@@ -45,4 +45,4 @@ Doxyfile.bak
 Doxyfile
 
 # Gtest
-gtest/*
+gtest*
