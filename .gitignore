@@ -43,3 +43,6 @@ Makefile*
 # Doxy
 Doxyfile.bak
 Doxyfile
+
+# Gtest
+gtest/*
