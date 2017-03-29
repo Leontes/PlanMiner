@@ -1,0 +1,1 @@
+cmd='/usr/bin/cmake;-GUnix Makefiles;/mnt/Datos/Dropbox/Doctorado/Investigación/PlanMiner_Abril17/PlanMiner/gtest/src/gtest'

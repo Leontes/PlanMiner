@@ -27,3 +27,19 @@
 *.exe
 *.out
 *.app
+
+# Folders
+Testing/*
+CMakeFiles/*
+doc/*
+bin/*
+
+# Cmake
+cmake_install*
+CMakeCache*
+CTestTest*
+Makefile*
+
+# Doxy
+Doxyfile.bak
+Doxyfile
