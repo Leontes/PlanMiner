@@ -30,6 +30,8 @@ endif(DOXYGEN_FOUND)
 #####################
 # Sources directories
 file(GLOB SOURCES "src/*.cpp" "src/*.cxx" "src/*.cc")
+file(GLOB SOURCES_LIBTASK "src/Task/*.cpp" "src/Task/*.cxx" "src/Task/*.cc")
+file(GLOB SOURCES_LIBSTATE "src/State/*.cpp" "src/State/*.cxx" "src/State/*.cc")
 
 #####################
 # Headers directories
@@ -44,18 +46,33 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+
+###################
+# Compile libraries
+add_library(taskLib ${SOURCES_LIBTASK})
+target_link_libraries(taskLib)
+
+add_library(stateLib ${SOURCES_LIBSTATE})
+target_link_libraries(stateLib)
+
+
+######################
+# Compile Main program
 add_executable(${PROJECT_NAME} "src/bin/main.cpp" ${SOURCES})
-target_link_libraries(${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME} taskLib stateLib)
 
 
-################
-# Define a test
-add_executable(data_tests "src/gtest/data_tests.cpp")
-
-######################################
-# Configure the test to use GoogleTest
+#################
+# Test definition
+# Test1
+add_executable(data_tests "src/utest/data_tests.cpp")
 add_dependencies(data_tests gtest)
-target_link_libraries(data_tests ${binary_dir}/googlemock/gtest/libgtest.a ${binary_dir}/googlemock/gtest/libgtest_main.a)
+target_link_libraries(data_tests ${binary_dir}/googlemock/gtest/libgtest.a ${binary_dir}/googlemock/gtest/libgtest_main.a taskLib stateLib)
+
+# Test2
+
+
+
 
 
 ##################################
