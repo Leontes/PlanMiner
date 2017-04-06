@@ -13,8 +13,8 @@ private:
   std::vector<TSLinker> tasks;
 
 public:
-  PlanTrace ();
-  virtual ~PlanTrace ();
+  PlanTrace(){};
+  ~PlanTrace(){};
 };
 
 #endif

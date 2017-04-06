@@ -46,3 +46,7 @@ Doxyfile
 
 # Gtest
 gtest/
+
+
+# Data
+data/

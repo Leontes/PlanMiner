@@ -1,7 +1,10 @@
 #include <iostream>
 
+
+#include "ParsePT.hpp"
+
 int main(int argc, char const *argv[]) {
 
-  std::cout << "Maiin" << std::endl; 
+  parse(argv[1]);
   return 0;
 }
