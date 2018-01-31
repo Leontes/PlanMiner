@@ -1,15 +1,17 @@
 # PlanMiner-O2
-PlanMiner-O2 is a domain learner algorithm. General questions and contact: José Á. Segura-Muros <josesegmur@decasi.ugr.es>
+PlanMiner-O2 is a domain learner algorithm. 
+
+General questions and contact: José Á. Segura-Muros <josesegmur@decasi.ugr.es>
 
 Data folder contains the experimental data used in the paper sent to the IJCAI 2018. Each folder contains a planning domain used in the experimental process and the source code of an executable generator of domain's problems. plantrace.txt is an example Plan Trace ready to use as the input of PlanMiner-O2. Scripts folder contains two scripts to include noise and incompleteness in a Plan Trace.
 
 ## Supported Platforms:
-  -Linux
+- Linux
 
 ## Dependencies needed to compile the software:
-	- g++
-	- cmake
-	- make
+- g++
+- cmake
+- make
 
 ## Installation and usage:
 ```
