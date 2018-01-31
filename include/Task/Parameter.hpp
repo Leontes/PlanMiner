@@ -26,8 +26,28 @@ public:
   Parameter(std::string name, std::string value, std::string type):name(name), value(value){
     types.push_back(type);
   };
+  Parameter(const Parameter & iParam):name(iParam.name),types(iParam.types),value(iParam.value){}
   ~Parameter(){};
 
+  std::string getName(){
+    return name;
+  }
+
+  void setName(std::string iName){
+    name = iName;
+  }
+
+  std::vector<std::string>getTypes(){
+    return types;
+  }
+
+  std::string getValue(){
+    return value;
+  }
+
+  void setValue(std::string iValue){
+    value = iValue;
+  }
 
   /** Methos addType
   *   @brief Adds another type to the parameter
@@ -55,6 +75,13 @@ public:
     }
     return os;
   }
+
+  std::string to_string();
+
+  virtual Parameter *  clone(){
+    return new Parameter(*this);
+  }
+
 
 
 };

@@ -37,6 +37,10 @@ public:
     parameters = task.parameters;
   }
 
+  std::vector<Parameter*> getParameters(){
+    return parameters;
+  }
+
 
   virtual ~Task() {}
 
@@ -53,6 +57,8 @@ public:
     os << std::string(")\n");
     return os;
   }
+
+  std::string to_string();
 
 };
 

@@ -28,7 +28,7 @@ State * parseState(std::string stateSTR);
 
 
 
-std::vector<std::vector< PlanTrace * > > * parse(const char * filename);
+std::vector< PlanTrace * > * parse(const char * filename);
 
 
 #endif

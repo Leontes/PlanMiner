@@ -32,6 +32,8 @@ endif(DOXYGEN_FOUND)
 file(GLOB SOURCES "src/*.cpp" "src/*.cxx" "src/*.cc")
 file(GLOB SOURCES_LIBTASK "src/Task/*.cpp" "src/Task/*.cxx" "src/Task/*.cc")
 file(GLOB SOURCES_LIBSTATE "src/State/*.cpp" "src/State/*.cxx" "src/State/*.cc")
+file(GLOB SOURCES_INSLV "src/INSLV/*.cpp" "src/INSLV/*.cxx" "src/INSLV/*.cc")
+
 
 #####################
 # Headers directories
@@ -55,11 +57,19 @@ target_link_libraries(taskLib)
 add_library(stateLib ${SOURCES_LIBSTATE})
 target_link_libraries(stateLib)
 
+add_library(inslvLib ${SOURCES_INSLV})
+target_link_libraries(inslvLib)
 
 ######################
 # Compile Main program
-add_executable(${PROJECT_NAME} "src/bin/main.cpp" ${SOURCES})
-target_link_libraries(${PROJECT_NAME} taskLib stateLib)
+add_executable(${PROJECT_NAME} "src/bin/mainPlanMiner.cpp" ${SOURCES})
+target_link_libraries(${PROJECT_NAME} taskLib stateLib inslvLib)
+
+
+######################
+# Compile INSLV program
+add_executable(INSLV "src/bin/mainINSLV.cpp" ${SOURCES_INSLV})
+target_link_libraries(${PROJECT_NAME})
 
 
 #################
@@ -70,7 +80,7 @@ add_dependencies(data_tests gtest)
 target_link_libraries(data_tests ${binary_dir}/googlemock/gtest/libgtest.a ${binary_dir}/googlemock/gtest/libgtest_main.a taskLib stateLib)
 
 # Test2
-
+#.....
 
 
 
