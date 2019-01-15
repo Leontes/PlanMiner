@@ -53,3 +53,8 @@ data/
 Dominios/
 Problemas/
 outputPM/
+*.sh
+*.pddl
+traza.txt
+*.py
+*.zip
