@@ -48,17 +48,19 @@ Doxyfile
 gtest/
 
 
-# Data
+# Problemas y output de PM
 data/
 Dominios/
 Problemas/
 outputPM/
 res/
+
+# Basura variada
 *.sh
 *.pddl
 traza.txt
 *.py
 *.zip
 
-#Example PTs
+# Example PTs
 !Problemas/Test/*
