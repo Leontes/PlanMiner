@@ -51,7 +51,7 @@ public:
     return sLength;
   }
 
-  void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index);
+  void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index);
 
   double getCost(std::string pred);
   void setCost(std::string pred, double cost);

@@ -56,7 +56,7 @@ public:
   /** Method ParseTask
   *   @brief Method to calculate the schema form of every Task/State of the plan trace.
   */
-  void schematize(std::vector < Type *> tipos);
+  void schematize(/*std::vector < Type *> tipos*/);
 
 };
 

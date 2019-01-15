@@ -127,7 +127,7 @@ example_set::example_set(const char *nom_fich){
 }
 
 
-example_set::example_set(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels){
+example_set::example_set(std::vector < std::vector < double > > * dataset){
 
   n_example =(*dataset)[0].size();
   n_variable = dataset -> size();

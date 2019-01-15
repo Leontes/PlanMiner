@@ -9,7 +9,7 @@
 
 
 
-void to_table( std::string task, StatesLists states, std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels);
+void to_table( std::string task, StatesLists states, std::vector < std::vector < std::vector < double > > > * datasets, std::vector < std::vector < std::pair<std::string, std::string> > > * attribLabelsVC);
 
 
 

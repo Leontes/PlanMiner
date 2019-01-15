@@ -20,12 +20,12 @@ void State::clean(){
 
 
 
-  void State::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index){
-    for(unsigned int i = 0; i < predicates.size(); i++){
-      predicates[i] -> to_table(dataset, attribLabels, nStates, index);
-    }
-    (*index)++;
+void State::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index){
+  for(unsigned int i = 0; i < predicates.size(); i++){
+    predicates[i] -> to_table(dataset, attribLabels, nStates, index);
   }
+  (*index)++;
+}
 
 
   double State::getCost(std::string pred){

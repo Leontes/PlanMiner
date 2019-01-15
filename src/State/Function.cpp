@@ -4,11 +4,10 @@
 #include "State/Function.hpp"
 
 Function::Function(std::vector <std::string> tokens):Predicate() {
-  unsigned int i = 3, j = i;
-  extractSubVector(tokens, &i, &j);
-  std::vector<std::string> aux (&tokens[i], &tokens[j]);
+
+  std::vector<std::string> aux (&tokens[1], &tokens[tokens.size()-1]);
   pred = new Atom(aux);
-  value = stod(tokens[j]);
+  value = stod(tokens[tokens.size()-1]);
 
 }
 
@@ -25,7 +24,7 @@ bool Function::erasable(){
   return pred -> erasable();
 }
 
-void Function::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
+void Function::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
   std::ostringstream stream;
   stream << *pred;
   std::string _str = stream.str();
@@ -35,13 +34,13 @@ void Function::to_table(std::vector < std::vector < double > > * dataset, std::v
     bool esta = false;
     unsigned int pred = 0;
     for (unsigned int i = 0; i < attribLabels -> size(); i++) {
-      if((*attribLabels)[i] == _str){
+      if((*attribLabels)[i].first == _str){
         esta = true;
         nPred = i;
       }
     }
     if(!esta){
-      (*attribLabels).push_back(_str);
+      (*attribLabels).push_back(std::pair <std::string, std::string> (_str, "Numerical"));
       std::vector<double> vect(nStates, -999999999);
       dataset->push_back(vect);
       nPred = (dataset -> size()) - 1;

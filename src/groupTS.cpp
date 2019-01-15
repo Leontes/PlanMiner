@@ -17,8 +17,8 @@ std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * >
 
   for(unsigned int i = 0; i < PTS -> size(); i++){
     for (unsigned int j = 0; j < (*PTS)[i] -> getNTS(); j++) {
-      taskName = (((*PTS)[i] -> getTS(j)) -> getTask()) -> to_string();
-
+      //taskName = (((*PTS)[i] -> getTS(j)) -> getTask()) -> to_string();
+      taskName = (((*PTS)[i] -> getTS(j)) -> getTask()) -> get_Tname();
       it = output.find(taskName);
       if (it != output.end()){
         //Esta
@@ -43,7 +43,7 @@ std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * >
       }
     }
   }
-  unsigned int cont = 0;
+
   /*for (it=output.begin(); it!=output.end(); ++it){
     std::cout << "Key: " << it->first;
 

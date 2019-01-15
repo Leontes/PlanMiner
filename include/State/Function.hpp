@@ -49,7 +49,7 @@ public:
     return 1;
   }
 
-  void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity);
+  void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity);
 
   virtual Function *  clone(){
     return new Function(*this);

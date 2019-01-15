@@ -20,7 +20,7 @@ string itos(int n)
 
 bool vectoresIguales_E(double *v1, double *v2, int tama){
   int i=0;
-/*  for (int t=0; t<tama; t++){
+  /*  for (int t=0; t<tama; t++){
     cout << v1[t] << " | " << v2[t] << endl;
   }*/
 
@@ -3264,6 +3264,7 @@ double Bondad (multipoblacion &G, const VectorVar &V, const example_set &E, rule
     }
 
 // Calculo previo para obtener el peso de la regla sobre atributos originales
+valida = (variables_irrelevantes < r1-1);
     if (regla_valida and valida)
     {
         for (j=0; j<ne; j++)
@@ -3806,6 +3807,7 @@ double Bondad_E (multipoblacion &G, const VectorVar &V, const example_set &E, ru
     }
 
 // Calculo previo para obtener el peso de la regla sobre atributos originales
+    valida = (variables_irrelevantes < r1-1);
     if (regla_valida and valida)
     {
         for (j=0; j<ne; j++)
@@ -4327,6 +4329,7 @@ double Bondad_Final (multipoblacion &G, const VectorVar &V, const example_set &E
        valida = ponderacion_por_clase[clase]!=0;
 
 // Calculo previo para obtener el peso de la regla sobre atributos originales
+    valida = (variables_irrelevantes < r1-1);
     if (regla_valida and valida)
     {
         for (j=0; j<ne; j++)
@@ -8983,6 +8986,7 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
        valida = (ponderacion_por_clase[clase]!=0);
 
 // Calculo previo para obtener el peso de la regla sobre atributos originales
+    valida = (variables_irrelevantes < r1-1);
     if (regla_valida and valida)
     {
         for (j=0; j<ne; j++)
@@ -9320,19 +9324,16 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
 
 
 
- int inslv(std::string pDomainName ,std::string tName, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, vector < pair <int, list< pair<string, string> > > > * reglas){
-
+ int inslv(std::string pDomainName ,std::string tName, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap, vector < pair <int, list< pair<string, string> > > > * reglas){
    std::string task;
    task = sPath + "res/" + tName;
     // Numero de particiones
     int num_par=1;
     std::string comando;
 
-    VectorVar V(dataset, attribLabels);
-
+    VectorVar V(dataset, attribLabels, attribMap);
     V.Pinta();
-
-    example_set E(dataset, attribLabels);
+    example_set E(dataset);
     int seed = 0;
 
 

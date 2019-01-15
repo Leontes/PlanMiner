@@ -202,7 +202,7 @@ bool vectoresIguales(double *v1, double *v2, int tama);
 
 
 
-int inslv(std::string pDomainName, std::string task, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, vector < pair <int, list< pair<string, string> > > > * reglas);
+int inslv(std::string pDomainName, std::string task, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap, vector < pair <int, list< pair<string, string> > > > * reglas);
 
 
 

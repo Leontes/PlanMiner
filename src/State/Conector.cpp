@@ -4,60 +4,46 @@
 
 
 Conector::Conector(std::vector <std::string> tokens, conectorType iType):Predicate(), type(iType){
-  unsigned int j;
-  for (unsigned int i = 1; i < tokens.size(); i++){
-    if(tokens[i] == "("){
-      i++;
-      if(tokens[i] == "not" or tokens[i] == "or" or tokens[i] == "and" or tokens[i] == "xor" or tokens[i] == "xand"){ //not
-        j = i;
-        extractSubVector(tokens, &i, &j);
-        std::vector<std::string> aux (&tokens[i], &tokens[j]);
-
-        conectorType contType;
-        i++;
-        if(tokens[i] == "not"){
-          contType = NOT;
+    //Creamos sublistas de predicados
+    std::vector <std::string> sublist;
+    unsigned int contador = 0, nParentesis = 0;
+    if(iType == NOT){
+      std::vector<std::string> aux (&tokens[1], &tokens[tokens.size()]);
+      predicates.push_back(new Atom(aux));
+    }
+    else{
+      while (contador < tokens.size()){
+        if(tokens[contador] == "("){
+          nParentesis++;
         }else{
-          if(tokens[i] == "or"){
-            contType = OR;
+          if(tokens[contador] == ")"){
+            nParentesis--;
           }
           else{
-            if(tokens[i] == "and"){
-              contType = AND;
-            }
-            else{
-              if(tokens[i] == "xor"){
-                contType = XOR;
-              }
-              else{
-                contType = XAND;
-              }
+            if(tokens[contador] != ""){
+              sublist.push_back(tokens[contador]);
             }
           }
         }
-        predicates.push_back(new Conector(aux, contType));
-        i = j-1;
-      }
-      else{
 
-        if(tokens[i] == "="){ //Functions
-          j = i;
-          extractSubVector(tokens, &i, &j);
-          //j += 2;
-          std::vector<std::string> aux (&tokens[i], &tokens[j]);
-
-          predicates.push_back(new Function(aux));
-          i = j-1;
-        }else{ //Atoms
-          j = i;
-          extractSubVector(tokens, &i, &j);
-          std::vector<std::string> aux (&tokens[i], &tokens[j]);
-          predicates.push_back(new Atom(aux));
-          i = j-1;
+        if(nParentesis == 0 and sublist.size() > 0){
+          if(sublist[0] == "="){
+            predicates.push_back(new Function(sublist));
+          }else{
+            if(sublist[0] == "not"){
+              predicates.push_back(new Conector(sublist, NOT));
+            }else{
+              predicates.push_back(new Atom(sublist));
+            }
+          }
+          sublist.clear();
         }
+        contador++;
       }
     }
-  }
+
+
+
 }
 
 
@@ -81,7 +67,7 @@ bool Conector::erasable(){
   return predicates.size() == 0;
 }
 
-void Conector::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
+void Conector::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
   if(type == NOT){
     for (unsigned int i = 0; i < predicates.size(); i++) {
       predicates[i] -> to_table(dataset, attribLabels, nStates, index, false);
@@ -115,7 +101,7 @@ void Conector::setCost(std::string pred, double cost){
     tokens.push_back("(");
     tokens.push_back("=");
     tokens.push_back("(");
-    tokens.push_back("DIFF-" + pred);
+    tokens.push_back("DELTA-" + pred);
     tokens.push_back(")");
     tokens.push_back(std::to_string(cost));
     tokens.push_back(")");
@@ -139,7 +125,7 @@ std::vector<std::string> Conector::getAllFunctions(){
 std::ostream& Conector::print(std::ostream& os) const {
     switch (type) {
       case NOT:
-        os << "(" << "not" << std::endl;
+        os << "(" << "not ";
       break;
       case OR:
         os << "(" << "or" << std::endl;

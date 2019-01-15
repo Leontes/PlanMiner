@@ -142,7 +142,7 @@ public:
     return os;
   }
 
-  void schematize(std::vector < Type *> tipos);
+  void schematize(/*std::vector < Type *> tipos*/);
 };
 
 #endif

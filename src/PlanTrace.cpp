@@ -1,8 +1,8 @@
 #include "PlanTrace.hpp"
 
 
-void PlanTrace::schematize(std::vector < Type *> tipos){
+void PlanTrace::schematize(/*std::vector < Type *> tipos*/){
   for (unsigned int i = 0; i < TSlinks.size(); i++) {
-    TSlinks[i] -> schematize(tipos);
+    TSlinks[i] -> schematize(/*tipos*/);
   }
 }

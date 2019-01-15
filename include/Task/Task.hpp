@@ -59,6 +59,9 @@ public:
   }
 
   std::string to_string();
+  std::string get_Tname(){
+    return taskName;
+  };
 
 };
 

@@ -3,11 +3,15 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <map>
+#include <algorithm>
+#include <iomanip>
 #include "fuzzy_t.h"
 #include "domain_t.h"
 #include "variable_t.h"
 #include "vectordouble.h"
 #include "genetcode.h"
+#include "Discretize.hpp"
 
 struct combinado{
    int op;
@@ -20,11 +24,12 @@ class VectorVar {
     int numero;
     variable_t *lista;
     combinado *oper;
+
   public:
     VectorVar();
     VectorVar(int tamano);
     VectorVar(const char *nom_fich);
-    VectorVar(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels);
+    VectorVar(std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap);
     ~VectorVar();
     VectorVar(const VectorVar &x);
     VectorVar &operator=(const VectorVar &x);

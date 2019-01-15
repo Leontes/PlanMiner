@@ -8,9 +8,9 @@
 
 #include "ParsePT.hpp"
 
-const std::regex planRE("New Plan!!!");
-const std::regex taskRE("^T(.)*:");
-const std::regex stateRE("^S(.)*:");
+const std::regex planRE("New plan!!!");
+const std::regex taskRE("##Tasks##");
+const std::regex stateRE("##States##");
 
 void parseGoals(){
   /*unsigned downDelim = str.find("(");
@@ -21,28 +21,69 @@ void parseGoals(){
 
 
 Task * parseTask(std::string taskSTR){
-    std::vector<std::string> tokens;
-    boost::split( tokens, taskSTR, boost::is_any_of(" ") );
-    if(tokens.size() > 1){
-      std::string name = tokens[1];
-      std::vector<pairParams> params;
-      if(tokens.size() > 3){
-        for (int i = 2; i < tokens.size()-1; i+=3) {
-          params.push_back(pairParams(tokens[i],tokens[i+2]));
-        }
-      }
-      return new PrimitiveTask(name, &params);
+
+  std::string strformateado;
+  for(unsigned int i = 0; i < taskSTR.size(); i++){
+    if(taskSTR[i] == '(' or taskSTR[i] == '['){
+      strformateado += " ( ";
     }
     else{
-      return nullptr;
+      if(taskSTR[i] == ')' or taskSTR[i] == ']'){
+        strformateado += " ) ";
+      }
+      else{
+        strformateado += taskSTR[i];
+      }
     }
+  }
+
+
+  if(strformateado.compare("") != 0){
+    std::vector<std::string> tokens;
+    boost::split( tokens, strformateado, boost::is_any_of(" "), boost::algorithm::token_compress_on);
+
+    unsigned int contador = 0;
+    while(tokens[contador] != ":"){
+      contador++;
+    }
+    contador++;
+
+    std::string name = tokens[contador+1];
+    std::vector<pairParams> params;
+    if(tokens.size() > 3){
+      for (int i = contador+2; i < tokens.size()-2; i+=3) {
+        params.push_back(pairParams(tokens[i],tokens[i+2]));
+      }
+    }
+    return new PrimitiveTask(name, &params);
+  }
+  else{
+    return nullptr;
+  }
 }
 
 
 State * parseState(std::string stateSTR){
-  if(stateSTR.compare("") != 0){
+
+  std::string strformateado;
+  for(unsigned int i = 0; i < stateSTR.size(); i++){
+    if(stateSTR[i] == '('){
+      strformateado += " ( ";
+    }
+    else{
+      if(stateSTR[i] == ')'){
+        strformateado += " ) ";
+      }
+      else{
+        strformateado += stateSTR[i];
+      }
+    }
+  }
+
+
+  if(strformateado.compare("") != 0){
     std::vector<std::string> tokens;
-    boost::split( tokens, stateSTR, boost::is_any_of(" ") );
+    boost::split( tokens, strformateado, boost::is_any_of(" ") );
     return new State(tokens);
   }
   else{
@@ -58,139 +99,72 @@ std::vector< PlanTrace * > * parse(const char * filename){
   ptFile.open (filename);
   std::string rBuffer;
   std::vector< PlanTrace * > * pt = new std::vector< PlanTrace * >();
+  std::map<std::string, State *> statesMap;
+  std::vector<std::string> taskVec;
 
-  State * parsedPre = nullptr, * parsedPost = nullptr;
-  PrimitiveTask * parsedTask = nullptr;
-  bool esperandoEstado = false, esperandoTarea = true;
-  char nStates = 0, a;
+  Task * tareaParseada;
 
-//Mientras el fichero tenga algo...
+  unsigned int contador = 0;
+  //Mientras el fichero tenga algo...
   while (!ptFile.eof()) {
-
-
-    if(nStates == 2){
-      nStates = 1;
-      //std::cout << parsedPre << " " << parsedPost << " " << parsedTask << std::endl;
-      ((*pt)[pt -> size() - 1]) -> addLink(new TSLinker(parsedPre, parsedPost, parsedTask));
-      //std::cout << *((*pt)[pt -> size() - 1]) -> getTS(((*pt)[pt -> size() - 1]) -> lenght() -1 ) << std::endl;
-    }
-
     rBuffer = "";
     //Ignoramos las lineas vacías
     while (rBuffer.compare("") == 0 and !ptFile.eof()) {
       getline(ptFile, rBuffer);
-    }
 
-    //std::cout << rBuffer << std::endl;
-    //std::cin >> a;
-
-    //Si la linea es el inicio de un nuevo plan creamos el objeto necesario
-    if(regex_match(rBuffer,planRE)){
       pt -> push_back(new PlanTrace());
-      parsedPre = nullptr;
-      parsedPost = nullptr;
-      parsedTask = nullptr;
-      esperandoEstado = false;
-      esperandoTarea = false;
-      nStates = 0;
-    }
-    else{
-      //Si no comprobamos si lo siguiente es un estado
-      if(regex_match(rBuffer,stateRE)){
-        esperandoEstado = true;
-        //std::cout << "Esperando un estado..." << std::endl;
+      statesMap.clear();
+      taskVec.clear();
+
+      while(!regex_match(rBuffer,stateRE)){
+          getline(ptFile, rBuffer);
+          if(!regex_match(rBuffer,taskRE) and rBuffer != "" and !regex_match(rBuffer,stateRE)){
+            taskVec.push_back(rBuffer);
+          }
       }
-      else{
-        //Si no comprobamos si lo siguiente es una tarea
-        if(regex_match(rBuffer,taskRE)){
-          esperandoTarea = true;
-          //std::cout << "Esperando una tarea..." << std::endl;
-          if(esperandoEstado == true){
-            //std::cout << "Estaba esperando un estado y lo que ocurrió a continuacion te sorprendera..." << std::endl;
-            esperandoEstado = false; //<-- Si esperabamos un estado y nos hemos encontrado con el inicio de una tarea... el estado esta perdido
-            parsedPre = parsedPost;
-            parsedPost = nullptr;
-            nStates++;
+
+      while(!regex_match(rBuffer, planRE) and !ptFile.eof()){
+          getline(ptFile, rBuffer);
+          if(!regex_match(rBuffer, planRE)){
+            if(rBuffer != ""){
+              for (contador = 0; contador < rBuffer.size(); contador++) {
+                if(rBuffer[contador] == ':'){
+                  break;
+                }
+              }
+
+              statesMap[rBuffer.substr(0, contador)] = parseState(rBuffer.substr(contador+2));
+            }
           }
+      }
+
+      std::string numPre = "", numPos = "";
+      unsigned int indice = 0;
+      for(unsigned int i = 0; i < taskVec.size(); i++){
+        tareaParseada = parseTask(taskVec[i]);
+        //Buscamos el primer numero
+        indice = 1;
+        numPre = "";
+        while(taskVec[i][indice] != ','){
+          numPre+= taskVec[i][indice];
+          indice++;
         }
-        else{
-          //Si esperabamos una tarea la parseamos
-          if(esperandoTarea == true){
-            esperandoTarea = false;
-            parsedTask = (PrimitiveTask*) parseTask(rBuffer);
-          }
 
-          if(esperandoEstado == true){
-            esperandoEstado = false;
-            parsedPre = parsedPost;
-            parsedPost = parseState(rBuffer);
-            nStates++;
-          }
-         }
-       }
-     }
+        //Buscamos el segundo numero
+        indice += 2;
+        numPos = "";
+        while(taskVec[i][indice] != ']'){
+          numPos+= taskVec[i][indice];
+          indice++;
+        }
 
-
-
-
+        ((*pt)[pt -> size()-1]) -> addLink(new TSLinker(statesMap["[" + numPre + "]"], statesMap["[" + numPos + "]"], tareaParseada));
+      }
+    }
 
   }
 
 
-
-  /*while (!ptFile.eof()) {
-    rBuffer = "";
-    while (rBuffer.compare("") == 0 and !ptFile.eof()) {
-      getline(ptFile, rBuffer);
-    }
-    if(regex_match(rBuffer,planRE)){
-       pt -> push_back(new PlanTrace());
-       parsedPre = nullptr;
-       parsedPost = nullptr;
-       parsedTask = nullptr;
-     }
-
-     if(regex_match(rBuffer,stateRE)){
-       rBuffer = "";
-       while (rBuffer.compare("") == 0 and !ptFile.eof()) {
-         getline(ptFile, rBuffer);
-       }
-       parsedPre = parsedPost;
-       parsedPost = parseState(rBuffer);
-
-       if(tareaLeida == true){
-         ((*pt)[pt -> size() - 1]) -> addLink(new TSLinker(parsedPre, parsedPost, parsedTask));
-         tareaLeida = false;
-       }
-
-       /*if(parsedPre != nullptr){
-         std::cout << *(parsedPre);
-       }
-       else{
-         std::cout << "Missing state" << std::endl;
-       }
-     }
-
-     if(regex_match(rBuffer,taskRE)){
-       rBuffer = "";
-       while (rBuffer.compare("") == 0 and !ptFile.eof()) {
-         getline(ptFile, rBuffer);
-       }
-       parsedTask = (PrimitiveTask*) parseTask(rBuffer);
-       tareaLeida = true;
-
-       /*if(parsedTask != nullptr){
-         std::cout << *(parsedTask);
-       }
-       else{
-         std::cout << "Missing task" << std::endl;
-       }
-     }
-  }*/
-
-
   ptFile.close();
-
   return pt;
-
 }

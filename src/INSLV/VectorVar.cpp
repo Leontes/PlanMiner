@@ -7,6 +7,9 @@ using namespace std;
 #include "INSLV/VectorVar.h"
 
 
+
+
+
 VectorVar::VectorVar(){
   numero=0;
   lista=0;
@@ -78,23 +81,22 @@ VectorVar::VectorVar(int tamano){
   oper = new combinado[tamano];
 }
 
-VectorVar::VectorVar(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels){
+VectorVar::VectorVar(std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap){
   double *va,*vb,*vc,*vd,inf,sup, c_factor;
   string nom_var, *vname;
   int antecedente, activa, n, unit;
 
-  std::vector<double> elemVistos;
-  double min, max, valor;
-  bool encontrado = false;
+  unsigned int cont = 0;
+  numero = attribLabels.size();
+  lista = new variable_t[attribLabels.size()];
+  oper = new combinado[attribLabels.size()];
 
-  numero = attribLabels -> size();
-  lista = new variable_t[numero];
-  oper = new combinado[numero];
 
-  for (unsigned int i=0; i<numero; i++){
+  for(unsigned int attrib = 0; attrib < attribLabels.size(); attrib++){
+
+
     //nom_var nombre de la variable
-    nom_var = (*attribLabels)[i];
-
+    nom_var = attribLabels[attrib].first;
     //antecedente 1 si es clase, 0 si no
     if(nom_var == "Class"){
       antecedente = 1;
@@ -108,149 +110,50 @@ VectorVar::VectorVar(std::vector < std::vector < double > > * dataset, std::vect
     //c_factor poner a 0
     c_factor = 0;
 
-    //inf cota inferior
-    sup = std::numeric_limits<double>::lowest();
+    //inf
+    inf = attribMap[ attribLabels[attrib].first][0].a;
+    //sup
+    sup = attribMap[ attribLabels[attrib].first][attribMap[ attribLabels[attrib].first].size()-1].d;
 
-    //sup cota superior
-    inf = std::numeric_limits<double>::max();
-    elemVistos.clear();
+    va = new double[attribMap[ attribLabels[attrib].first].size()];
+    vb = new double[attribMap[ attribLabels[attrib].first].size()];
+    vc = new double[attribMap[ attribLabels[attrib].first].size()];
+    vd = new double[attribMap[ attribLabels[attrib].first].size()];
+    vname = new std::string[attribMap[ attribLabels[attrib].first].size()];
 
-
-    for(unsigned j = 0; j<(*dataset)[i].size(); j++){
-      valor = (*dataset)[i][j];
-      if(valor != -999999999.0){
-          if(valor > sup){
-            sup = valor;
-          }
-          if(valor < inf){
-            inf = valor;
-          }
-
-          encontrado = false;
-          for(unsigned int k = 0; k < elemVistos.size(); k++){
-
-            if(valor == elemVistos[k]){
-              encontrado = true;
-            }
-          }
-          if(encontrado == false){
-            elemVistos.push_back(valor);
-          }
-      }
+    for(unsigned int i = 0; i < attribMap[ attribLabels[attrib].first].size(); i++){
+      va[i] = attribMap[ attribLabels[attrib].first][i].a;
+      vb[i] = attribMap[ attribLabels[attrib].first][i].b;
+      vc[i] = attribMap[ attribLabels[attrib].first][i].c;
+      vd[i] = attribMap[ attribLabels[attrib].first][i].d;
+      vname[i] = attribMap[ attribLabels[attrib].first][i].label;
     }
-
-    if((sup == inf) and (inf == 1.0)){
-      inf = 0.0;
-      elemVistos.push_back(0.0);
-    }else{
-      if((sup == inf) and (sup == 0.0)){
-        sup = 1.0;
-        elemVistos.push_back(1.0);
-      }
-    }
-
-
-    //n numero de tags
-    n = elemVistos.size();
 
     /*
-      va vector con la lista de valores inferior
-      vb vector con la lista de valores media inferior
-      vc vector con la lista de valores media superior
-      vd vector con la lista de valores superior
-      vname vector con la lista de nombres de las variables
+    std::cout << "n: " << (*attrIT).second.size() << "\n";
+    std::cout << "nom_var: " << nom_var << "\n";
+    std::cout << "antecedente: " << antecedente << "\n";
+    std::cout << "unit: " << unit << "\n";
+    std::cout << "c_factor: " << c_factor << "\n";
+    std::cout << "inf: " << inf << "\n";
+    std::cout << "sup: " << sup << "\n";
+
+    for(unsigned int i = 0; i < (*attrIT).second.size(); i++){
+      std::cout << va[i] << " "  << vb[i] << " "  << vc[i] << " "  << vd[i] << " "  << vname[i] << "\n";
+    }
+    std::cout << "\n\n\n";
     */
 
-    if(n==1){
-      va = new double[1];
-      va[0] = sup;
+    lista[cont].Asigna(attribMap[ attribLabels[attrib].first].size(), nom_var, antecedente, unit, c_factor, inf, sup, va, vb, vc, vd, vname, true);
+    oper[cont].op=0;
+    Libera_Memoria_Var_aux(va,vb,vc,vd,vname);
 
-      vb = new double[1];
-      vb[0] = sup;
-
-      vc = new double[1];
-      vc[0] = sup;
-
-      vd = new double[1];
-      vd[0] = sup;
-
-      vname = new std::string[1];
-      vname[0] = "M";
-      lista[i].Asigna(n, nom_var, antecedente, unit, c_factor, inf, sup, va, vb, vc, vd, vname);
-      oper[i].op=0;
-      Libera_Memoria_Var_aux(va,vb,vc,vd,vname);
-
-    }
-    else{
-      if((n == 2) and (inf == 0.0) and (sup == 1.0)){
-        va = new double[n];
-        va[0] = 0;
-        va[1] = 1;
-
-        vb = new double[n];
-        vb[0] = 0;
-        vb[1] = 1;
-
-        vc = new double[n];
-        vc[0] = 0;
-        vc[1] = 1;
-
-        vd = new double[n];
-        vd[0] = 0;
-        vd[1] = 1;
-
-        vname = new std::string[n];
-        if(nom_var == "Class"){
-          vname[0] = "PreState";
-          vname[1] = "PostState";
-        }
-        else{
-          vname[0] = "False";
-          vname[1] = "True";
-        }
-
-        lista[i].Asigna(n, nom_var, antecedente, unit, c_factor, inf, sup, va, vb, vc, vd, vname, true);
-        oper[i].op=0;
-        Libera_Memoria_Var_aux(va,vb,vc,vd,vname);
-
-      }
-      else{
-        va = new double[n];
-        vb = new double[n];
-        vc = new double[n];
-        vd = new double[n];
-        vname = new std::string[n];
-
-        for(unsigned int i = 0; i < n; i++){
-          va[i] = elemVistos[i];
-          vb[i] = elemVistos[i];
-          vc[i] = elemVistos[i];
-          vd[i] = elemVistos[i];
-          vname[i] = "L_" + to_string(i);
-        }
-        lista[i].Asigna(n, nom_var, antecedente, unit, c_factor, inf, sup, va, vb, vc, vd, vname, true);
-        oper[i].op=0;
-
-
-
-        /*
-        if(n < 3){
-          n = 3;
-        }else{
-          if((n/log(n)) < 11){
-            n = 11;
-          }
-          else{
-            n = n/log(n);
-          }
-        }
-        lista[i].Asigna(n, inf, sup, false, false, nom_var);
-        oper[i].op=0; */
-      }
-    }
-
-
+    cont++;
   }
+
+
+
+
 }
 
 

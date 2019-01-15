@@ -6,10 +6,10 @@
 #include "State/Atom.hpp"
 
 Atom::Atom(std::vector <std::string> tokens):Predicate(){
-  name = tokens[1];
+  name = tokens[0];
   unsigned int cont = 0;
-  for(unsigned int i = 2; i < tokens.size()-1; i+=3){
-    parameters.push_back(new Parameter("Param_" + std::to_string(cont), tokens[i], tokens[i+2]));
+  for(unsigned int i = 1; i < tokens.size()-1; i+=3){
+    parameters.push_back(new Parameter("param_" + std::to_string(cont), tokens[i], tokens[i+2]));
     cont ++;
   }
 }
@@ -61,7 +61,7 @@ bool Atom::erasable(){
   }
 }
 
-void Atom::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
+void Atom::to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){
   std::ostringstream stream;
   stream << print(stream).rdbuf();
   std::string _str = stream.str();
@@ -71,13 +71,13 @@ void Atom::to_table(std::vector < std::vector < double > > * dataset, std::vecto
     bool esta = false;
     unsigned int pred = 0;
     for (unsigned int i = 0; i < attribLabels -> size(); i++) {
-      if((*attribLabels)[i] == _str){
+      if((*attribLabels)[i].first == _str){
         esta = true;
         pred = i;
       }
     }
     if(!esta){
-      (*attribLabels).push_back(_str);
+      (*attribLabels).push_back(std::pair <std::string, std::string> (_str, "Logical"));
       std::vector<double> vect(nStates, -999999999);
       dataset->push_back(vect);
       pred = (dataset -> size()) - 1;

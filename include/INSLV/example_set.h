@@ -26,7 +26,7 @@ class example_set {
     example_set(int ejemplos, int variables);
     example_set(const example_set &x);
     example_set(const char *nom_fich);
-    example_set(std::vector < std::vector < double > > * dataset, std::vector < std::string > * attribLabels);
+    example_set(std::vector < std::vector < double > > * dataset);
     example_set &operator=(const example_set &x);
     ~example_set();
     void AddExampleFich(const char *nom_fich, int par, bool order = false); // order=F -> as it is, order=T -> random
