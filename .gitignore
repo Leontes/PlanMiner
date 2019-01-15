@@ -53,8 +53,12 @@ data/
 Dominios/
 Problemas/
 outputPM/
+res/
 *.sh
 *.pddl
 traza.txt
 *.py
 *.zip
+
+#Example PTs
+!Problemas/Test/*
