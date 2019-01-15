@@ -63,4 +63,4 @@ traza.txt
 *.zip
 
 # Example PTs
-!Problemas/Test/*
+!Problemas/Test/
