@@ -61,6 +61,4 @@ res/
 traza.txt
 *.py
 *.zip
-
-# Example PTs
-!Problemas/Test/
+<
