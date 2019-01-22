@@ -11,7 +11,7 @@
 #include "variable_t.h"
 #include "vectordouble.h"
 #include "genetcode.h"
-#include "Discretize.hpp"
+#include "DataSLib.hpp"
 
 struct combinado{
    int op;

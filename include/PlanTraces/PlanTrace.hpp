@@ -3,13 +3,13 @@
 
 #include <vector>
 #include <list>
-#include "TSLinker.hpp"
+#include "StateLib.hpp"
 
 typedef std::pair<std::list<State*>, std::list<State*> > StatesLists;
 
 
 /** Class PlanTrace.
-*  \brief Class to model planning tasks.
+*  @brief Class to model planning tasks.
 */
 class PlanTrace {
 private:
@@ -19,22 +19,35 @@ public:
   PlanTrace(){};
   ~PlanTrace(){};
 
+  /** Function addLink
+  *   @brief Method to add a TaskStateLinker to the plan trace
+  *   @param link TaskStateLinker to add
+  */
   void addLink(TSLinker * link){
     TSlinks.push_back(link);
   }
 
+  /** Function getNTS
+  *   @brief Method to get the number of TaskStateLinker of the PlanTrace object
+  *   @retval the number of TaskStateLinker objects
+  */
   unsigned int getNTS(){
     return TSlinks.size();
   }
 
+  /** Function getNTS
+  *   @brief Method to get a certain TaskStateLinker object
+  *   @param i integer TaskStateLinker to obtain
+  *   @retval TSLinker TaskStateLinker object
+  */
   TSLinker * getTS(unsigned int i){
     return TSlinks[i];
   }
 
-  unsigned int lenght(){
-    return TSlinks.size();
-  }
-
+  /** Function stateLenght
+  *   @brief Method to mean number of predicates of the PlanTrace's states
+  *   @retval double mean number of predicates
+  */
   double stateLenght(){
     double sLength = 0.0;
     for (unsigned int i = 0; i < TSlinks.size(); i++){
@@ -43,7 +56,10 @@ public:
     return (double)sLength/(double)TSlinks.size();
   }
 
-
+  /** Function operator <<
+  *   @brief Method to output the PlanTrace object
+  *   @retval ostream PlanTrace object info
+  */
   friend std::ostream& operator << (std::ostream& os, const PlanTrace& pt){
     os << "New Plan!!" << std::endl << std::endl;
     for (unsigned int i = 0; i < pt.TSlinks.size(); i++) {

@@ -1,4 +1,4 @@
-#include "PlanTrace.hpp"
+#include "PlanTraces/PlanTrace.hpp"
 
 
 void PlanTrace::schematize(/*std::vector < Type *> tipos*/){

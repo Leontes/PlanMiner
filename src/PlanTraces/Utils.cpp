@@ -1,17 +1,63 @@
-#include "ToTable.hpp"
 
-#include <map>
-#include <vector>
-#include <queue>
-#include <stack>
-#include <cmath>
-#include <random>
+#include <iostream>
+#include <fstream>
 #include <sstream>
 
+#include <queue>
 
 
-enum type {constant, variable, binaryOp};
 
+
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
+#include "PlanTraces/Utils.hpp"
+
+
+//Auxiliary functions
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        *(result++) = item;
+    }
+}
+std::vector<std::string> extract_keys(std::map <std::string, std::vector <std::pair <std::string, std::string> > > const& input_map) {
+  std::vector<std::string> retval;
+  for (auto const& element : input_map) {
+    retval.push_back(element.first);
+  }
+  return retval;
+}
+std::string solveConflict(std::string A, std::string B, std::vector < Type * > *vtipos){
+  std::string out;
+
+  Type * auxA , * auxB, * pivote;
+  for (unsigned int i = 0; i < vtipos -> size(); i++) {
+    if(A == (*vtipos)[i] -> name){
+      auxA = (*vtipos)[i];
+    }
+
+    if(B == (*vtipos)[i] -> name){
+      auxB = (*vtipos)[i];
+      pivote = auxB;
+    }
+
+  }
+  while (auxA != 0){
+    auxB = pivote;
+    while (auxB != 0){
+      if(auxA -> name == auxB -> name){
+        return auxA -> name;
+      }
+      auxB = auxB -> parent;
+    }
+    auxA = auxA -> parent;
+  }
+  return out;
+}
 bool is_number(const std::string& s){
   if(s[0] == '-' and s.size() == 1){
     return false;
@@ -20,11 +66,9 @@ bool is_number(const std::string& s){
     return(s.find_first_not_of( "-.0123456789" ) == std::string::npos);
   }
 }
-
 bool is_var(const std::string& s){
   return std::isalpha(s[0]);
 }
-
 int precedencia(std::string str){
     if(str == "^"){
       return 4;
@@ -47,7 +91,6 @@ int precedencia(std::string str){
       }
     }
   }
-
 std::vector<std::string> infixAPrefix(std::vector<std::string> &formInf){
 
   //Paso 1: Se le da la vuelta a la formula
@@ -123,716 +166,6 @@ std::vector<std::string> infixAPrefix(std::vector<std::string> &formInf){
 
   return formOut;
 }
-
-struct nodoArith {
-  type tipo;
-  //Numero, variable, +, -, *, /
-  std::string valor;
-  std::vector<nodoArith> hijos;
-
-  nodoArith(){}
-  nodoArith(std::vector <std::string> formula){
-    std::stack <nodoArith> pilaNodos;
-    nodoArith hijo1, hijo2, aux;
-    for(std::vector <std::string>::reverse_iterator it = formula.rbegin(); it != formula.rend(); it++){
-      if(is_number(*it) or is_var(*it)){
-        aux.valor = *it;
-        aux.hijos.clear();
-        if(is_number(*it)){
-          aux.tipo = constant;
-        }
-        else{
-          aux.tipo = variable;
-        }
-        pilaNodos.push(aux);
-      }
-      else{
-        hijo1 = pilaNodos.top();
-        pilaNodos.pop();
-        hijo2 = pilaNodos.top();
-        pilaNodos.pop();
-
-        aux.tipo = binaryOp;
-        aux.valor = *it;
-
-        aux.hijos.clear();
-        aux.hijos.push_back(hijo1);
-        aux.hijos.push_back(hijo2);
-
-        pilaNodos.push(aux);
-      }
-    }
-
-    tipo = pilaNodos.top().tipo;
-    valor = pilaNodos.top().valor;
-    hijos = pilaNodos.top().hijos;
-
-  }
-
-  ~nodoArith(){}
-
-  void asignarFormula(std::vector <std::string> formula){
-    std::stack <nodoArith> pilaNodos;
-    nodoArith hijo1, hijo2, aux;
-    for(std::vector <std::string>::reverse_iterator it = formula.rbegin(); it != formula.rend(); it++){
-      if(is_number(*it) or is_var(*it)){
-        aux.valor = *it;
-        aux.hijos.clear();
-        if(is_number(*it)){
-          aux.tipo = constant;
-        }
-        else{
-          aux.tipo = variable;
-        }
-        pilaNodos.push(aux);
-      }
-      else{
-        hijo1 = pilaNodos.top();
-        pilaNodos.pop();
-        hijo2 = pilaNodos.top();
-        pilaNodos.pop();
-
-        aux.tipo = binaryOp;
-        aux.valor = *it;
-
-        aux.hijos.clear();
-        aux.hijos.push_back(hijo1);
-        aux.hijos.push_back(hijo2);
-
-        pilaNodos.push(aux);
-      }
-    }
-
-    this -> tipo = pilaNodos.top().tipo;
-    this -> valor = pilaNodos.top().valor;
-    this -> hijos = pilaNodos.top().hijos;
-  }
-
-
-  double ejecutar(std::map<std::string, double> variables){
-    switch (tipo) {
-      case constant:
-        return std::stod(valor);
-        break;
-      case variable:
-        return variables[valor];
-        break;
-      case binaryOp:
-        if(valor == "+"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
-            return -999999999.0;
-          }
-          else{
-            return (hijos[0].ejecutar(variables) + hijos[1].ejecutar(variables));
-          }
-        }
-        if(valor == "-"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
-            return -999999999.0;
-          }
-          else{
-            return (hijos[0].ejecutar(variables) - hijos[1].ejecutar(variables));
-          }
-        }
-        if(valor == "*"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
-            return -999999999.0;
-          }
-          else{
-            return (hijos[0].ejecutar(variables) * hijos[1].ejecutar(variables));
-          }
-        }
-        if(valor == "/"){
-
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
-            return -999999999.0;
-          }
-          else{
-            double wd = hijos[1].ejecutar(variables);
-            if(wd == 0.0){
-              return -999999999.0;
-            }
-            return (hijos[0].ejecutar(variables) / wd);
-          }
-        }
-        if(valor == "^"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
-            return -999999999.0;
-          }
-          else{
-            return pow(hijos[0].ejecutar(variables), hijos[1].ejecutar(variables));
-          }
-        }
-        break;
-    }
-  }
-
-
-  bool noVars(){
-    switch (tipo) {
-      case constant:
-        return true;
-        break;
-      case variable:
-        return false;
-        break;
-      case binaryOp:
-          return (hijos[0].noVars() and hijos[1].noVars());
-        break;
-    }
-  }
-
-  unsigned int size(){
-    switch (tipo) {
-      case constant:
-      case variable:
-        return 1;
-        break;
-      case binaryOp:
-        return 1 + hijos[0].size() + hijos[1].size() ;
-        break;
-
-    }
-  }
-
-  void clearHijos(){
-    for(unsigned int i = 0; i < hijos.size(); i++){
-      hijos[i].clearHijos();
-    }
-    hijos.clear();
-  }
-
-  nodoArith * getNodo(unsigned int *i){
-    nodoArith * aux;
-    if(*i == 0){
-      return this;
-    }
-    else{
-      for(unsigned hijo = 0; hijo < hijos.size(); hijo++){
-        if(*i == 0){
-          return this;
-        }
-        else{
-          (*i)--;
-          aux = hijos[hijo].getNodo(i);
-          if(aux != nullptr){
-            return aux;
-          }
-        }
-      }
-      return nullptr;
-    }
-  }
-
-  std::string printFunct(){
-    std::string out = "";
-    if(tipo != constant){
-      out += "(" + valor;
-    }
-    else{
-      out += valor;
-    }
-
-    for(unsigned hijo = 0; hijo < hijos.size(); hijo++){
-      out += " ";
-      out += hijos[hijo].printFunct();
-    }
-
-      if(tipo != constant){
-      out += ")";
-    }
-
-
-    return out;
-  }
-
-  nodoArith& operator = (const nodoArith &innodo){
-    //Comprueba que no se esté intentanod igualar un objeto a sí mismo
-    if(this!=&innodo){
-      tipo = innodo.tipo;
-      valor = innodo.valor;
-      hijos = innodo.hijos;
-    }
-    return *this;
-  }
-
-  bool operator == (const nodoArith& e) const {
-
-    switch (tipo) {
-      case constant:
-        if (e.tipo != constant or valor != e.valor){
-          return false;
-        }else{
-          return true;
-        }
-        break;
-      case variable:
-        if (e.tipo != variable or valor != e.valor){
-          return false;
-        }else{
-          return true;
-        }
-        break;
-      case binaryOp:
-        if(e.tipo == binaryOp and valor == e.valor){
-          if(valor == "+" or valor == "*"){
-            return((hijos[0] == e.hijos[0] and hijos[1] == e.hijos[1]) or (hijos[0] == e.hijos[1] and hijos[1] == e.hijos[0]));
-          }
-          else{
-            return(hijos[0] == e.hijos[0] and hijos[1] == e.hijos[1]);
-          }
-        }
-        else{
-          return false;
-        }
-        break;
-    }
-  }
-};
-
-
-struct Estado{
-  std::vector <std::string> formula;
-  double errorR = 0.0;
-  std::vector<std::string> * vars;
-  std::vector<std::vector<double> > * data;
-  std::vector<double> * objetivo;
-  bool timeoutVar = false;
-
-  Estado(){}
-
-  Estado(std::vector<std::string> iFormula, std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo, bool iUn = false){
-
-    formula = iFormula;
-    vars = iVars;
-    data = iData;
-    objetivo = iObjetivo;
-
-    errorR = evaluar();
-
-  }
-
-
-  Estado(std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo){
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(1, 10);
-    std::uniform_int_distribution<> disVar(1, iVars -> size() - 1);
-    std::uniform_int_distribution<> disOB(1, 4);
-
-    if(dis(gen) <= 5){
-      //Constante
-      formula.push_back(std::to_string(dis(gen)));
-    }else{
-      //Variable
-      formula.push_back((*iVars)[disVar(gen)]);
-    }
-
-
-    unsigned int opBin = disOB(gen);
-
-    if(opBin == 1){
-      formula.push_back("+");
-    }
-    else{
-      if(opBin == 2){
-        formula.push_back("-");
-      }
-      else{
-        if(opBin == 3){
-          formula.push_back("*");
-        }
-        else{
-          formula.push_back("/");
-        }
-      }
-    }
-
-
-    if(dis(gen) <= 5){
-      //Constante
-      formula.push_back(std::to_string(dis(gen)));
-    }else{
-      //Variable
-      formula.push_back((*iVars)[disVar(gen)]);
-    }
-
-    //formula.push_back(inputForm.substr(start, end - start));
-
-    vars = iVars;
-    data = iData;
-    objetivo = iObjetivo;
-
-    errorR = evaluar();
-
-  }
-
-
-  Estado(std::string inputForm, std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo){
-    std::string delim = " ";
-    auto start = 0U;
-    auto end = inputForm.find(delim);
-
-    while (end != std::string::npos){
-        formula.push_back(inputForm.substr(start, end - start));
-        start = end + delim.length();
-        end = inputForm.find(delim, start);
-    }
-    formula.push_back(inputForm.substr(start, end - start));
-
-    vars = iVars;
-    data = iData;
-    objetivo = iObjetivo;
-
-    errorR = evaluar();
-  }
-
-
-  double evaluar(){
-
-    std::vector<std::string> infFor = infixAPrefix(formula);
-    //nodoArith formulaEvaluable(infFor);
-    nodoArith formulaEvaluable;
-    formulaEvaluable.asignarFormula(infFor);
-
-
-    double error = 0.0, val = 0.0;
-    unsigned int cont = 0;
-    std::map<std::string, double> variables;
-    for(unsigned int i = 0; i < objetivo -> size(); i++){
-
-      variables.clear();
-      for(unsigned int j = 0; j < data -> size(); j++){
-        variables[(*vars)[j]] = (*data)[j][i];
-      }
-      //MSE
-      //error += pow((*objetivo)[i] - formulaEvaluable.ejecutar(variables), 2);
-
-      //MAE
-      val = formulaEvaluable.ejecutar(variables);
-      if(val != -999999999.0 and (*objetivo)[i] != -999999999.0){
-
-
-        if((*objetivo)[i] >= 0.0 and (*objetivo)[i] <1.0){
-          error += (std::abs((*objetivo)[i] - val));
-        }else{
-          error += (std::abs(((*objetivo)[i] - val)/(*objetivo)[i]));
-        }
-        cont++;
-      }
-
-    }
-
-
-    error /= cont;
-    error *= 100.0;
-    return error;
-  }
-
-
-
-
-  double evaluarPrint(){
-
-    nodoArith formulaEvaluable(formula);
-
-
-    double error = 0.0, val = 0.0;
-    unsigned int cont = 0;
-    std::map<std::string, double> variables;
-    for(unsigned int i = 0; i < objetivo -> size(); i++){
-
-      variables.clear();
-      for(unsigned int j = 0; j < data -> size(); j++){
-        variables[(*vars)[j]] = (*data)[j][i];
-      }
-      //MSE
-      //error += pow((*objetivo)[i] - formulaEvaluable.ejecutar(variables), 2);
-
-      //MAE
-      val = formulaEvaluable.ejecutar(variables);
-      if(val != -999999999.0 and (*objetivo)[i] != -999999999.0){
-
-
-        if((*objetivo)[i] >= 0.0 and (*objetivo)[i] <1.0){
-          error += (std::abs((*objetivo)[i] - val));
-        }else{
-          error += (std::abs(((*objetivo)[i] - val)/(*objetivo)[i]));
-        }
-        cont++;
-      }
-
-    }
-
-
-    error /= cont;
-    error *= 100.0;
-
-    std::cout << "MAPE: " << error << std::endl << std::endl << std::endl;
-    return error;
-  }
-
-
-  std::vector<double> getVectorSol(){
-
-        std::vector<std::string> infFor = infixAPrefix(formula);
-        //nodoArith formulaEvaluable(infFor);
-        nodoArith formulaEvaluable;
-        formulaEvaluable.asignarFormula(infFor);
-
-
-        std::vector<double> out;
-        std::map<std::string, double> variables;
-        for(unsigned int i = 0; i < objetivo -> size(); i++){
-          variables.clear();
-          for(unsigned int j = 0; j < data -> size(); j++){
-            variables[(*vars)[j]] = (*data)[j][i];
-          }
-          out.push_back(formulaEvaluable.ejecutar(variables));
-        }
-
-
-
-        return out;
-  }
-
-  double getErrorR(){
-    return errorR;
-  }
-
-
-  double getH(){
-    return (errorR * (double)formula.size());
-  }
-
-  std::string getFormula(){
-    std::vector<std::string> infFor = infixAPrefix(formula);
-    //nodoArith formulaEvaluable(infFor);
-    nodoArith formulaEvaluable;
-    formulaEvaluable.asignarFormula(infFor);
-
-    if(formulaEvaluable.noVars()){
-      std::map<std::string, double> variables;
-      return(std::to_string(formulaEvaluable.ejecutar(variables)));
-    }else{
-      std::string out = "";
-      for (unsigned int i = 0; i < formula.size(); i++) {
-        out += formula[i] + " ";
-      }
-
-      return out;
-    }
-  }
-
-  std::string getFormulaPrefix(){
-    std::vector<std::string> infFor = infixAPrefix(formula);
-    //nodoArith formulaEvaluable(infFor);
-    nodoArith formulaEvaluable;
-    formulaEvaluable.asignarFormula(infFor);
-
-    if(formulaEvaluable.noVars()){
-      std::map<std::string, double> variables;
-      return(std::to_string(formulaEvaluable.ejecutar(variables)));
-    }else{
-      std::string out = "";
-      std::vector<std::string> formPre = infixAPrefix(formula);
-      for (unsigned int i = 0; i < formPre.size(); i++) {
-        out += formPre[i] + " ";
-      }
-
-      return out;
-    }
-
-
-
-  }
-
-  bool final(double tope){
-    if(errorR == 0.0){
-      return true;
-    }
-    else{
-      return ((errorR * 100.0)/tope) < 0.05;
-    }
-  }
-
-
-  bool final(){
-    return (errorR < 0.5);
-  }
-
-  void timeout(){timeoutVar = true;}
-
-  bool getTO(){return timeoutVar;}
-
-  std::vector<Estado> generarHijos(){
-
-      std::vector <std::string> nForm;
-
-      std::vector<std::string> opBin;
-      opBin.push_back("+");
-      opBin.push_back("*");
-      opBin.push_back("-");
-      opBin.push_back("/");
-
-      std::vector<std::vector<std::string> > nuevasFormulas;
-      std::vector<Estado> hijos;
-      unsigned int tope = 0;
-
-      for(unsigned int oB = 0; oB < opBin.size(); oB++){
-        //Formulas que empiezan por el +, *, - y /
-        //Constantes
-        for(size_t i = 0; i < 11; i++) {
-          nForm = formula;
-          if((opBin[oB] != "*" or opBin[oB] != "/") and (i != 0)){
-            nForm.push_back(opBin[oB]);
-            nForm.push_back(std::to_string(i));
-            nuevasFormulas.push_back(nForm);
-          }
-        }
-
-        nForm = formula;
-        nForm.push_back(opBin[oB]);
-        nForm.push_back(std::to_string(-1));
-        nuevasFormulas.push_back(nForm);
-
-        tope = nuevasFormulas.size();
-        //Variables
-        for(size_t i = 0; i < (vars -> size()); i++){
-          nForm = formula;
-          nForm.push_back(opBin[oB]);
-          nForm.push_back((*vars)[i]);
-          nuevasFormulas.push_back(nForm);
-        }
-        //tope = nuevasFormulas.size();
-
-
-        /*
-        //Relaciones Simples
-        //Suma y multiplicacion
-        for(size_t i = 0; i < (vars -> size()); i++){
-          for(size_t j = i+1; j < (vars -> size()); j++){
-            nuevasFormulas.push_back(formula);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back("+");
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-
-            nuevasFormulas.push_back(formula);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back("*");
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-          }
-        }
-        tope = nuevasFormulas.size();
-
-        //Resta y division
-        for(size_t i = 0; i < (vars -> size()); i++){
-          for(size_t j = 0; j < (vars -> size()); j++){
-            if(i != j){
-              nuevasFormulas.push_back(formula);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back("-");
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-
-              nuevasFormulas.push_back(formula);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back("/");
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-            }
-          }
-        }
-        tope = nuevasFormulas.size();
-        */
-      }
-
-
-      std::string formHijo;
-      for(unsigned int i = 0; i < nuevasFormulas.size(); i++){
-        formHijo = "";
-        for(unsigned int j = 0; j < nuevasFormulas[i].size(); j++){
-          formHijo += nuevasFormulas[i][j] + " ";
-        }
-        //std::cout << formHijo << std::endl;
-        if(formHijo.size() > 0){
-          hijos.push_back(Estado(formHijo, vars, data, objetivo));
-        }
-      }
-
-
-      return hijos;
-
-    }
-
-
-  //Version A
-  bool operator < (const Estado& e) const {
-    return (errorR * (double)formula.size()) < (e.errorR * (double)e.formula.size());
-  }
-
-  bool operator > (const Estado& e) const {
-    return (errorR * (double)formula.size()) > (e.errorR * (double)e.formula.size());
-  }
-
-
-
-  bool operator == (const Estado& e) const {
-    if(formula.size() != e.formula.size()){
-      return false;
-    }
-    else{
-      return nodoArith(formula) == nodoArith(e.formula);
-    }
-  }
-
-  Estado& operator = (const Estado &inEstado){
-    //Comprueba que no se esté intentando igualar un objeto a sí mismo
-    if(this!=&inEstado){
-      formula = inEstado.formula;
-      errorR = inEstado.errorR;
-      vars = inEstado.vars;
-      data = inEstado.data;
-      objetivo = inEstado.objetivo;
-      timeoutVar = inEstado.timeoutVar;
-    }
-    return *this;
-  }
-
-  std::string to_string(){
-    std::string out = "";
-
-    out += "\n++Formula Infija: ";
-    for (unsigned int i = 0; i < formula.size(); i++) {
-      out += formula[i] + " ";
-    }
-
-    out += "\n++Formula Prefija: ";
-    std::vector<std::string> formPre = infixAPrefix(formula);
-    for (unsigned int i = 0; i < formPre.size(); i++) {
-      out += formPre[i] + " ";
-    }
-
-    out += "\n++Formula Arbol: " + nodoArith(infixAPrefix(formula)).printFunct() + "\n";
-
-    out += "\n\t- errorR: " + std::to_string(errorR);
-    out += "\n\t- Valor H: " + std::to_string(errorR * (double)formula.size());
-   if(errorR == 0.0){
-     out += "\n\t- Resultado exacto";
-   }
-   else{
-     out += "\n\t- Resultado NO exacto";
-   }
-
-    return  out;
-  }
-
-};
-
-
 bool estaenLista(Estado hijo, std::vector<Estado> &listaCerrados){
   for(unsigned int i = 0; i < listaCerrados.size(); i++){
     if(hijo == listaCerrados[i]){
@@ -841,7 +174,6 @@ bool estaenLista(Estado hijo, std::vector<Estado> &listaCerrados){
   }
   return false;
 }
-
 bool vectorInutil(std::vector<double> vec){
   double elem = vec[0];
   for(unsigned int i = 1; i < vec.size(); i++){
@@ -853,7 +185,6 @@ bool vectorInutil(std::vector<double> vec){
   }
   return false;
 }
-
 bool vectorDeZeros(std::vector<double> vec){
     for(unsigned int i = 0; i < vec.size(); i++){
       if(vec[i] != -999999999.0){
@@ -864,8 +195,454 @@ bool vectorDeZeros(std::vector<double> vec){
     }
     return false;
 }
+std::vector<std::string> extract_keys(std::map<std::string, bool> const& input_map) {
+  std::vector<std::string> retval;
+  for (auto const& element : input_map) {
+    if(stod(element.first) != -999999999.0 ){
+      retval.push_back(element.first);
+    }
+  }
+  return retval;
+}
+std::string sustituirVars(std::string formula, std::vector <std::pair <std::string, std::string> > pairVars){
+  std::string formulaOut;
+  std::vector<std::string> tokens;
+  std::string buf;
+
+  std::stringstream ss(formula); // Insert the string into a stream
+
+  while (ss >> buf){
+    tokens.push_back(buf);
+  }
+
+  bool sustituto = false;
+
+  for(unsigned int i = 0; i < tokens.size(); i++){
+    sustituto = false;
+    for(unsigned int j = 0; j < pairVars.size(); j++){
+      if(tokens[i] == pairVars[j].first){
+        sustituto = true;
+        buf = pairVars[j].second;
+      }
+    }
+    if(sustituto == true){
+      formulaOut += buf + " ";
+    }else{
+      formulaOut += tokens[i] + " ";
+    }
+  }
+
+  return formulaOut;
+}
+bool esDiff(std::vector <std::string> listadeDiffs, std::string str){
+  for(unsigned int i = 0; i < listadeDiffs.size(); i++){
+    if(listadeDiffs[i] == str){
+      return true;
+    }
+  }
+  return false;
+}
+std::string getEquiv(std::string pred, std::vector <std::pair <std::string, std::string> > vectEquiv){
+  for (unsigned int i = 0; i < vectEquiv.size(); i++) {
+    if("DELTA - " + pred == vectEquiv[i].first){
+      return vectEquiv[i].second;
+    }
+  }
+  return pred;
+}
+bool esPrecondicionable(std::string pred, std::vector < std::pair <std::string, std::vector <double> > > listadeDiffs){
+  for(unsigned int i = 0; i < listadeDiffs.size(); i++){
+    if (listadeDiffs[i].first == pred){
+      return true;
+    }
+  }
+  return false;
+}
+std::vector <Estado> generarListaInit(std::vector<std::string> *problemVars, std::vector<std::vector<double> > *problemData, std::vector<double> *problemObj){
+  std::vector <Estado> out;
+  //Constantes
+  for(unsigned int i = 0; i < 11; i++){
+    out.push_back(Estado(std::to_string(i), problemVars, problemData, problemObj));
+  }
+  out.push_back(Estado(std::to_string(-1), problemVars, problemData, problemObj));
+
+  //Variables
+  for(unsigned int i = 0; i < problemVars -> size(); i++){
+    out.push_back(Estado((*problemVars)[i], problemVars, problemData, problemObj));
+  }
+  return out;
+
+}
 
 
+
+
+void parseGoals(){
+  /*unsigned downDelim = str.find("(");
+  unsigned upDelim = str.find(")");
+  string task = str.substr (downDelim,upDelim);
+  cout << */
+}
+
+Task * parseTask(std::string taskSTR){
+
+  std::string strformateado;
+  for(unsigned int i = 0; i < taskSTR.size(); i++){
+    if(taskSTR[i] == '(' or taskSTR[i] == '['){
+      strformateado += " ( ";
+    }
+    else{
+      if(taskSTR[i] == ')' or taskSTR[i] == ']'){
+        strformateado += " ) ";
+      }
+      else{
+        strformateado += taskSTR[i];
+      }
+    }
+  }
+
+
+  if(strformateado.compare("") != 0){
+    std::vector<std::string> tokens;
+    boost::split( tokens, strformateado, boost::is_any_of(" "), boost::algorithm::token_compress_on);
+
+    unsigned int contador = 0;
+    while(tokens[contador] != ":"){
+      contador++;
+    }
+    contador++;
+
+    std::string name = tokens[contador+1];
+    std::vector<pairParams> params;
+    if(tokens.size() > 3){
+      for (int i = contador+2; i < tokens.size()-2; i+=3) {
+        params.push_back(pairParams(tokens[i],tokens[i+2]));
+      }
+    }
+    return new PrimitiveTask(name, &params);
+  }
+  else{
+    return nullptr;
+  }
+}
+
+State * parseState(std::string stateSTR){
+
+  std::string strformateado;
+  for(unsigned int i = 0; i < stateSTR.size(); i++){
+    if(stateSTR[i] == '('){
+      strformateado += " ( ";
+    }
+    else{
+      if(stateSTR[i] == ')'){
+        strformateado += " ) ";
+      }
+      else{
+        strformateado += stateSTR[i];
+      }
+    }
+  }
+
+
+  if(strformateado.compare("") != 0){
+    std::vector<std::string> tokens;
+    boost::split( tokens, strformateado, boost::is_any_of(" ") );
+    return new State(tokens);
+  }
+  else{
+    return nullptr;
+  }
+}
+
+std::vector< PlanTrace * > * parse(const char * filename){
+  std::ifstream ptFile;
+  ptFile.open (filename);
+  std::string rBuffer;
+  std::vector< PlanTrace * > * pt = new std::vector< PlanTrace * >();
+  std::map<std::string, State *> statesMap;
+  std::vector<std::string> taskVec;
+
+  Task * tareaParseada;
+
+  unsigned int contador = 0;
+  //Mientras el fichero tenga algo...
+  while (!ptFile.eof()) {
+    rBuffer = "";
+    //Ignoramos las lineas vacías
+    while (rBuffer.compare("") == 0 and !ptFile.eof()) {
+      getline(ptFile, rBuffer);
+
+      pt -> push_back(new PlanTrace());
+      statesMap.clear();
+      taskVec.clear();
+
+      while(!regex_match(rBuffer,stateRE)){
+          getline(ptFile, rBuffer);
+          if(!regex_match(rBuffer,taskRE) and rBuffer != "" and !regex_match(rBuffer,stateRE)){
+            taskVec.push_back(rBuffer);
+          }
+      }
+
+      while(!regex_match(rBuffer, planRE) and !ptFile.eof()){
+          getline(ptFile, rBuffer);
+          if(!regex_match(rBuffer, planRE)){
+            if(rBuffer != ""){
+              for (contador = 0; contador < rBuffer.size(); contador++) {
+                if(rBuffer[contador] == ':'){
+                  break;
+                }
+              }
+
+              statesMap[rBuffer.substr(0, contador)] = parseState(rBuffer.substr(contador+2));
+            }
+          }
+      }
+
+      std::string numPre = "", numPos = "";
+      unsigned int indice = 0;
+      for(unsigned int i = 0; i < taskVec.size(); i++){
+        tareaParseada = parseTask(taskVec[i]);
+        //Buscamos el primer numero
+        indice = 1;
+        numPre = "";
+        while(taskVec[i][indice] != ','){
+          numPre+= taskVec[i][indice];
+          indice++;
+        }
+
+        //Buscamos el segundo numero
+        indice += 2;
+        numPos = "";
+        while(taskVec[i][indice] != ']'){
+          numPos+= taskVec[i][indice];
+          indice++;
+        }
+
+        ((*pt)[pt -> size()-1]) -> addLink(new TSLinker(statesMap["[" + numPre + "]"], statesMap["[" + numPos + "]"], tareaParseada));
+      }
+    }
+
+  }
+
+
+  ptFile.close();
+  return pt;
+}
+
+std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPrimitivasParam){
+  std::vector < Type * > vectorAux;
+  std::string tName;
+  std::vector<Parameter*> parametros;
+
+  std::map <std::string, std::vector <std::pair <std::string, std::string> > > mapaPrimitivasParamAUX;
+
+  //Tomamos 1 plan
+  for(unsigned int i = 0; i < PTS -> size(); i++){
+    //Tomamos un TS
+    for (unsigned int j = 0; j < (*PTS)[i] -> getNTS(); j++) {
+      //Tomamos el nombre de la tarea y sus parametros
+      tName = (*PTS)[i] -> getTS(j) -> getTask() -> get_Tname();
+      parametros = (*PTS)[i] -> getTS(j) -> getTask() -> getParameters();
+      //Creamos un mapa con todos los tipos distintos para los
+      for(unsigned int k = 0; k < parametros.size(); k++){
+        mapaPrimitivasParamAUX[tName].push_back(std::pair <std::string, std::string> (parametros[k] -> getName(), parametros[k] -> getTypes()[0]) );
+      }
+    }
+  }
+
+
+  //Limpiamos de elementos repetidos
+  std::vector<std::string> keys = extract_keys(mapaPrimitivasParamAUX);
+  bool encontrado = false;
+  for(unsigned int i = 0; i < keys.size(); i++){
+    for(unsigned int j = 0; j < mapaPrimitivasParamAUX[keys[i]].size(); j++){
+      encontrado = false;
+      for(unsigned int k = 0; k < (*mapaPrimitivasParam)[keys[i]].size(); k++){
+        if((mapaPrimitivasParamAUX[keys[i]][j].first == (*mapaPrimitivasParam)[keys[i]][k].first)
+              and (mapaPrimitivasParamAUX[keys[i]][j].second == (*mapaPrimitivasParam)[keys[i]][k].second)){
+          encontrado = true;
+        }
+      }
+      if(encontrado == false){
+        (*mapaPrimitivasParam)[keys[i]].push_back(std::pair <std::string, std::string> (mapaPrimitivasParamAUX[keys[i]][j].first, mapaPrimitivasParamAUX[keys[i]][j].second));
+      }
+
+    }
+  }
+
+  std::vector <std::string> tiposDistintos;
+  for(unsigned int i = 0; i < keys.size(); i++){
+    for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
+      encontrado = false;
+      for(unsigned int k = 0; k < tiposDistintos.size(); k++){
+        if(tiposDistintos[k] ==  (*mapaPrimitivasParam)[keys[i]][j].second){
+          encontrado = true;
+        }
+      }
+
+      if(encontrado == false){
+        tiposDistintos.push_back((*mapaPrimitivasParam)[keys[i]][j].second);
+      }
+    }
+  }
+
+
+
+  //Encontramos los conflictos entre parametros con el mismo nombre en la misma tarea evitando los conflictos repetidos
+  std::vector <std::pair <std::string, std::string> > conflictos;
+
+  for(unsigned int i = 0; i < keys.size(); i++){
+    for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
+      for(unsigned int k = j; k < (*mapaPrimitivasParam)[keys[i]].size(); k++){
+        if(((*mapaPrimitivasParam)[keys[i]][j].first == (*mapaPrimitivasParam)[keys[i]][k].first) and ((*mapaPrimitivasParam)[keys[i]][j].second != (*mapaPrimitivasParam)[keys[i]][k].second)){
+          encontrado = false;
+          for(unsigned int l = 0; l < conflictos.size(); l++){
+            if( ((conflictos[l].first ==  (*mapaPrimitivasParam)[keys[i]][j].second) and (conflictos[l].second == (*mapaPrimitivasParam)[keys[i]][k].second)) or ((conflictos[l].second ==  (*mapaPrimitivasParam)[keys[i]][j].second) and (conflictos[l].first == (*mapaPrimitivasParam)[keys[i]][k].second)) ){
+              encontrado = true;
+            }
+          }
+          if(encontrado == false){
+            conflictos.push_back(std::pair <std::string, std::string> ((*mapaPrimitivasParam)[keys[i]][j].second, (*mapaPrimitivasParam)[keys[i]][k].second));
+          }
+        }
+      }
+    }
+  }
+
+  std::cout << "Types found:\n";
+  for(unsigned int i = 0; i < tiposDistintos.size(); i++){
+    std::cout << tiposDistintos[i] << " " << std::endl;
+    vectorAux.push_back(new Type(tiposDistintos[i]));
+  }
+  std::cout << std::endl;
+
+
+  for(unsigned int i = 0; i < conflictos.size(); i++){
+    vectorAux.push_back(new Type("PARENTTYPE" + std::to_string(i)));
+    for(unsigned int j = 0; j < vectorAux.size(); j++){
+      if(conflictos[i].first == vectorAux[j] -> name){
+        vectorAux[j] -> parent = vectorAux[vectorAux.size()-1];
+      }
+      if(conflictos[i].second == vectorAux[j] -> name){
+        vectorAux[j] -> parent = vectorAux[vectorAux.size()-1];
+      }
+    }
+  }
+
+  //Recalculamos las cabeceras con los conflictos entre parametros resueltos
+  mapaPrimitivasParamAUX = *mapaPrimitivasParam;
+  mapaPrimitivasParam -> clear();
+
+  for(unsigned int i = 0; i < conflictos.size(); i++){
+    std::cout << "Conflict found between the type: " << conflictos[i].first << " and " << conflictos[i].second << std::endl;
+    std::cout << "\t- New Parent type created: " << solveConflict(conflictos[i].first, conflictos[i].second, &vectorAux) << std::endl;
+  }
+
+  bool parametroConflictivo = false, parametroYaIncluido = false;
+  std::string resolucion;
+  for(unsigned int i = 0; i < keys.size(); i++){
+    for(unsigned int j = 0; j < mapaPrimitivasParamAUX[keys[i]].size(); j++){
+      parametroConflictivo = false;
+      for(unsigned int k = j; k < mapaPrimitivasParamAUX[keys[i]].size(); k++){
+        if((mapaPrimitivasParamAUX[keys[i]][j].first == mapaPrimitivasParamAUX[keys[i]][k].first) and (mapaPrimitivasParamAUX[keys[i]][j].second != mapaPrimitivasParamAUX[keys[i]][k].second)){
+          parametroConflictivo = true;
+          resolucion = solveConflict(mapaPrimitivasParamAUX[keys[i]][j].second, mapaPrimitivasParamAUX[keys[i]][k].second, &vectorAux);
+        }
+      }
+
+      parametroYaIncluido = false;
+      for(unsigned int k = 0; k < (*mapaPrimitivasParam)[keys[i]].size(); k++){
+        if(mapaPrimitivasParamAUX[keys[i]][j].first == (*mapaPrimitivasParam)[keys[i]][k].first){
+          parametroYaIncluido = true;
+        }
+      }
+      if(parametroConflictivo == true){
+
+        if(parametroYaIncluido == false){
+          (*mapaPrimitivasParam)[keys[i]].push_back(std::pair <std::string, std::string> (mapaPrimitivasParamAUX[keys[i]][j].first, resolucion));
+        }
+      }else{
+        if(parametroYaIncluido == false){
+          (*mapaPrimitivasParam)[keys[i]].push_back(std::pair <std::string, std::string> (mapaPrimitivasParamAUX[keys[i]][j].first, mapaPrimitivasParamAUX[keys[i]][j].second));
+        }
+      }
+    }
+  }
+
+  std::cout << "New tasks headers created: \n";
+  for(unsigned int i = 0; i < keys.size(); i++){
+    std::cout << keys[i];
+    for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
+      std::cout << " " << (*mapaPrimitivasParam)[keys[i]][j].first  << " - " << (*mapaPrimitivasParam)[keys[i]][j].second;
+    }
+    std::cout << std::endl;
+  }
+
+  return vectorAux;
+}
+
+std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * > * PTS){
+
+  std::map < std::string, StatesLists > output;
+  std::map < std::string, StatesLists >::iterator it;
+  std::string taskName;
+
+
+  for(unsigned int i = 0; i < PTS -> size(); i++){
+    for (unsigned int j = 0; j < (*PTS)[i] -> getNTS(); j++) {
+      //taskName = (((*PTS)[i] -> getTS(j)) -> getTask()) -> to_string();
+      taskName = (((*PTS)[i] -> getTS(j)) -> getTask()) -> get_Tname();
+      it = output.find(taskName);
+      if (it != output.end()){
+        //Esta
+        if(((*PTS)[i] -> getTS(j)) -> getPreS() != nullptr){
+          output[taskName].first.push_back(((*PTS)[i] -> getTS(j)) -> getPreS());
+        }
+
+        if(((*PTS)[i] -> getTS(j)) -> getPostS() != nullptr){
+          output[taskName].second.push_back(((*PTS)[i] -> getTS(j)) -> getPostS());
+        }
+
+      }else{
+        //No esta
+        output[taskName] = std::pair<std::list<State*>, std::list<State*> >();
+        if(((*PTS)[i] -> getTS(j)) -> getPreS() != nullptr){
+          output[taskName].first.push_back(((*PTS)[i] -> getTS(j)) -> getPreS());
+        }
+
+        if(((*PTS)[i] -> getTS(j)) -> getPostS() != nullptr){
+          output[taskName].second.push_back(((*PTS)[i] -> getTS(j)) -> getPostS());
+        }
+      }
+    }
+  }
+
+  /*for (it=output.begin(); it!=output.end(); ++it){
+    std::cout << "Key: " << it->first;
+
+    std::cout << "\tNumber of Prestates: " << (it -> second).first.size() << std::endl;
+    cont = 0;
+    for (std::list<State *>::iterator stIt = (it -> second).first.begin(); stIt != (it -> second).first.end(); stIt ++){
+        std::cout << "Prestate: " << cont << std::endl;
+        std::cout << *(*stIt) << std::endl;
+        cont ++;
+    }
+
+
+    std::cout << "\tNumber of Poststates: " << (it -> second).second.size() << std::endl;
+    cont = 0;
+    for (std::list<State *>::iterator stIt = (it -> second).second.begin(); stIt != (it -> second).second.end(); stIt ++){
+        std::cout << "Poststate: " << cont << std::endl;
+        std::cout << *(*stIt) << std::endl;
+        cont++;
+    } s
+  } */
+
+  return output;
+
+}
+
+//Simbolic Regression A*-based algorithm
 Estado Astar(std::vector <Estado> & estadosInit){
   std::priority_queue<Estado, std::vector<Estado>, std::greater<Estado> > listaAbiertos, vacia;
 
@@ -937,93 +714,6 @@ Estado Astar(std::vector <Estado> & estadosInit){
   return mejorEstado;
 }
 
-std::vector <Estado> generarListaInit(std::vector<std::string> *problemVars, std::vector<std::vector<double> > *problemData, std::vector<double> *problemObj){
-  std::vector <Estado> out;
-  //Constantes
-  for(unsigned int i = 0; i < 11; i++){
-    out.push_back(Estado(std::to_string(i), problemVars, problemData, problemObj));
-  }
-  out.push_back(Estado(std::to_string(-1), problemVars, problemData, problemObj));
-
-  //Variables
-  for(unsigned int i = 0; i < problemVars -> size(); i++){
-    out.push_back(Estado((*problemVars)[i], problemVars, problemData, problemObj));
-  }
-  return out;
-
-}
-
-
-
-std::vector<std::string> extract_keys(std::map<std::string, bool> const& input_map) {
-  std::vector<std::string> retval;
-  for (auto const& element : input_map) {
-    if(stod(element.first) != -999999999.0 ){
-      retval.push_back(element.first);
-    }
-  }
-  return retval;
-}
-
-std::string sustituirVars(std::string formula, std::vector <std::pair <std::string, std::string> > pairVars){
-  std::string formulaOut;
-  std::vector<std::string> tokens;
-  std::string buf;
-
-  std::stringstream ss(formula); // Insert the string into a stream
-
-  while (ss >> buf){
-    tokens.push_back(buf);
-  }
-
-  bool sustituto = false;
-
-  for(unsigned int i = 0; i < tokens.size(); i++){
-    sustituto = false;
-    for(unsigned int j = 0; j < pairVars.size(); j++){
-      if(tokens[i] == pairVars[j].first){
-        sustituto = true;
-        buf = pairVars[j].second;
-      }
-    }
-    if(sustituto == true){
-      formulaOut += buf + " ";
-    }else{
-      formulaOut += tokens[i] + " ";
-    }
-  }
-
-  return formulaOut;
-}
-
-bool esDiff(std::vector <std::string> listadeDiffs, std::string str){
-  for(unsigned int i = 0; i < listadeDiffs.size(); i++){
-    if(listadeDiffs[i] == str){
-      return true;
-    }
-  }
-  return false;
-}
-
-std::string getEquiv(std::string pred, std::vector <std::pair <std::string, std::string> > vectEquiv){
-  for (unsigned int i = 0; i < vectEquiv.size(); i++) {
-    if("DELTA - " + pred == vectEquiv[i].first){
-      return vectEquiv[i].second;
-    }
-  }
-  return pred;
-}
-
-bool esPrecondicionable(std::string pred, std::vector < std::pair <std::string, std::vector <double> > > listadeDiffs){
-  for(unsigned int i = 0; i < listadeDiffs.size(); i++){
-    if (listadeDiffs[i].first == pred){
-      return true;
-    }
-  }
-  return false;
-}
-
-
 void to_table( std::string task, StatesLists states, std::vector < std::vector < std::vector < double > > > * datasets, std::vector < std::vector < std::pair<std::string, std::string> > > * attribLabelsVC){
 
   std::vector < std::vector < double > > * dataset = new std::vector < std::vector < double > >();
@@ -1055,7 +745,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
   attribLabels -> push_back(std::pair <std::string, std::string> ("Class", "Class"));
 
 
-  
+
 
   //Separamos el dataset en dos datasets: Uno con la información logica y otro con la númerica
   std::vector < std::vector < double > > datasetCP = *dataset;

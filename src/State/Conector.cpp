@@ -79,38 +79,6 @@ void Conector::to_table(std::vector < std::vector < double > > * dataset, std::v
   }
 }
 
-double Conector::getCost(std::string pred){
-  for (unsigned int i = 0; i < predicates.size(); i++) {
-    if(predicates[i] -> getName() == pred){
-      return predicates[i] -> getValue();
-    }
-  }
-  return -999999999.0;
-}
-
-void Conector::setCost(std::string pred, double cost){
-  bool found = false;
-  for (unsigned int i = 0; i < predicates.size(); i++) {
-    if(predicates[i] -> getName() == pred){
-      found = true;
-      break;
-    }
-  }
-  if(found == true){
-    std::vector<std::string> tokens;
-    tokens.push_back("(");
-    tokens.push_back("=");
-    tokens.push_back("(");
-    tokens.push_back("DELTA-" + pred);
-    tokens.push_back(")");
-    tokens.push_back(std::to_string(cost));
-    tokens.push_back(")");
-
-    predicates.push_back(new Function(tokens));
-  }
-}
-
-
 std::vector<std::string> Conector::getAllFunctions(){
   std::vector<std::string> out, aux;
   for(unsigned int i = 0; i < predicates.size(); i++){

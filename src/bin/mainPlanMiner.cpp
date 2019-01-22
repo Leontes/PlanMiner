@@ -8,14 +8,10 @@
 #include <sys/stat.h>
 #include <regex>
 
-#include "ParsePT.hpp"
-#include "groupTS.hpp"
-#include "ToTable.hpp"
-#include "RuleCreator.hpp"
-#include "TypeHierarchyCalc.hpp"
-#include "Cleaner.hpp"
-#include "fuseRules.hpp"
-#include "Discretize.hpp"
+
+#include "PtLib.hpp"
+#include "DataSLib.hpp"
+#include "RuleLib.hpp"
 
 
 const std::regex diffRE("^(DELTA - )\\((.)*\\)\\)");
@@ -25,7 +21,18 @@ const std::regex opRE("(^(opEQ - )\\((.)*\\))|(^(opGT-)\\((.)*\\))|(^(opLT-)\\((
 //const std::regex diffRE("^(\\( DELTA)(.)*(\\))");
 
 int main(int argc, char const *argv[]) {
-  if (argc > 1) {
+  bool existeFL;
+  if(argc > 1){
+    std::ifstream infile(argv[1]);
+    existeFL = infile.good();
+    infile.close();
+  }
+  else{
+    existeFL = false;
+  }
+
+
+  if (argc > 1 and existeFL != false) {
 
     std::cout << std::endl << std::endl << std::endl << "/*********************************************************/" << std::endl;
     std::cout << "/****************** Launching PlanMiner ******************/" << std::endl;
@@ -62,10 +69,10 @@ int main(int argc, char const *argv[]) {
     unsigned int planLenght = 0, stateLength = 0;
     //Calculamos la forma esquematizada de cada TS
     for(unsigned int i = 0; i < PTS -> size(); i++){
-      planLenght += (*PTS)[i] -> lenght();
+      planLenght += (*PTS)[i] -> getNTS();
       stateLength += (*PTS)[i] -> stateLenght();
       (*PTS)[i] -> schematize(/*tipos*/);
-      std::cout << std::right << std::setw(6) << std::setfill('-') << i+1 << "/" << std::left << std::setw(6) << std::setfill('-') << (PTS -> size()) << " Lenght: " << (*PTS)[i] -> lenght() << endl;
+      std::cout << std::right << std::setw(6) << std::setfill('-') << i+1 << "/" << std::left << std::setw(6) << std::setfill('-') << (PTS -> size()) << " Lenght: " << (*PTS)[i] -> getNTS() << endl;
     }
     std::cout << "#############################" << std::endl;
     std::cout << "Average plan lenght: " << (float)planLenght / (float)PTS -> size() << std::endl;
@@ -650,6 +657,7 @@ int main(int argc, char const *argv[]) {
     exit(EXIT_SUCCESS);
   }
   else{
+    std::cout << "Input PT file not specified or doesn't not exist" << std::endl;
     exit(EXIT_FAILURE);
   }
 

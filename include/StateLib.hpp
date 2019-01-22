@@ -6,5 +6,6 @@
 #include "State/Atom.hpp"
 #include "State/Conector.hpp"
 #include "State/Function.hpp"
+#include "State/TSLinker.hpp"
 
 #endif

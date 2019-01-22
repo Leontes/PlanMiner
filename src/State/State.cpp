@@ -28,14 +28,6 @@ void State::to_table(std::vector < std::vector < double > > * dataset, std::vect
 }
 
 
-  double State::getCost(std::string pred){
-    return predicates[0] -> getCost(pred);
-  }
-
-  void State::setCost(std::string pred, double cost){
-    return predicates[0] -> setCost(pred, cost);
-  }
-
   std::vector<std::string> State::getAllFunctions(){
     std::vector<std::string> out, aux;
     for(unsigned int i = 0; i < predicates.size(); i++){

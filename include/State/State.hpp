@@ -5,7 +5,7 @@
 #include <string>
 
 #include "State/Conector.hpp"
-#include "StateLib.hpp"
+
 
 
 
@@ -30,11 +30,23 @@ public:
   }
   ~State (){};
 
-
+  /** Function clearParam
+  *   @brief Method to substitute a value of the parameters with a new one
+  *   @param newValue string substituting string
+  *   @param value string to be substituted
+  *   @param types STD vector with the types of the objects of the parameters
+  */
   void clearParam(std::string newValue, std::string value, std::vector<std::string> types);
 
+  /** Function clean
+  *   @brief Method to delete the parameters' list
+  */
   void clean();
 
+  /** Function operator <<
+  *   @brief Method to output the State object
+  *   @retval ostream State object info
+  */
   friend std::ostream& operator << (std::ostream& os, const State& state){
     for (unsigned i = 0; i < state.predicates.size(); i++) {
       os << *(state.predicates[i]);
@@ -43,6 +55,10 @@ public:
     return  os;
   }
 
+  /** Function length
+  *   @brief Method to get the lenght of the state
+  *   @retval double State lenght
+  */
   unsigned int length(){
     unsigned int sLength = 0;
     for (unsigned i = 0; i < predicates.size(); i++) {
@@ -51,11 +67,20 @@ public:
     return sLength;
   }
 
+  /** Function to_table
+  *   @brief Method to display a collection of pairs pre-state/post-state as a attribute-value matrix.
+  *   @param dataset Output pair of STD matrices of double values
+  *   @param attribLabels Output pair of STD vector with the labels of the datasets' columns
+  *   @param nStates unsigned int number of states of the dataset
+  *   @param index unsigned int attribute index of the dataset's column
+  *   @param polarity bool with the polarity of the atom
+  */
   void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index);
 
-  double getCost(std::string pred);
-  void setCost(std::string pred, double cost);
-
+  /** Function getAllFunctions
+  *   @brief Method to get the name and parameters of the child predicates
+  *   @retval STD vector with the predicates information
+  */
   std::vector<std::string> getAllFunctions();
 
 };

@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#include "StateLib.hpp"
+#include "State/State.hpp"
 #include "TaskLib.hpp"
 
 struct Type{
@@ -89,19 +89,34 @@ public:
     delete task;
   }
 
+  /** Function getTask
+  *   @brief Method to get the TSLinker object's task
+  *   @retval Task object
+  */
   Task * getTask(){
     return task;
   }
 
+  /** Function getPreS
+  *   @brief Method to get the TSLinker object's pre-state
+  *   @retval State object
+  */
   State * getPreS(){
     return preState;
   }
 
+  /** Function getPostS
+  *   @brief Method to get the TSLinker object's post-state
+  *   @retval State object
+  */
   State * getPostS(){
     return postState;
   }
 
-
+  /** Function stateLenght
+  *   @brief Method to get the lenght of the TSLinker object's states
+  *   @retval double states length sum
+  */
   double stateLenght(){
     unsigned int sLength = 0, n = 0;
     if(preState != nullptr){
@@ -120,7 +135,10 @@ public:
     }
   }
 
-
+  /** Function operator <<
+  *   @brief Method to output the TSLinker object
+  *   @retval ostream TSLinker object info
+  */
   friend std::ostream& operator << (std::ostream& os, const TSLinker& ts){
     if(ts.preState != nullptr){
       os << "PreState: \n" << *(ts.preState) << std::endl;
@@ -142,6 +160,9 @@ public:
     return os;
   }
 
+  /** Function schematize
+  *   @brief Method to put the tasks and states of the TSLinker object in it into its schema form
+  */
   void schematize(/*std::vector < Type *> tipos*/);
 };
 

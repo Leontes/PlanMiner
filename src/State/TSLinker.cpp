@@ -1,4 +1,4 @@
-#include "TSLinker.hpp"
+#include "State/TSLinker.hpp"
 
 
 void TSLinker::schematize(/*std::vector < Type *> tipos*/){

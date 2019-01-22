@@ -4,7 +4,7 @@
 #include <limits>
 #include <map>
 
-#include "fuseRules.hpp"
+#include "Rules/FuseRules.hpp"
 
 
 bool isnumber(const std::string& s){
