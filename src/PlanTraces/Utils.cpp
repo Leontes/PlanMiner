@@ -275,8 +275,6 @@ std::vector <Estado> generarListaInit(std::vector<std::string> *problemVars, std
 }
 
 
-
-
 void parseGoals(){
   /*unsigned downDelim = str.find("(");
   unsigned upDelim = str.find(")");
@@ -394,6 +392,7 @@ std::vector< PlanTrace * > * parse(const char * filename){
               }
 
               statesMap[rBuffer.substr(0, contador)] = parseState(rBuffer.substr(contador+2));
+              (*statesMap[rBuffer.substr(0, contador)]).setTimeStamp(rBuffer.substr(1, contador-2));
             }
           }
       }

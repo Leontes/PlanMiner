@@ -24,6 +24,25 @@ void State::to_table(std::vector < std::vector < double > > * dataset, std::vect
   for(unsigned int i = 0; i < predicates.size(); i++){
     predicates[i] -> to_table(dataset, attribLabels, nStates, index);
   }
+
+  bool esta = false;
+  unsigned int pred = 0;
+  for (unsigned int i = 0; i < attribLabels -> size(); i++) {
+    if((*attribLabels)[i].first == "TIMESTAMP"){
+      esta = true;
+      pred = i;
+    }
+  }
+
+  if(!esta){
+    (*attribLabels).push_back(std::pair <std::string, std::string> ("TIMESTAMP", "Numerical"));
+    std::vector<double> vect(nStates, -999999999);
+    dataset->push_back(vect);
+    pred = (dataset -> size()) - 1;
+  }
+
+  (*dataset)[pred][*index] = tStamp;
+
   (*index)++;
 }
 

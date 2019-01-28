@@ -15,6 +15,7 @@
 class State {
 private:
   std::vector<Predicate *> predicates;
+  double tStamp = 0.0;
 
 public:
   /** State Constructor
@@ -26,6 +27,7 @@ public:
     for (unsigned int i = 0; i < iState.predicates.size(); i++) {
       predicates.push_back(iState.predicates[i] -> clone());
     }
+    tStamp = iState.tStamp;
 
   }
   ~State (){};
@@ -82,6 +84,22 @@ public:
   *   @retval STD vector with the predicates information
   */
   std::vector<std::string> getAllFunctions();
+
+  /** Function setTimeStamp
+  *   @brief Method to set the time stamp of the state
+  *   @param ts string Time stamp
+  */
+  void setTimeStamp(std::string ts){
+    tStamp = stod(ts);
+  }
+
+  /** Function getTimeStamp
+  *   @brief Method to set the time stamp of the state
+  *   @retval double state's time stamp
+  */
+  double getTimeStamp(){
+    return tStamp;
+  }
 
 };
 

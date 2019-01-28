@@ -180,7 +180,7 @@ int main(int argc, char const *argv[]) {
     vector<string> tokens;
     std::string buf;
 
-    std::cout << "#############################" << std::endl;
+    std::cout << "\n\n#############################" << std::endl;
     std::cout << "Cleaning Datasets..." << std::endl << std::endl;
 
     unsigned int cont = 0;
@@ -497,6 +497,30 @@ int main(int argc, char const *argv[]) {
       }
       pddl << cabeceras[it -> first][cabeceras[it -> first].size()-1].first << " - " << cabeceras[it -> first][cabeceras[it -> first].size()-1].second;
       pddl << ")" <<  endl;
+
+
+      for (std::list< pair<string, string> >::iterator it=reglas[1].begin(); it != reglas[1].end(); ++it){
+        tokens.clear();
+        std::stringstream ss((*it).first);
+        while (ss >> buf){
+          tokens.push_back(buf);
+        }
+
+        if (tokens[0] == "DELTA" and tokens[2] == "TIMESTAMP"){
+          pddl << "\t\t:duration (= ?duration ";
+
+          for(unsigned int i = 2; i < tokens.size(); i++){
+            if(tokens[i] != "-"){
+              pddl  << tokens[i] << " ";
+            }
+            else{
+              i++;
+            }
+          }
+
+          pddl << ")\n";
+        }
+      }
 
 
       pddl << "\t\t:precondition" << std::endl;
