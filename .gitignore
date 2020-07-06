@@ -59,6 +59,7 @@ calcularDominios.sh
 CompareDoms.py
 ResultadosRuidoCon/
 ResultadosRuidoSin/
+VAL
 
 # Basura variada
 *.sh
