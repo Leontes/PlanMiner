@@ -57,6 +57,8 @@ res/
 src/bin/pruebas.cpp
 calcularDominios.sh
 CompareDoms.py
+ResultadosRuidoCon/
+ResultadosRuidoSin/
 
 # Basura variada
 *.sh
