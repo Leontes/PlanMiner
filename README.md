@@ -1,4 +1,5 @@
 # PlanMiner
+<<<<<<< HEAD
 PlanMiner is a domain learner algorithm. 
 
 ## Features
@@ -22,4 +23,3 @@ make
 ```
 
 ptFilename is the path and name of the input plan trace. dFilename is the output domain's name.
-
