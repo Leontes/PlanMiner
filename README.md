@@ -1,5 +1,5 @@
 # PlanMiner
-PlanMiner is a domain learner algorithm. 
+PlanMiner domain learner algorithm Github repository. 
 
 General questions and contact: José Á. Segura-Muros <josesegmur@decasi.ugr.es>
 
