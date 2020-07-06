@@ -1,5 +1,4 @@
 # PlanMiner
-<<<<<<< HEAD
 PlanMiner is a domain learner algorithm. 
 
 ## Features
