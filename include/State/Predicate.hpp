@@ -82,6 +82,16 @@ public:
   */
   virtual void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity = true){};
 
+
+  /** Function getTokens
+  *   @brief Method to get the name and parameters of the child predicates
+  *   @retval STD vector with the predicates information
+  */
+  virtual std::vector < std::vector <std::string> > getTokens(){
+    std::vector < std::vector <std::string> > out;
+    return out;
+  }
+
   /** Function clone
   *   @brief Method to create a copy of the Predicate object
   *   @retval Function object copy

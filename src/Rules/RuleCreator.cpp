@@ -9325,16 +9325,16 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
 
 
  int inslv(std::string pDomainName ,std::string tName, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap, vector < pair <int, list< pair<string, string> > > > * reglas){
-   std::string task;
-   task = sPath + "res/" + tName;
-    // Numero de particiones
-    int num_par=1;
-    std::string comando;
+  std::string task;
+  task = sPath + "res/" + tName;
+  // Numero de particiones
+  int num_par=1;
+  std::string comando;
 
-    VectorVar V(dataset, attribLabels, attribMap);
-    V.Pinta();
-    example_set E(dataset);
-    int seed = 0;
+  VectorVar V(dataset, attribLabels, attribMap);
+  V.Pinta();
+  example_set E(dataset);
+  int seed = 0;
 
 
 

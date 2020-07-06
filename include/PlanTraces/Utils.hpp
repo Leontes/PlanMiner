@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include <cmath>
+#include <math.h>
 #include <random>
 #include <regex>
 #include <stack>
@@ -26,6 +26,7 @@ bool is_number(const std::string& s);
 bool is_var(const std::string& s);
 int precedencia(std::string str);
 std::vector<std::string> infixAPrefix(std::vector<std::string> &formInf);
+
 
 
 
@@ -69,7 +70,8 @@ std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * >
 *   @param mapaPrimitivasParam Tasks' original headers
 *   @retval STD vector collection of extracted types
 */
-std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPrimitivasParam);
+std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPrimitivasParam,
+  std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPredicadosParam);
 
 /** Method to_table
 *   @brief Method to display a collection of pairs pre-state/post-state as a attribute-value matrix.
@@ -178,7 +180,7 @@ struct nodoArith {
   *   @param  variables set of input variables
   *   @retval result of the evaluation
   */
-  double ejecutar(std::map<std::string, double> variables){
+  double ejecutar(std::map<std::string, double> & variables){
     switch (tipo) {
       case constant:
         return std::stod(valor);
@@ -187,49 +189,52 @@ struct nodoArith {
         return variables[valor];
         break;
       case binaryOp:
+        double val1 = hijos[0].ejecutar(variables);
+        double val2 = hijos[1].ejecutar(variables);
         if(valor == "+"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
+          if(val1 == -999999999.0 or val2 == -999999999.0){
             return -999999999.0;
           }
           else{
-            return (hijos[0].ejecutar(variables) + hijos[1].ejecutar(variables));
+            return (val1 + val2);
           }
         }
         if(valor == "-"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
+          if(val1 == -999999999.0 or val2 == -999999999.0){
             return -999999999.0;
           }
           else{
-            return (hijos[0].ejecutar(variables) - hijos[1].ejecutar(variables));
+            return (val1 - val2);
           }
         }
         if(valor == "*"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
+          if(val1 == -999999999.0 or val2 == -999999999.0){
             return -999999999.0;
           }
           else{
-            return (hijos[0].ejecutar(variables) * hijos[1].ejecutar(variables));
+            return (val1 * val2);
           }
         }
         if(valor == "/"){
 
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
+          if(val1 == -999999999.0 or val2 == -999999999.0){
             return -999999999.0;
           }
           else{
-            double wd = hijos[1].ejecutar(variables);
-            if(wd == 0.0){
+            if(val2 == 0.0){
               return -999999999.0;
             }
-            return (hijos[0].ejecutar(variables) / wd);
+            else{
+              return (val1 / val2);
+            }
           }
         }
         if(valor == "^"){
-          if(hijos[0].ejecutar(variables) == -999999999.0 or hijos[1].ejecutar(variables) == -999999999.0){
+          if(val1 == -999999999.0 or val2 == -999999999.0){
             return -999999999.0;
           }
           else{
-            return pow(hijos[0].ejecutar(variables), hijos[1].ejecutar(variables));
+            return pow(val1, val2);
           }
         }
         break;
@@ -314,8 +319,8 @@ struct nodoArith {
   */
   std::string printFunct(){
     std::string out = "";
-    if(tipo != constant){
-      out += "(" + valor;
+    if(tipo != constant and tipo != variable){
+      out += "( " + valor;
     }
     else{
       out += valor;
@@ -326,8 +331,8 @@ struct nodoArith {
       out += hijos[hijo].printFunct();
     }
 
-      if(tipo != constant){
-      out += ")";
+      if(tipo != constant and tipo != variable){
+      out += " )";
     }
 
 
@@ -460,7 +465,6 @@ struct Estado{
     objetivo = iObjetivo;
 
     errorR = evaluar();
-
   }
   Estado(std::string inputForm, std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo){
     std::string delim = " ";
@@ -479,6 +483,42 @@ struct Estado{
     objetivo = iObjetivo;
 
     errorR = evaluar();
+
+  }
+
+  void assign(std::string inputForm, std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo){
+    std::string delim = " ";
+    auto start = 0U;
+    auto end = inputForm.find(delim);
+
+    formula.clear();
+    while (end != std::string::npos){
+        formula.push_back(inputForm.substr(start, end - start));
+        start = end + delim.length();
+        end = inputForm.find(delim, start);
+    }
+    formula.push_back(inputForm.substr(start, end - start));
+
+    vars = iVars;
+    data = iData;
+    objetivo = iObjetivo;
+
+    errorR = evaluar(0.05);
+
+    // std::vector<std::vector<std::string> > nuevasFormulas = generaFormulas(formula);
+    //
+    // std::vector<std::string> oldFormula = formula;
+    // errorR = 1000000.0;
+    //
+    // double errorHijo = 0.0;
+    // for(unsigned int i = 0; i < nuevasFormulas.size(); i++){
+    //   formula = nuevasFormulas[i];
+    //   errorHijo = evaluar(0.01);
+    //   if(errorHijo < errorR){
+    //     errorR = errorHijo;
+    //   }
+    // }
+    // formula = oldFormula;
   }
 
 
@@ -486,44 +526,55 @@ struct Estado{
   *   @brief Method to evaluate the arithmetic expression in the state with the data stored in it
   *   @retval Heuristic value of the state
   */
-  double evaluar(){
+  double evaluar(double percent = 1.0){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, objetivo -> size());
 
     std::vector<std::string> infFor = infixAPrefix(formula);
     //nodoArith formulaEvaluable(infFor);
     nodoArith formulaEvaluable;
     formulaEvaluable.asignarFormula(infFor);
 
-
     double error = 0.0, val = 0.0;
     unsigned int cont = 0;
     std::map<std::string, double> variables;
-    for(unsigned int i = 0; i < objetivo -> size(); i++){
+    unsigned int ndatos = percent * objetivo -> size(), indice;
+    for(unsigned int i = 0; i < ndatos; i++){
+      if(percent == 1.0){
+        indice = i;
+      }
+      else{
+        indice = dis(gen);
+      }
 
       variables.clear();
       for(unsigned int j = 0; j < data -> size(); j++){
-        variables[(*vars)[j]] = (*data)[j][i];
+        variables[(*vars)[j]] = (*data)[j][indice];
       }
       //MSE
       //error += pow((*objetivo)[i] - formulaEvaluable.ejecutar(variables), 2);
 
-      //MAE
+      //MAPE
       val = formulaEvaluable.ejecutar(variables);
-      if(val != -999999999.0 and (*objetivo)[i] != -999999999.0){
 
-
-        if((*objetivo)[i] >= 0.0 and (*objetivo)[i] <1.0){
-          error += (std::abs((*objetivo)[i] - val));
+      if((isnan(val) == false) and (val != -999999999.0) and ((*objetivo)[indice] != 999999999.0)){
+        if((*objetivo)[indice] >-1.0 and (*objetivo)[indice] <1.0){
+          error += (std::abs((*objetivo)[indice] - val));
         }else{
-          error += (std::abs(((*objetivo)[i] - val)/(*objetivo)[i]));
+          error += (std::abs(((*objetivo)[indice] - val)/(*objetivo)[indice]));
         }
         cont++;
       }
-
     }
 
-
-    error /= cont;
-    error *= 100.0;
+    if(cont != 0.0){
+      error /= cont;
+      error *= 100.0;
+    }
+    else{
+      error = 99999999.0;
+    }
     return error;
   }
 
@@ -532,12 +583,10 @@ struct Estado{
   *   @retval STD vector with the expression
   */
   std::vector<double> getVectorSol(){
-
         std::vector<std::string> infFor = infixAPrefix(formula);
         //nodoArith formulaEvaluable(infFor);
         nodoArith formulaEvaluable;
         formulaEvaluable.asignarFormula(infFor);
-
 
         std::vector<double> out;
         std::map<std::string, double> variables;
@@ -549,8 +598,6 @@ struct Estado{
           out.push_back(formulaEvaluable.ejecutar(variables));
         }
 
-
-
         return out;
   }
 
@@ -558,16 +605,32 @@ struct Estado{
   *   @brief Method to get the MAPE value of the arithmetic expression
   *   @retval double MAPE value
   */
-  double getErrorR(){
-    return errorR;
+  double getH() const{
+    return errorR/10.0;
   }
 
-  /** Method getH
-  *   @brief Method to get the heuristic value of the arithmetic expression
-  *   @retval double heuristic value
+  /** Method getC
+  *   @brief Method to get the cost value of the arithmetic expression
+  *   @retval double cost value
   */
-  double getH(){
-    return (errorR * (double)formula.size());
+  double getC() const {
+    return 2.0 * ((double)formula.size());
+  }
+
+  /** Method getF
+  *   @brief Method to get the value of the arithmetic expression
+  *   @retval double cost value
+  */
+  double getF() const {
+    return getH() + getC();
+  }
+
+  /** Method getVectFormula
+  *   @brief Method to get the arithmetic expression
+  *   @retval std::vector<std::string> arithmetic formula
+  */
+  std::vector<std::string> getVectFormula(){
+    return formula;
   }
 
   /** Method getFormula
@@ -585,10 +648,11 @@ struct Estado{
       return(std::to_string(formulaEvaluable.ejecutar(variables)));
     }else{
       std::string out = "";
-      for (unsigned int i = 0; i < formula.size(); i++) {
+      for (unsigned int i = 0; i < (formula.size()-1); i++) {
         out += formula[i] + " ";
       }
 
+      out += formula[formula.size()-1];
       return out;
     }
   }
@@ -609,15 +673,17 @@ struct Estado{
     }else{
       std::string out = "";
       std::vector<std::string> formPre = infixAPrefix(formula);
-      for (unsigned int i = 0; i < formPre.size(); i++) {
+      for (unsigned int i = 0; i < (formPre.size()-1); i++) {
         out += formPre[i] + " ";
       }
+      out += formPre[formPre.size()-1];
 
       return out;
     }
+  }
 
-
-
+  std::string getFormulaArbol(){
+    return nodoArith(infixAPrefix(formula)).printFunct();
   }
 
   /** Method final
@@ -625,7 +691,7 @@ struct Estado{
   *   @retval boolean value
   */
   bool final(){
-    return (errorR < 0.5);
+    return (evaluar() < 2.0);
   }
 
   /** Method timeout
@@ -638,118 +704,127 @@ struct Estado{
   */
   bool getTO(){return timeoutVar;}
 
+
+  std::vector<std::vector<std::string> > generaFormulas(std::vector <std::string> & formula){
+    std::vector <std::string> nForm;
+    std::vector<std::string> opBin;
+    opBin.push_back("+");
+    opBin.push_back("*");
+    opBin.push_back("-");
+    opBin.push_back("/");
+
+    std::vector<std::vector<std::string> > nuevasFormulas;
+    for(unsigned int oB = 0; oB < opBin.size(); oB++){
+      //Formulas que empiezan por el +, *, - y /
+      //Constantes
+      for(size_t i = 0; i < 11; i++){
+        if(formula.size() > 1){
+          nForm = std::vector <std::string>(&formula[0], &formula[formula.size()-1]);
+        }else{
+          nForm = formula;
+        }
+
+        if(((opBin[oB] == "*") and (i > 1))
+              or ((opBin[oB] == "+" or opBin[oB] == "-") and (i > 0))
+                or ((opBin[oB] == "/") and (i > 1))){
+          nForm.push_back(opBin[oB]);
+          nForm.push_back(std::to_string(i));
+          nuevasFormulas.push_back(nForm);
+        }
+      }
+
+      //Variables
+      for(size_t i = 0; i < (vars -> size()); i++){
+        if(formula.size() > 1){
+          nForm = std::vector <std::string>(&formula[0], &formula[formula.size()-1]);
+        }else{
+          nForm = formula;
+        }
+        nForm.push_back(opBin[oB]);
+        nForm.push_back((*vars)[i]);
+        nuevasFormulas.push_back(nForm);
+      }
+    }
+
+    return nuevasFormulas;
+  }
+
+
   /** Method generarHijos
   *   @brief Method to generate a vector with a set of child states created from the the objects
   *   @retvat STD vector with the states
   */
   std::vector<Estado> generarHijos(){
-
-      std::vector <std::string> nForm;
-
-      std::vector<std::string> opBin;
-      opBin.push_back("+");
-      opBin.push_back("*");
-      opBin.push_back("-");
-      opBin.push_back("/");
-
-      std::vector<std::vector<std::string> > nuevasFormulas;
-      std::vector<Estado> hijos;
-      unsigned int tope = 0;
-
-      for(unsigned int oB = 0; oB < opBin.size(); oB++){
-        //Formulas que empiezan por el +, *, - y /
-        //Constantes
-        for(size_t i = 0; i < 11; i++) {
-          nForm = formula;
-          if((opBin[oB] != "*" or opBin[oB] != "/") and (i != 0)){
-            nForm.push_back(opBin[oB]);
-            nForm.push_back(std::to_string(i));
-            nuevasFormulas.push_back(nForm);
-          }
-        }
-
-        nForm = formula;
-        nForm.push_back(opBin[oB]);
-        nForm.push_back(std::to_string(-1));
-        nuevasFormulas.push_back(nForm);
-
-        tope = nuevasFormulas.size();
-        //Variables
-        for(size_t i = 0; i < (vars -> size()); i++){
-          nForm = formula;
-          nForm.push_back(opBin[oB]);
-          nForm.push_back((*vars)[i]);
-          nuevasFormulas.push_back(nForm);
-        }
-        //tope = nuevasFormulas.size();
-
-
-        /*
-        //Relaciones Simples
-        //Suma y multiplicacion
-        for(size_t i = 0; i < (vars -> size()); i++){
-          for(size_t j = i+1; j < (vars -> size()); j++){
-            nuevasFormulas.push_back(formula);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back("+");
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-
-            nuevasFormulas.push_back(formula);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-            nuevasFormulas[nuevasFormulas.size()-1].push_back("*");
-            nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-          }
-        }
-        tope = nuevasFormulas.size();
-
-        //Resta y division
-        for(size_t i = 0; i < (vars -> size()); i++){
-          for(size_t j = 0; j < (vars -> size()); j++){
-            if(i != j){
-              nuevasFormulas.push_back(formula);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back("-");
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-
-              nuevasFormulas.push_back(formula);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back(opBin[oB]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[i]);
-              nuevasFormulas[nuevasFormulas.size()-1].push_back("/");
-              nuevasFormulas[nuevasFormulas.size()-1].push_back((*vars)[j]);
-            }
-          }
-        }
-        tope = nuevasFormulas.size();
-        */
+    std::vector<std::vector<std::string> > nuevasFormulas = generaFormulas(formula);
+    std::vector<Estado> hijos;
+    std::string formHijo;
+    Estado hijo;
+    for(unsigned int i = 0; i < nuevasFormulas.size(); i++){
+      formHijo = "";
+      for(unsigned int j = 0; j < nuevasFormulas[i].size(); j++){
+        formHijo += nuevasFormulas[i][j] + " ";
       }
-
-
-      std::string formHijo;
-      for(unsigned int i = 0; i < nuevasFormulas.size(); i++){
-        formHijo = "";
-        for(unsigned int j = 0; j < nuevasFormulas[i].size(); j++){
-          formHijo += nuevasFormulas[i][j] + " ";
-        }
-        //std::cout << formHijo << std::endl;
-        if(formHijo.size() > 0){
-          hijos.push_back(Estado(formHijo, vars, data, objetivo));
-        }
+      //std::cout << formHijo << std::endl;
+      if(formHijo.size() > 0){
+        hijo.assign(formHijo, vars, data, objetivo);
+        hijos.push_back(hijo);
       }
-
-
-      return hijos;
-
     }
+    return hijos;
+  }
+
+
+
+
+  bool podar(){
+    std::vector<std::vector<std::string> > formulasHijos = generaFormulas(formula);
+    std::vector<std::vector<std::string> > formulasHijosHijos, aux;
+    for(unsigned int i = 0; i < formulasHijos.size(); i++){
+      aux = generaFormulas(formulasHijos[i]);
+      formulasHijosHijos.insert(formulasHijosHijos.end(), aux.begin(), aux.end());
+    }
+    Estado estadohijo;
+    double min = 10000000.0, dAux;
+    std::string formHijo;
+    for(unsigned int i = 0; i < formulasHijosHijos.size(); i++){
+      formHijo = "";
+      for(unsigned int j = 0; j < formulasHijosHijos[i].size(); j++){
+        formHijo += formulasHijosHijos[i][j] + " ";
+      }
+
+      estadohijo.assign(formHijo, vars, data, objetivo);
+      dAux = estadohijo.getH();
+      if(dAux < min){
+        min = dAux;
+      }
+    }
+
+    std::cout << "\n-------\n";
+    std::cout << getH() << std::endl;
+    std::cout << min << std::endl;
+    std::cout << "-------\n\n";
+
+    return ((getH() - min) < 0.005);
+  }
 
   /** Method operator <
   *   @brief Method to compare Estado objects
   *   @param innodo Estado to be compared
   */
   bool operator < (const Estado& e) const {
-    return (errorR * (double)formula.size()) < (e.errorR * (double)e.formula.size());
+
+    // if(errorR == e.errorR){
+    //   return ((double)formula.size() < (double)e.formula.size());
+    // }else{
+    //   return (errorR < e.errorR);
+    // }
+
+    double h1 = getF();
+    double h2 = e.getF();
+
+    return h1 < h2;
+
+
   }
 
   /** Method operator >
@@ -757,7 +832,18 @@ struct Estado{
   *   @param innodo Estado to be compared
   */
   bool operator > (const Estado& e) const {
-    return (errorR * (double)formula.size()) > (e.errorR * (double)e.formula.size());
+    // if(errorR == e.errorR){
+    //   return ((double)formula.size() > (double)e.formula.size());
+    // }else{
+    //   return (errorR > e.errorR);
+    // }
+
+
+    double h1 = getF();
+    double h2 = e.getF();
+
+    return h1 > h2;
+
   }
 
 
@@ -811,8 +897,8 @@ struct Estado{
 
     out += "\n++Formula Arbol: " + nodoArith(infixAPrefix(formula)).printFunct() + "\n";
 
-    out += "\n\t- errorR: " + std::to_string(errorR);
-    out += "\n\t- Valor H: " + std::to_string(errorR * (double)formula.size());
+    out += "\n\t- H(x): " + std::to_string(getH());
+    out += "\n\t- F(x): " + std::to_string(getF());
    if(errorR == 0.0){
      out += "\n\t- Resultado exacto";
    }
@@ -824,5 +910,11 @@ struct Estado{
   }
 
 };
+
+std::vector <Estado> generarListaInit(std::vector<std::string> *problemVars, std::vector<std::vector<double> > *problemData, std::vector<double> *problemObj);
+Estado Astar(std::vector <Estado> & estadosInit);
+
+Estado RSPrueba(std::vector <Estado> & estadosInit);
+
 
 #endif

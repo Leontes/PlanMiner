@@ -95,6 +95,17 @@ private:
   */
   std::vector<std::string> getAllFunctions();
 
+
+  std::vector < std::vector <std::string> > getTokens(){
+    std::vector < std::vector <std::string> > outMat;
+    std::vector < std::vector <std::string> > aux;
+    for (unsigned i = 0; i < predicates.size(); i++) {
+      aux = predicates[i] -> getTokens();
+      outMat.insert(outMat.end(), aux.begin(), aux.end());
+    }
+    return outMat;
+  }
+
   /** Function print
   *   @brief Method to output the Conector object
   *   @retval ostream Conector object info

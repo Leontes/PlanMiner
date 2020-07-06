@@ -73,6 +73,137 @@ bool significative(unsigned int impactoBase, unsigned int impactoAux){
   return impactoAux > impactoBase * 0.9 and impactoAux < impactoBase * 1.1;
 }
 
+bool en(std::string A, std::string B){
+
+  //std::cout << "¿Esta " << B << " en " << A << "?\n";
+  if (A.find(B) != std::string::npos) {
+    //std::cout << "\t Siiii!" << '\n';
+      return true;
+  }
+  else{
+    //std::cout << "\t Noooo!" << '\n';
+    return false;
+  }
+}
+
+std::list < std::pair< std::string, std::string> > borrarRedundancias(std::list < std::pair< std::string, std::string> > regla){
+  std::list < std::pair< std::string, std::string> > aux;
+  std::map < std::string, std::list < std::string> > dictIgualdades;
+  //std::cout << "\n\n\n////////////////////////////////////////////////////////////\n";
+  std::vector<std::string> tokens, op1, op2;
+  std::string buf, op1STR, op2STR;
+  unsigned int i = 0;
+  for (auto it = regla.begin(); it != regla.end(); it++) {
+    //std::cout << (*it).first << " <-----> " << (*it).second << "\n";
+    tokens.clear();
+    std::stringstream ss(it->first);
+    while (ss >> buf){
+      tokens.push_back(buf);
+    }
+
+    if(tokens[0] == "opGT" or tokens[0] == "opLT" or tokens[0] == "opEQ"){
+      if(tokens[2] == "("){
+        i = 2;
+        op1.clear();
+        while(tokens[i] != ")"){
+          op1.push_back(tokens[i]);
+          i++;
+        }
+        op1.push_back(tokens[i]);
+        i++;
+      }
+      else{
+        i = 2;
+        op1.clear();
+        op1.push_back(tokens[i]);
+        i++;
+      }
+
+      if(tokens[i] == "("){
+        op2.clear();
+        while(i < tokens.size()){
+          op2.push_back(tokens[i]);
+          i++;
+        }
+      }
+      else{
+        op2.clear();
+        op2.push_back(tokens[i]);
+        i++;
+      }
+
+      op1STR = "";
+      for (size_t j = 0; j < op1.size(); j++) {
+        op1STR += op1[j];
+        op1STR += " ";
+      }
+
+      op2STR = "";
+      for (size_t j = 0; j < op2.size(); j++) {
+        op2STR += op2[j];
+        op2STR += " ";
+      }
+
+      if(dictIgualdades.find(op1STR) == dictIgualdades.end()){
+        dictIgualdades[op1STR] = std::list < std::string>();
+        dictIgualdades[op1STR].push_back(op2STR);
+      }
+      else{
+        dictIgualdades[op1STR].push_back(op2STR);
+      }
+    }
+  }
+
+
+  std::list < std::string> listaPreds;
+  std::vector < std::string> predsAEliminar;
+  std::vector <bool> contenidoEn;
+  std::string predA, predB;
+  for(auto it = dictIgualdades.begin(); it != dictIgualdades.end(); it++){
+    //std::cout << (*it).first << std::endl;
+    listaPreds = (*it).second;
+    predsAEliminar.clear();
+    for(auto it2 = (*it).second.begin(); it2 != (*it).second.end(); it2++){
+      //std::cout << "\t*** " << (*it2) << std::endl;
+      contenidoEn.clear();
+      predA = (*it2);
+      for(auto it3 = (*it).second.begin(); it3 != (*it).second.end(); it3++){
+        predB = (*it3);
+        if(it2 != it3){
+          if(en(predA, predB)){
+            predsAEliminar.push_back(((*it).first + predB));
+            predsAEliminar[predsAEliminar.size()-1].erase((predsAEliminar[predsAEliminar.size()-1]).end()-1, (predsAEliminar[predsAEliminar.size()-1]).end());
+          }
+          contenidoEn.push_back(en(predA, predB));
+        }
+        else{
+          contenidoEn.push_back(false);
+        }
+      }
+    }
+
+    for (auto it2 = regla.begin(); it2 != regla.end(); it2++){
+      if(((*it2).first.find("opGT") != std::string::npos) or ((*it2).first.find("opLT") != std::string::npos) or ((*it2).first.find("opEQ") != std::string::npos)){
+        for(unsigned int i = 0; i < predsAEliminar.size(); i++){
+          if((*it2).first.find(predsAEliminar[i]) != std::string::npos){
+            (*it2).second = "ELIMINAR";
+          }
+        }
+      }
+    }
+
+  }
+
+  for (auto it = regla.begin(); it != regla.end(); it++){
+    if((*it).second != "ELIMINAR"){
+      aux.push_back((*it));
+    }
+  }
+
+  return aux;
+}
+
+
 void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, std::string > > > > * reglasInp,
   std::vector <std::list< std::pair<std::string, std::string> > > * reglasOut,
     std::vector < std::vector < double > > * dataset,
@@ -422,7 +553,6 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
 
         for(auto boolIt = mapBools.begin(); boolIt != mapBools.end(); boolIt++){
           pred = std::to_string((*boolIt).first);
-
           if((*boolIt).second[0] == true){
             if((*boolIt).second[1] == true){
               if((*boolIt).second[2] == true){
@@ -509,18 +639,24 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
       }
       else{
         for(unsigned int i = 0; i < (*it).second.size(); i++){
-         if((*it).second[i][0] == "opEQ" and ((*it).second[i][2] == "True")){
-           eq = true;
-         }
+          eq = false;
+          lt = false;
+          gt = false;
 
-         if((*it).second[i][0] == "opLT" and ((*it).second[i][2] == "True")){
-           lt = true;
-         }
+          if((*it).second[i][0] == "opEQ" and ((*it).second[i][2] == "True")){
+            eq = true;
+          }
 
-         if((*it).second[i][0] == "opGT" and ((*it).second[i][2] == "True")){
-           gt = true;
-         }
+          if((*it).second[i][0] == "opLT" and ((*it).second[i][2] == "True")){
+            lt = true;
+          }
+
+          if((*it).second[i][0] == "opGT" and ((*it).second[i][2] == "True")){
+            gt = true;
+          }
         }
+
+        //std::cout << (*it).first.first << " " << (*it).first.second << " [" << eq << gt << lt << "]" << std::endl;
 
         pred = (*it).first.second;
 
@@ -1078,13 +1214,14 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
 
 
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    (*reglasOut)[0] = borrarRedundancias((*reglasOut)[0]);
+    //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
     std::cout << "\n\nPredicados seleccionados para el postestado:" <<std::endl;
     for(unsigned int i = 0; i < postVec.size(); i++ ){
         std::cout <<"[" << postVec[i].first <<"] " << postVec[i].second.first << " = " << postVec[i].second.second << std::endl;
     }
-
 
     rule.clear();
     selectedPreds.clear();
@@ -1155,10 +1292,11 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
                 auxVec.push_back("DELTA");
                 auxVec.push_back("-");
 
-                auxVec.push_back(tokens[tokens.size()-1]);
+                //auxVec.push_back(tokens[tokens.size()-1]);
+                auxVec.push_back(std::string(selectedPreds[i].second.second));
 
                 pred = "";
-                for (unsigned int tk = 2; tk < tokens.size()-1; tk++) {
+                for (unsigned int tk = 2; tk < tokens.size(); tk++) {
                   pred += tokens[tk];
                   pred += " ";
                 }
@@ -1181,10 +1319,11 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
               auxVec.push_back(selectedPreds[i].second.second);
 
               pred = "";
-              for (unsigned int tk = 0; tk < tokens.size(); tk++) {
+              for (unsigned int tk = 0; tk < tokens.size() - 1; tk++) {
                 pred += tokens[tk];
                 pred += " ";
               }
+              pred += tokens[tokens.size() - 1];
 
               mapComps[std::pair<std::string, std::string>(pred, "NUMERO")].push_back(auxVec);
             }
@@ -1193,20 +1332,17 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
     }
 
 
-     for(auto it = mapComps.begin(); it != mapComps.end(); it++){
-       std::cout << (*it).first.first << " " << (*it).first.second << std::endl;
-      for(unsigned int i = 0; i < (*it).second.size(); i++){
-        std::cout << "\t[" << (*it).second[i][0] << "|" << (*it).second[i][1] << "] = " << (*it).second[i][2] << std::endl;
-      }
-    }
+    // for(auto it = mapComps.begin(); it != mapComps.end(); it++){
+    //    std::cout << (*it).first.first << " " << (*it).first.second << std::endl;
+    //   for(unsigned int i = 0; i < (*it).second.size(); i++){
+    //     std::cout << "\t[" << (*it).second[i][0] << "|" << (*it).second[i][1] << "] = " << (*it).second[i][2] << std::endl;
+    //   }
+    // }
 
 
     bool assign = true;
     unsigned int val1 = 0, val2 = 0;
-
-
     for(auto it = mapComps.begin(); it != mapComps.end(); it++){
-
       assign = true;
       for(unsigned int i = 0; i < (*it).second.size(); i++){
         if((*it).second[i][0] == "opEQ"){
@@ -1218,21 +1354,50 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
         }
       }
 
-
       if(assign == false){
         //std::cout << "En " +  (*it).first.first + "hay un ASSIGN\n";
-        rule.push_back(std::pair<std::string, std::string> ( "DELTA - " + (*it).first.first + " " + (*it).second[val1][2], (*it).second[val1][2]));
+        rule.push_back(std::pair<std::string, std::string> ( "DELTA - " + (*it).first.first, (*it).second[val1][2]));
       }
       else{
         //std::cout << "En " +  (*it).first.first + "NO hay un ASSIGN\n";
         rule.push_back(std::pair<std::string, std::string> ( "opEQ " + (*it).first.first + " " + (*it).second[val2][2], (*it).second[val2][2]));
       }
-
-
-
     }
 
+    std::vector<std::string> tokens2;
+    bool distintos = false;
+    for(unsigned int i = 0; i < rule.size(); i++){
+      //Buscamos los Delta.
 
+      std::stringstream ss(rule[i].first);
+      tokens.clear();
+      while (ss >> buf){
+        tokens.push_back(buf);
+      }
+      if(tokens[0] == "DELTA"){
+        //Si hay opEQ que iguale al delta se marca.
+
+        for(unsigned int j = 0; j < rule.size(); j++){
+          std::stringstream ss(rule[j].first);
+          tokens2.clear();
+          while (ss >> buf){
+            tokens2.push_back(buf);
+          }
+          //si esta marcado no se manda a reglasOut.
+          distintos = false;
+          for (unsigned int k = 1; k < tokens2.size(); k++){
+            if(tokens[k+1] != tokens2[k]){
+              distintos = true;
+            }
+          }
+
+          if(distintos == false){
+            rule[j].second = "ELIMINAR";
+          }
+
+        }
+      }
+    }
 
 
 
@@ -1259,21 +1424,12 @@ void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, s
       }
 
       //Si no esta marcado, se incluye
-      if(esta == false){
+      if(esta == false and (*antPost).second != "ELIMINAR"){
         (*reglasOut)[1].push_back(std::pair< std::string, std::string> ((*antPost).first, (*antPost).second));
       }
     }
 
     //reglasOut -> push_back(std::list < std::pair< std::string, std::string> > (rule.begin(), rule.end()));
-
-
-
-
-
-
-
-
-
 
 
 

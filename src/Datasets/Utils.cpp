@@ -262,12 +262,12 @@ Clusters discretizar(std::vector<double> numeros){
 
 
 
-  std::cout << "Clusters seleccionados:\n";
-  std::cout << "\tIndice CH: " << mejor.CHIndex << std::endl;
-  std::cout << "\tCentroides: " << std::endl;
-  for(unsigned int i = 0; i < mejor.clustersCentroids.size(); i++){
-    std::cout << "\t\t*Centroide del cluster" << i << ": " <<  mejor.clustersCentroids[i] << " Elementos en el cluster: "<< mejor.clustersElements[i].size() << std::endl;
-  }
+  // std::cout << "Clusters seleccionados:\n";
+  // std::cout << "\tIndice CH: " << mejor.CHIndex << std::endl;
+  // std::cout << "\tCentroides: " << std::endl;
+  // for(unsigned int i = 0; i < mejor.clustersCentroids.size(); i++){
+  //   std::cout << "\t\t*Centroide del cluster" << i << ": " <<  mejor.clustersCentroids[i] << " Elementos en el cluster: "<< mejor.clustersElements[i].size() << std::endl;
+  // }
 
 
 
