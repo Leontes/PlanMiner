@@ -103,6 +103,11 @@ public:
   */
   std::vector<std::string> getAllFunctions();
 
+
+  std::vector < std::vector <std::string> > getTokens(){
+    return pred -> getTokens();
+  }
+
   /** Function print
   *   @brief Method to output the Function object
   *   @retval ostream Function object info

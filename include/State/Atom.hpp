@@ -79,6 +79,22 @@ public:
   */
   void to_table(std::vector < std::vector < double > > * dataset, std::vector < std::pair <std::string, std::string> > * attribLabels, unsigned int nStates, unsigned int * index, bool polarity);
 
+
+  std::vector < std::vector <std::string> > getTokens(){
+    std::vector<std::string> out;
+    out.push_back(name);
+    for(unsigned int i = 0; i < parameters.size(); i++){
+      out.push_back("param_" + std::to_string(i));
+      out.push_back("-");
+      for(unsigned int j = 0; j < parameters[i]->getTypes().size(); j++){
+        out.push_back(parameters[i]-> getTypes()[j]);
+      }
+    }
+    std::vector < std::vector <std::string> > outMat;
+    outMat.push_back(out);
+    return outMat;
+  }
+
   /** Function clone
   *   @brief Method to create a copy of the Atom object
   *   @retval Atom object copy

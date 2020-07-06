@@ -37,9 +37,22 @@ struct funcPert{
 */
 struct Clusters {
   double CHIndex;
+  double SIndex;
+  std::vector<double> SIndexClusters;
   std::vector<double> clustersCentroids;
   std::vector< std::vector<double> > clustersElements;
   std::vector<funcPert> membershipClusters;
+
+  friend Clusters operator+( Clusters const& lhs, Clusters const& rhs ){
+      Clusters out;
+      out.clustersCentroids.insert(out.clustersCentroids.end(), lhs.clustersCentroids.begin(), lhs.clustersCentroids.end());
+      out.clustersCentroids.insert(out.clustersCentroids.end(), rhs.clustersCentroids.begin(), rhs.clustersCentroids.end());
+
+      out.clustersElements.insert(out.clustersElements.end(), lhs.clustersElements.begin(), lhs.clustersElements.end());
+      out.clustersElements.insert(out.clustersElements.end(), rhs.clustersElements.begin(), rhs.clustersElements.end());
+
+      return out;
+  }
 };
 
 /*!
@@ -60,13 +73,14 @@ enum orientacion {colinear, reloj, contrareloj};
 *   @param  attribLabels Output pair of STD vector with the labels of the datasets' columns
 *   @retval STD map with every attribute and its discrete sets calculated
 */
-std::map < std::string, std::vector <FuzzSet> > discretize(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabels);
+std::map < std::string, std::vector <FuzzSet> > labeler(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabels);
 
 /** Method cleanDataset
 *   @brief Method to clean a dataset from noise and incompleteness
 *   @param  dataset Output pair of STD matrices of double values
 *   @param  threshold double to discern between noise and infrecuent values
 */
-void cleanDataset(std::vector < std::vector < double > > * dataset, double threshold = 0.01);
+void lowFreq(std::vector < std::vector < double > > * dataset, double threshold = 0.01);
+void discretizar(std::vector < std::vector < double > > * dataset);
 
 #endif

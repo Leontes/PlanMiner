@@ -10,13 +10,13 @@ std::string Parameter::to_string(){
     str = std::string("?") + name + std::string(" ");
   }
   if(types.size() > 1){
-    str += std::string("- either( ");
+    str += std::string("~ either( ");
     for (unsigned i = 0; i < types.size(); i++) {
       str += types[i] + std::string(" ");
     }
     str += std::string(")");
   }else{
-    str += std::string("- ") + types[0] + std::string(" ");
+    str += std::string("~ ") + types[0] + std::string(" ");
   }
   return str;
 }

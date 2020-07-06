@@ -124,6 +124,63 @@ double CH(std::vector<double> centroides, std::vector< std::vector<double> > ele
 
   return outCH;
 }
+
+std::vector<double> SI(std::vector<double> centroides, std::vector< std::vector<double> > elementosCluster, double datasetCentroid){
+  std::vector<double> SIvect;
+  double a = 0.0, b = 0.0, SIaux = 0.0, SIClust = 0.0, aux = 0.0;
+  for(unsigned int i = 0; i < elementosCluster.size(); i++){
+    if(elementosCluster[i].size() < 2){
+      SIClust = 0.0;
+      SIvect.push_back(SIClust);
+    }
+    else{
+      SIClust = 0.0;
+      for(unsigned int j = 0; j < elementosCluster[i].size(); j++){
+        a = 0.0;
+        //a
+        for(unsigned int k = 0; k < elementosCluster[i].size(); k++){
+          if(j != k){
+            a+= pow(elementosCluster[i][j] - elementosCluster[i][k], 2);
+          }
+         }
+         a /= (elementosCluster[i].size() - 1.0);
+         //b
+         b = 999999999.9;
+         for(unsigned int k = 0; k < elementosCluster.size(); k++){
+           if(i != k and elementosCluster[k].size() > 0){
+             aux = 0.0;
+             for(unsigned int l = 0; l < elementosCluster[k].size(); l++){
+               aux +=  pow(elementosCluster[i][j] - elementosCluster[k][l], 2);
+             }
+             aux /= elementosCluster[k].size();
+             if (aux < b){
+               b = aux;
+             }
+           }
+         }
+
+         if(b != 0){
+           SIaux = b - a;
+           if (b > a){
+             SIaux /= b;
+           }
+           else{
+             SIaux /= a;
+           }
+         }
+         else{
+           SIaux = -1.0;
+         }
+         SIClust += SIaux;
+       }
+
+       SIClust /=  elementosCluster[i].size();
+       SIvect.push_back(SIClust);
+     }
+   }
+   return SIvect;
+ }
+
 //Algoritmo de kmedias
 Clusters kmeans(unsigned int k, std::vector<double> numeros){
   std::vector<double> centroidesNuevos(k, 0.0), centroidesViejos(k, 0.0);
@@ -206,246 +263,17 @@ Clusters mejorCluster(unsigned int k, std::vector<double> numeros){
 
   return mejor;
 }
-//Calcula el K (y sus clusters) optimo para una lista de elementos
-Clusters discretizar(std::vector<double> numeros){
-  double CHactual = 0.0;
-  unsigned int k = 1;
-  Clusters out, mejor;
-  mejor.CHIndex = -1.0;
 
-  /*
-  double TSS = 0;
-  for(unsigned int i = 0; i < numeros.size(); i++){
-    TSS += pow(numeros[i] - datasetMed, 2);
-  }
-  */
-
-  bool mejora = false;
-  do{
-    mejora = false;
-    CHactual = out.CHIndex;
-    //std::cout << "Probando con " << k << " clusters..." << std::endl;
-    out = kmeans(k, numeros);
-    //out = mejorCluster(k, numeros);
-    k++;
-    /*
-    std::cout << "Indice CH: " << out.CHIndex << std::endl;
-    std::cout << "Centroides calculados: " << std::endl;
-    for(unsigned int i = 0; i < out.clustersCentroids.size(); i++){
-      std::cout << "\t*Centroide del cluster" << i << ": " <<  out.clustersCentroids[i] << std::endl;
-    }
-
-    std::cout << std::endl;*/
-
-    if(mejor.CHIndex < out.CHIndex or mejor.CHIndex == -1.0){
-      mejor.CHIndex = out.CHIndex;
-      mejor.clustersCentroids = out.clustersCentroids;
-      mejor.clustersElements = out.clustersElements;
-      mejora = true;
-    }
-  }while(mejora == true);
-
-  out.CHIndex = mejor.CHIndex ;
-  out.clustersCentroids = mejor.clustersCentroids;
-  out.clustersElements = mejor.clustersElements;
-
-  mejor.clustersCentroids.clear();
-  mejor.clustersElements.clear();
-
-  for(unsigned int i = 0; i < out.clustersCentroids.size(); i++){
-    if(out.clustersElements[i].size() > 0){
-        mejor.clustersCentroids.push_back(out.clustersCentroids[i]);
-        mejor.clustersElements.push_back(out.clustersElements[i]);
+bool contiene(std::vector <double> vect, double val){
+  for(unsigned int i = 0; i < vect.size(); i++) {
+    if(val == vect[i]){
+      return true;
     }
   }
-
-
-
-
-  std::cout << "Clusters seleccionados:\n";
-  std::cout << "\tIndice CH: " << mejor.CHIndex << std::endl;
-  std::cout << "\tCentroides: " << std::endl;
-  for(unsigned int i = 0; i < mejor.clustersCentroids.size(); i++){
-    std::cout << "\t\t*Centroide del cluster" << i << ": " <<  mejor.clustersCentroids[i] << " Elementos en el cluster: "<< mejor.clustersElements[i].size() << std::endl;
-  }
-
-
-
-  double particion = 0.0, corte = 0.0;
-  unsigned int indice = 0, contador = 0;
-
-  std::vector <std::pair <std::pair <double, double>, double> > cortes;
-  std::vector <std::vector <std::pair <std::pair <double, double>, double> > > cortesCluster;
-  std::pair <double, double> pareja;
-  double ultimoCorte, med = 0;
-  unsigned int maxindex = 0, Bindex = 0, Cindex = 0, ultimoValor = 0;
-  bool fin = false;
-  Punto A, B, C, D, p, q;
-
-  //std::cout << "\n\n\n----------------------------------------------------------------------------------------------------------------" << std::endl;
-  //std::cout << "Clusters seleccionados:" << std::endl;
-  for (size_t i = 0; i < mejor.clustersCentroids.size(); i++) {
-    //std::cout << "\t*Cluster" << i << ": Centroide: " << mejor.clustersCentroids[i] << ". Numero de elementos en el cluster: " << mejor.clustersElements[i].size() << "." << std::endl;
-    std::sort (mejor.clustersElements[i].begin(), mejor.clustersElements[i].end());
-    //std::cout << "\t\t-Intervalo del conjunto [" << mejor.clustersElements[i][0] << ", " << mejor.clustersElements[i][mejor.clustersElements[i].size() - 1] << "]" << std::endl;
-
-    //std::cout << "\t\t-Distribucion de los elementos del conjunto" << std::endl;
-
-    particion = mejor.clustersElements[i][mejor.clustersElements[i].size() - 1] - mejor.clustersElements[i][0];
-    particion /= 20.0;
-    corte = mejor.clustersElements[i][0];
-    indice = 0;
-    cortes.clear();
-
-      if(mejor.clustersElements[i][0] == mejor.clustersElements[i][mejor.clustersElements[i].size() - 1]){
-        contador = mejor.clustersElements[i].size();
-        pareja.first = mejor.clustersElements[i][0];
-        pareja.second = mejor.clustersElements[i][mejor.clustersElements[i].size() - 1];
-        cortes.push_back(std::pair <std::pair <double, double>, unsigned int> (pareja, (unsigned int)100.0*((double)contador/(double)mejor.clustersElements[i].size())));
-
-        /*std::cout << std::setprecision(5) << std::fixed;
-        std::cout <<"\t\t\t[" << pareja.first << ", " << pareja.second << "]: \t";
-        std::cout << std::setprecision(2) << std::fixed;
-        std::cout <<  (100.0*((double)contador/(double)mejor.clustersElements[i].size())) << "%\t";
-
-        for(unsigned int l = 0; l < 100.0*((double)contador/(double)mejor.clustersElements[i].size()); l++ ){
-          std::cout << "#";
-        }
-        std::cout << std::endl; */
-      }
-      else{
-        for(unsigned int j = 0; j < 20; j++){
-          corte += particion;
-          contador = 0;
-          while (mejor.clustersElements[i][indice] < corte and indice < mejor.clustersElements[i].size()){
-            indice++;
-            contador++;
-          }
-
-          pareja.first = (corte - particion);
-          pareja.second = corte;
-          cortes.push_back(std::pair <std::pair <double, double>, double> (pareja, 100.0*((double)contador/(double)mejor.clustersElements[i].size())));
-
-        /*std::cout << std::setprecision(5) << std::fixed;
-        std::cout <<"\t\t\t[" << pareja.first << ", " << pareja.second << "]: \t";
-        std::cout << std::setprecision(2) << std::fixed;
-        std::cout <<  (100.0*((double)contador/(double)mejor.clustersElements[i].size())) << "%\t";
-
-        for(unsigned int l = 0; l < 100.0*((double)contador/(double)mejor.clustersElements[i].size()); l++ ){
-          std::cout << "#";
-        }
-        std::cout << std::endl;*/
-      }
-    }
-
-    cortesCluster.push_back(cortes);
-
-    maxindex = 0;
-    ultimoValor = 0;
-    fin = false;
-    while(fin == false){
-      if(cortesCluster[i][maxindex].second < ultimoValor){
-        fin = true;
-      }else{
-        ultimoValor = cortesCluster[i][maxindex].second;
-        maxindex++;
-      }
-    }
-
-    maxindex--;
-    //std::cout << "Indice del corte con mayor numero de elementos: " << maxindex << std::endl;
-
-    //A.x = cortesCluster[cortesCluster.size()-1][0].first.first;
-    A.x = cortesCluster[cortesCluster.size()-1][0].first.first - (particion/500.0);
-    A.y = 0;
-
-    //D.x = cortesCluster[cortesCluster.size()-1][cortesCluster[i].size()-1].first.second;
-    D.x = cortesCluster[cortesCluster.size()-1][cortesCluster[i].size()-1].first.second + (particion/100.0);
-    D.y = 0;
-
-    if(!distintos(A,D)){
-      B.x = A.x;
-      B.y = A.y;
-
-      C.x = D.x;
-      C.y = D.y;
-    }else{
-
-      Bindex = maxindex;
-      fin = false;
-      while(Bindex >= 0 and fin == false){
-
-        B.x = cortesCluster[cortesCluster.size()-1][Bindex].first.first;
-        B.y = cortesCluster[cortesCluster.size()-1][Bindex].second;
-
-        //std::cout << "Linea AB:" << "(" << A.x << ", " << A.y << ") - (" << B.x << ", " << B.y << ")" << std::endl;
-        fin = true;
-        for(unsigned int j = Bindex; j > 0; j--){
-          p.x = cortesCluster[cortesCluster.size()-1][j].first.first;
-          p.y = 0;
-          q.x = cortesCluster[cortesCluster.size()-1][j].first.first;
-          q.y = cortesCluster[cortesCluster.size()-1][j].second;
-          //std::cout << "Linea pq:" << "(" << p.x << ", " << p.y << ") - (" << q.x << ", " << q.y << ")" << std::endl;
-          if(intersectan(A, B, p, q) and distintos(p,q)){
-            fin = false;
-            Bindex--;
-            break;
-          }
-        }
-
-      }
-
-      Cindex = maxindex;
-      fin = false;
-
-      while(Cindex < 20 and fin == false){
-        C.x = cortesCluster[cortesCluster.size()-1][Cindex].first.second;
-        C.y = cortesCluster[cortesCluster.size()-1][Cindex].second;
-        //std::cout << "\n\nLinea CD:" << "(" << C.x << ", " << C.y << ") - (" << D.x << ", " << D.y << ")" << std::endl;
-        fin = true;
-        for(unsigned int j = Cindex; j < 20; j++){
-          p.x = cortesCluster[cortesCluster.size()-1][j].first.first;
-          p.y = 0;
-          q.x = cortesCluster[cortesCluster.size()-1][j].first.first;
-          q.y = cortesCluster[cortesCluster.size()-1][j].second;
-          //std::cout << "Linea pq:" << "(" << p.x << ", " << p.y << ") - (" << q.x << ", " << q.y << ")" << std::endl;
-          if(intersectan(C, D, p, q) and distintos(p,q)){
-            fin = false;
-            Cindex++;
-            break;
-          }
-        }
-      }
-    }
-
-    /*std::cout << "\t\t-Funcion de pertenencia asociada: ";
-    std::cout << std::setprecision(5) << std::fixed;
-    std::cout << "(" << A.x << ", "<< B.x << ", " << C.x << ", "<< D.x <<")" << std::endl;*/
-
-    mejor.membershipClusters.push_back(funcPert(A.x,B.x,C.x,D.x));
-
-    med = 0;
-    for(unsigned int k = 0; k < cortesCluster[cortesCluster.size()-1].size(); k++){
-      pareja.first = cortesCluster[cortesCluster.size()-1][k].first.first;
-      pareja.second = cortesCluster[cortesCluster.size()-1][k].first.second;
-      med += (((pareja.first + pareja.second)/2) * (cortesCluster[cortesCluster.size()-1][k].second / 100.0));
-
-      //std::cout << "Media: " << ((pareja.first + pareja.second)/2.0) << " factor de multiplicación: " << (cortesCluster[cortesCluster.size()-1][k].second / 100.0) << std::endl;
-    }
-
-    //std::cout << "\t\t\t*Valor CRISP asociado: " << med << std::endl;
-
-
-  }
-  //std::cout << "----------------------------------------------------------------------------------------------------------------" << std::endl;
-
-  return mejor;
+  return false;
 }
 
-
-
-
-std::map < std::string, std::vector <FuzzSet> > discretize(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabels){
+std::map < std::string, std::vector <FuzzSet> > labeler(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabels){
 
   std::map < std::string, std::vector <FuzzSet> > out;
   std::vector <FuzzSet> vectAux;
@@ -537,20 +365,20 @@ std::map < std::string, std::vector <FuzzSet> > discretize(std::vector < std::ve
           datosAux.clear();
 
           for(unsigned int j = 0; j <(*dataset)[i].size(); j++){
-            if((*dataset)[i][j] != -999999999.0){
+            if(contiene(datosAux,(*dataset)[i][j]) == false){
               datosAux.push_back((*dataset)[i][j]);
             }
           }
 
-          clAux = discretizar(datosAux);
+
           vectAux.clear();
 
-          for(unsigned int j = 0; j < clAux.membershipClusters.size(); j++){
+          for(unsigned int j = 0; j < datosAux.size(); j++){
             vectAux.push_back(FuzzSet());
-            vectAux[vectAux.size()- 1].a = clAux.membershipClusters[j].A;
-            vectAux[vectAux.size()- 1].b = clAux.membershipClusters[j].B;
-            vectAux[vectAux.size()- 1].c = clAux.membershipClusters[j].C;
-            vectAux[vectAux.size()- 1].d = clAux.membershipClusters[j].D;
+            vectAux[vectAux.size()- 1].a = datosAux[j];
+            vectAux[vectAux.size()- 1].b = datosAux[j];
+            vectAux[vectAux.size()- 1].c = datosAux[j];
+            vectAux[vectAux.size()- 1].d = datosAux[j];
             vectAux[vectAux.size()- 1].label = "L_" + std::to_string(j);
           }
 
@@ -564,7 +392,7 @@ std::map < std::string, std::vector <FuzzSet> > discretize(std::vector < std::ve
   return out;
 
 }
-void cleanDataset(std::vector < std::vector < double > > * dataset, double threshold){
+void lowFreq(std::vector < std::vector < double > > * dataset, double threshold){
   std::vector < std::vector < double > > aux(*dataset);
   std::map < double, double > frecPre, frecPost;
   unsigned int valsPre = 0, valsPost = 0;
@@ -576,7 +404,7 @@ void cleanDataset(std::vector < std::vector < double > > * dataset, double thres
   outPre = "Conditional Probability Class PreState\n";
   outPost = "Conditional Probability Class PostState\n";
 
-int a;
+  int a;
   for(unsigned int i = 0; i < aux.size()-1; i++){
     frecPre.clear();
     valsPre = 0;
@@ -584,7 +412,7 @@ int a;
     valsPost = 0;
     //Primer repaso para calcular las frecuencias
     for(unsigned int j = 0; j < aux[i].size(); j++){
-      if(aux[i][j] != -999999999.0){
+      if(aux[i][j] == 0 or aux[i][j] == 1){
         if(aux[aux.size()-1][j] == 0.0){
           valsPre++;
           if (frecPre.count(aux[i][j])>0){
@@ -640,7 +468,6 @@ int a;
     }
 
     //Segundo repaso para eliminar el ruido
-
     for(unsigned int j = 0; j < aux[i].size(); j++){
       if(aux[i][j] != -999999999.0){
         if(aux[aux.size()-1][j] == 0.0){
@@ -680,4 +507,127 @@ int a;
       }
     }
   }
+}
+
+//Hiearchycal Recursive Clustering
+Clusters HRC (std::vector<double> numeros, std::string nivel){
+    double umbral = 0.05, alpha = 0.5, beta = 0.5;
+    Clusters otro, mejorL;
+    mejorL = kmeans(2, numeros);
+    for (unsigned int i = 0; i < 4; i++) {
+        otro = kmeans(2, numeros);
+        if(otro.CHIndex > mejorL.CHIndex){
+            mejorL = otro;
+        }
+    }
+    double med = 0.0, varianza = 0.0;
+
+    Clusters nuevosClust, outClusts;
+    for(unsigned int i = 0; i < mejorL.SIndexClusters.size(); i++){
+        std::cout << "\n\n-----------------------\nCluster " << nivel << "." << i << std::endl;
+        med = 0.0;
+        for (size_t j = 0; j < mejorL.clustersElements[i].size(); j++) {
+          med += mejorL.clustersElements[i][j];
+        }
+        med /= mejorL.clustersElements[i].size();
+        std::cout << "\tMedia del dataset antes de dividirlo: "<< med << std::endl;
+
+        varianza = 0.0;
+        for (size_t j = 0; j < mejorL.clustersElements[i].size(); j++) {
+          varianza += (med - mejorL.clustersElements[i][j]) * (med - mejorL.clustersElements[i][j]);
+        }
+
+        std::cout << "\tVarianza del cluster: "<< varianza << std::endl;
+        varianza = std::sqrt(varianza);
+        std::cout << "\tDesviacion estandar del cluster: "<< varianza << std::endl;
+        varianza  /= numeros.size();
+        std::cout << "\tDesviacion estandar normalizada del cluster: "<< varianza << std::endl;
+        std::cout << "\tIndice de silueta del cluster: " << mejorL.SIndexClusters[i] << std::endl;
+
+        //Ajustar el indice de silueta
+        double silAjustado = -1.0 * mejorL.SIndexClusters[i];
+        silAjustado += 1.0;
+        std::cout << "\tIndice de silueta ajustado del cluster: " << silAjustado << std::endl;
+        double evalFunct = alpha * silAjustado + beta * varianza;
+        std::cout << "\tValor de evaluación del cluster: " << evalFunct << "\n-----------------------" << std::endl;
+
+        //Caso Recursivo
+        if(evalFunct > umbral){
+            if(mejorL.clustersElements[i].size() > 1){
+                nuevosClust = HRC(mejorL.clustersElements[i], nivel + "." + std::to_string(i));
+                for(unsigned int j = 0; j < nuevosClust.SIndexClusters.size(); j++){
+                    outClusts.SIndexClusters.push_back(nuevosClust.SIndexClusters[j]);
+                    outClusts.clustersCentroids.push_back(nuevosClust.clustersCentroids[j]);
+                    outClusts.clustersElements.push_back(nuevosClust.clustersElements[j]);
+                }
+            }
+        }
+
+        //Caso Base
+        else{
+              outClusts.SIndexClusters.push_back(mejorL.SIndexClusters[i]);
+              outClusts.clustersCentroids.push_back(mejorL.clustersCentroids[i]);
+              outClusts.clustersElements.push_back(mejorL.clustersElements[i]);
+        }
+    }
+
+    //Recalculamos CH y SI de los clusters.
+    outClusts.CHIndex = CH(outClusts.clustersCentroids, outClusts.clustersElements, med);
+    outClusts.SIndexClusters = SI(outClusts.clustersCentroids, outClusts.clustersElements, med);
+    outClusts.SIndex = 0;
+    for(unsigned int i = 0; i < outClusts.SIndexClusters.size(); i++){
+    outClusts.SIndex += outClusts.SIndexClusters[i];
+    }
+    outClusts.SIndex /= outClusts.SIndexClusters.size();
+
+
+    return outClusts;
+}
+
+
+void discretizar(std::vector < std::vector < double > > * dataset){
+  Clusters mejor;
+  std::vector<double> numeros;
+  for (unsigned int i = 0; i < dataset -> size(); i++){
+    numeros = (*dataset)[i];
+    std::cout << "\n************************************************\n";
+    mejor = HRC(numeros, "X");
+    std::cout << "\n\n#######################\nIndice CH: " << mejor.CHIndex << std::endl;
+    std::cout << "Indice Silueta: " << mejor.SIndex << std::endl;
+
+    std::cout << "\n\n\n----------------------------------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "Clusters seleccionados:" << std::endl;
+    for (size_t i = 0; i < mejor.clustersCentroids.size(); i++){
+      std::cout << "\t*Cluster" << i << ": Centroide: " << mejor.clustersCentroids[i] << ". Numero de elementos en el cluster: " << mejor.clustersElements[i].size() << "." << std::endl;
+      std::sort (mejor.clustersElements[i].begin(), mejor.clustersElements[i].end());
+      std::cout << "\t\t-Intervalo del conjunto [" << mejor.clustersElements[i][0] << ", " << mejor.clustersElements[i][mejor.clustersElements[i].size() - 1] << "]" << std::endl;
+    }
+    std::cout << "----------------------------------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "\n************************************************\n";
+
+    //Si el numero de clusters es 0 los datos se dejan tal cual
+    //Si no
+      // Si un numero pertenece a un cluster se cambia por su centroide
+      // Si no pertenece se cambia por un Valor Perdido
+    bool sustituido = false;
+    if(mejor.clustersCentroids.size() > 0){
+      for (unsigned int j = 0; j < (*dataset)[i].size(); j++) {
+        sustituido = false;
+        for (unsigned int k = 0; k < mejor.clustersCentroids.size(); k++) {
+          if(((*dataset)[i][j] > mejor.clustersElements[k][0]) and ((*dataset)[i][j] < mejor.clustersElements[i][mejor.clustersElements[i].size()-1])){
+            (*dataset)[i][j] = mejor.clustersCentroids[k];
+            sustituido = true;
+          }
+        }
+
+        if(sustituido == false){
+          (*dataset)[i][j] = -999999999.0;
+        }
+      }
+    }
+  }
+
+
+
+
 }

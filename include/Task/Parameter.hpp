@@ -65,13 +65,13 @@ public:
       os << std::string("?") << param.name << std::string(" ");
     }
     if(param.types.size() > 1){
-      os << std::string("- either( ");
+      os << std::string("~ either( ");
       for (unsigned i = 0; i < param.types.size(); i++) {
         os << param.types[i] << std::string(" ");
       }
       os << std::string(")");
     }else{
-      os << std::string("- ") << param.types[0] << std::string(" ");
+      os << std::string("~ ") << param.types[0] << std::string(" ");
     }
     return os;
   }
