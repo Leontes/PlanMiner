@@ -11,6 +11,7 @@ Function::Function(std::vector <std::string> tokens):Predicate() {
 }
 
 
+
 void Function::clearParam(std::string newValue, std::string value, std::vector<std::string> types){
   pred -> clearParam(newValue, value, types);
 }
