@@ -483,7 +483,6 @@ struct Estado{
     objetivo = iObjetivo;
 
     errorR = evaluar();
-
   }
 
   void assign(std::string inputForm, std::vector<std::string> *iVars, std::vector<std::vector<double> > *iData, std::vector<double> *iObjetivo){
@@ -774,8 +773,6 @@ struct Estado{
   }
 
 
-
-
   bool podar(){
     std::vector<std::vector<std::string> > formulasHijos = generaFormulas(formula);
     std::vector<std::vector<std::string> > formulasHijosHijos, aux;
@@ -812,19 +809,9 @@ struct Estado{
   *   @param innodo Estado to be compared
   */
   bool operator < (const Estado& e) const {
-
-    // if(errorR == e.errorR){
-    //   return ((double)formula.size() < (double)e.formula.size());
-    // }else{
-    //   return (errorR < e.errorR);
-    // }
-
     double h1 = getF();
     double h2 = e.getF();
-
     return h1 < h2;
-
-
   }
 
   /** Method operator >
@@ -881,9 +868,8 @@ struct Estado{
   *   @brief Method to obtain a printable version of the Estado object
   *   @param string with the Estado information
   */
-  std::string to_string(){
+  std::string to_string (){
     std::string out = "";
-
     out += "\n++Formula Infija: ";
     for (unsigned int i = 0; i < formula.size(); i++) {
       out += formula[i] + " ";
@@ -899,12 +885,12 @@ struct Estado{
 
     out += "\n\t- H(x): " + std::to_string(getH());
     out += "\n\t- F(x): " + std::to_string(getF());
-   if(errorR == 0.0){
-     out += "\n\t- Resultado exacto";
-   }
-   else{
-     out += "\n\t- Resultado NO exacto";
-   }
+    if (errorR == 0.0){
+      out += "\n\t- Resultado exacto";
+    }
+    else{
+      out += "\n\t- Resultado NO exacto";
+    }
 
     return  out;
   }
@@ -915,6 +901,9 @@ std::vector <Estado> generarListaInit(std::vector<std::string> *problemVars, std
 Estado Astar(std::vector <Estado> & estadosInit);
 
 Estado RSPrueba(std::vector <Estado> & estadosInit);
+
+void to_table( std::string task, StatesLists states, std::vector < std::vector < std::vector < double > > > * datasets, std::vector < std::vector < std::pair<std::string, std::string> > > * attribLabelsVC);
+void discoverInfo(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabels);
 
 
 #endif

@@ -17,9 +17,8 @@
 */
 void fuseRules(std::vector < std::pair <int, std::list< std::pair<std::string, std::string> > > > * reglasInp,
   std::vector <std::list< std::pair<std::string, std::string> > > * reglasOut,
-    std::vector < std::vector < double > > * dataset,
-      std::vector < std::pair <std::string, std::string> > attribLabels,
-        std::vector <std::pair <std::string, std::string> > * cabeceras);
+    std::vector <std::pair <std::string, std::string> > * cabeceras,
+      std::vector < std::vector < std::pair<std::string, std::string> > > attribLabels);
 
 
 #endif

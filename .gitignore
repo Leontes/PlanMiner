@@ -47,6 +47,8 @@ Doxyfile
 # Gtest
 gtest/
 
+# VAL
+VAL/
 
 # Problemas y output de PM
 data/
@@ -61,4 +63,4 @@ res/
 traza.txt
 *.py
 *.zip
-<
+*.csv

@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 #include <map>
-
+#include <limits.h>
+#include <math.h>
 
 /*!
   Struct to code fuzzy sets
@@ -53,6 +54,17 @@ struct Clusters {
 
       return out;
   }
+  Clusters& operator=(const Clusters& other){
+    if (this != &other) {
+      this -> CHIndex = other.CHIndex;
+      this -> SIndex = other.SIndex;
+      this -> SIndexClusters = other.SIndexClusters;
+      this -> clustersCentroids = other.clustersCentroids;
+      this -> clustersElements = other.clustersElements;
+      this -> membershipClusters = other.membershipClusters;
+    }
+    return *this;
+  }
 };
 
 /*!
@@ -81,6 +93,6 @@ std::map < std::string, std::vector <FuzzSet> > labeler(std::vector < std::vecto
 *   @param  threshold double to discern between noise and infrecuent values
 */
 void lowFreq(std::vector < std::vector < double > > * dataset, double threshold = 0.01);
-void discretizar(std::vector < std::vector < double > > * dataset);
+void discretizar(std::vector < std::vector < double > > * dataset, std::vector < std::pair<std::string, std::string> > * attribLabelsMap);
 
 #endif

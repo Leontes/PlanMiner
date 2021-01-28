@@ -129,8 +129,6 @@ int main(int argc, char const *argv[]) {
           std::cout << "Attr" +  std::to_string(attr) << ":\t" << attribLabelsMap[it -> first][iDataset][attr].first << std::endl;
         }
 
-
-
         std::cout << std::endl<< std::flush;
         std::cout << std::left  << std::setw(6) << std::setfill(' ') << "|";
 
@@ -179,10 +177,23 @@ int main(int argc, char const *argv[]) {
       }
       std::cout << tokens[0] << std::endl;
       lowFreq(&(it->second)[0], 0.05);
-      discretizar(&(it->second)[1]);
+      // discretizar(&(it->second)[1], &(attribLabelsMap[(it->first)][1]));
+      std::cout << "Siguiente accion\n";
     }
     std::cout << "Datasets cleaned." << std::endl;
     std::cout << "#############################" << std::endl << std::endl << std::endl;
+
+
+    /*
+      Information Discovery
+    */
+    std::cout << "\n\n#############################" << std::endl;
+    std::cout << "Discovering Information..." << std::endl << std::endl;
+    for(auto it = datasetMap.begin(); it != datasetMap.end(); it++){
+      std::cout << it->first << std::endl;
+      discoverInfo(&(it->second)[1], &(attribLabelsMap[(it->first)][1]));
+    }
+    std::cout << "\n\n#############################" << std::endl;
 
     /*
       CSV creation section.
@@ -224,9 +235,9 @@ int main(int argc, char const *argv[]) {
       #endif
     }
 
+    std::ofstream output;
     for(auto it = datasetMap.begin(); it != datasetMap.end(); it++){
       for (unsigned int iDataset = 0; iDataset < attribLabelsMap[it -> first].size(); iDataset++){
-        std::ofstream output;
         if(iDataset == 1){
           output.open(sPath + "Number/" + it->first + ".csv", std::ofstream::out | std::ofstream::trunc);
         }
@@ -252,6 +263,19 @@ int main(int argc, char const *argv[]) {
       }
 
     }
+
+    output.open(sPath + "headers.txt", std::ofstream::out | std::ofstream::trunc);
+    for (auto cabeceras_it =  cabeceras.begin(); cabeceras_it != cabeceras.end(); cabeceras_it++){
+      output << cabeceras_it -> first + " ";
+
+      for (size_t m = 0; m < (cabeceras_it -> second).size(); m++) {
+        output << (cabeceras_it -> second)[m].first + " - " + (cabeceras_it -> second)[m].second + " ";
+      }
+      output<< std::endl;
+    }
+    output.close();
+
+
 
     std::cout << "#############################" << std::endl << std::endl << std::endl;
 
@@ -431,11 +455,23 @@ int main(int argc, char const *argv[]) {
         inslv(nombreDom, it -> first, sPath  + "Number/", &datasetMap[it -> first][1], attribLabelsMap[it -> first][1], conjuntosDiff, &reglasInp2);
       }
 
-      if(reglasInp2.begin() != reglasInp2.end()){
+      if(reglasInp2.begin() != reglasInp2.end() and reglasInp2.size() > 1){
         reglasInp1.insert(reglasInp1.end(), reglasInp2.begin(), reglasInp2.end());
       }
 
-      fuseRules(&reglasInp1, &reglas, &datasetMap[it -> first][0], attribLabelsMap[it -> first][0], &(cabeceras[it -> first]));
+      std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~\n";
+      for (size_t p = 0; p < reglasInp1.size(); p++) {
+        std::cout << reglasInp1[p].first << std::endl;
+        for (auto itLista = reglasInp1[p].second.begin(); itLista != reglasInp1[p].second.end(); itLista++) {
+          std::cout << itLista -> first << " => "  << itLista -> second << std::endl;
+        }
+      }
+      std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+
+
+
+      fuseRules(&reglasInp1, &reglas, &(cabeceras[it -> first]), attribLabelsMap[it -> first]);
 
       if(reglas.size() > 0){
         noRepe = false;
@@ -522,7 +558,12 @@ int main(int argc, char const *argv[]) {
                 }
                 else{
                   std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
-                  pddl  << tokens[i] << " ";
+                  if(tokens[i] == "delta"){
+                    //pddl  << " AQUI VA UN DELTA ";
+                  }
+                  else{
+                    pddl  << tokens[i] << " ";
+                  }
                 }
 
               }
