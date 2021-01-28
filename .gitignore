@@ -57,8 +57,13 @@ res/
 src/bin/pruebas.cpp
 calcularDominios.sh
 CompareDoms.py
+<<<<<<< HEAD
 
 #VAL
+=======
+ResultadosRuidoCon/
+ResultadosRuidoSin/
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
 VAL/
 
 # Basura variada

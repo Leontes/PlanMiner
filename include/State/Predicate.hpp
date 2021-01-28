@@ -97,6 +97,7 @@ public:
   *   @retval Function object copy
   */
   virtual Predicate * clone(){
+    //Meto un comentario random para github
     return new Predicate(*this);
   }
 

@@ -481,6 +481,10 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
           mapaPredicadosParamAUX[outMat[m][0]].push_back(std::pair <std::string, std::string> (outMat[m][n], outMat[m][n+2]));
         }
       }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
       outMat = (*PTS)[i] -> getTS(j) -> getPostS() -> getTokens();
       for (size_t m = 0; m < outMat.size(); m++) {
         for (size_t n = 1; n < outMat[m].size(); n+=3) {
@@ -489,6 +493,10 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
       }
     }
   }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
   std::vector <std::pair <std::string, std::string> > listaParamsAux, listaParamsFinal;
   for(auto it = mapaPrimitivasParamAUX.begin(); it != mapaPrimitivasParamAUX.end(); it++){
     listaParamsAux = (*it).second;
@@ -497,10 +505,18 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
           listaParamsFinal.push_back(listaParamsAux[i]);
         }
     }
+<<<<<<< HEAD
     mapaPrimitivasParamAUX[(*it).first] = listaParamsFinal;
     listaParamsFinal.clear();
   }
 
+=======
+
+    mapaPrimitivasParamAUX[(*it).first] = listaParamsFinal;
+    listaParamsFinal.clear();
+  }
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
   for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
     listaParamsAux = (*it).second;
     for(unsigned int i = 0; i < listaParamsAux.size(); i++){
@@ -508,6 +524,10 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
           listaParamsFinal.push_back(listaParamsAux[i]);
         }
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
     mapaPredicadosParamAUX[(*it).first] = listaParamsFinal;
     listaParamsFinal.clear();
   }
@@ -546,10 +566,33 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
       for(unsigned int j = i; j < (*it).second.size(); j++){
         if((*it).second[i].first == (*it).second[j].first and (*it).second[i].second != (*it).second[j].second){
           conflictos.push_back(std::pair <std::string, std::string> ((*it).second[i].second, (*it).second[j].second));
+<<<<<<< HEAD
+=======
         }
       }
     }
   }
+
+  for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
+    for(unsigned int i = 0; i < (*it).second.size(); i++){
+      tipoencontrado = false;
+      for (size_t j = 0; j < vectorAux.size(); j++) {
+        if((*it).second[i].second == vectorAux[j] -> name){
+          tipoencontrado = true;
+        }
+      }
+      if(tipoencontrado == false){
+        vectorAux.push_back(new Type((*it).second[i].second));
+      }
+      for(unsigned int j = i; j < (*it).second.size(); j++){
+        if((*it).second[i].first == (*it).second[j].first and (*it).second[i].second != (*it).second[j].second){
+          conflictos.push_back(std::pair <std::string, std::string> ((*it).second[i].second, (*it).second[j].second));
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
+        }
+      }
+    }
+  }
+<<<<<<< HEAD
   for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
     for(unsigned int i = 0; i < (*it).second.size(); i++){
       tipoencontrado = false;
@@ -568,6 +611,9 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
       }
     }
   }
+=======
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
   std::cout << "Types found in PTs:\n";
   for(unsigned int i = 0; i < vectorAux.size(); i++){
     std::cout << vectorAux[i] -> name << " " << std::endl;
@@ -763,9 +809,15 @@ std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * >
   return output;
 
 }
+<<<<<<< HEAD
 
 
 
+=======
+
+
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
 bool noesta(std::set<std::string> & conjuntoElem, Estado actual){
   std::vector<std::string> form = actual.getVectFormula();
   std::string clave = "", otraClave = "";
@@ -788,6 +840,7 @@ bool noesta(std::set<std::string> & conjuntoElem, Estado actual){
 
     if(operadorAct == "+" or operadorAct == "*"){
       esta = ((conjuntoElem.find(clave) == conjuntoElem.end()) and (conjuntoElem.find(otraClave) == conjuntoElem.end()));
+<<<<<<< HEAD
 
     }
     else{
@@ -795,6 +848,15 @@ bool noesta(std::set<std::string> & conjuntoElem, Estado actual){
     }
   }
 
+=======
+
+    }
+    else{
+      esta = ((conjuntoElem.find(clave) == conjuntoElem.end()));
+    }
+  }
+
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
   return esta;
 }
 
@@ -851,7 +913,11 @@ Estado Astar(std::vector <Estado> & estadosInit){
     }
 
     time(&finish);
+<<<<<<< HEAD
     if(difftime(finish, start) >= 300.0){
+=======
+    if(difftime(finish, start) >= 3.0){
+>>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
       seguir = false;
     }
 
