@@ -913,11 +913,7 @@ Estado Astar(std::vector <Estado> & estadosInit){
     }
 
     time(&finish);
-<<<<<<< HEAD
     if(difftime(finish, start) >= 300.0){
-=======
-    if(difftime(finish, start) >= 3.0){
->>>>>>> 6e8344f7d2eef24cc20ab12fd5ea3d617b5d3d71
       seguir = false;
     }
 
