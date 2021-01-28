@@ -51,15 +51,10 @@ int main(int argc, char const *argv[]) {
     }
     */
 
-
-
-
-
     /*
     Este hueco queda libre para modificar las PT's con la información estructural del dominio HTN
     Para el futuro....
     */
-
 
 
     std::cout << "#############################" << std::endl;
@@ -86,6 +81,7 @@ int main(int argc, char const *argv[]) {
     */
 
 
+
     //Extraemos los estados de cada TS y los agrupamos
     std::map < std::string, StatesLists > groupedStates = groupTaskStates(PTS);
 
@@ -94,6 +90,20 @@ int main(int argc, char const *argv[]) {
 
     std::vector < std::vector < std::vector < double > > > datasets;
     std::vector < std::vector < std::pair<std::string, std::string> > > attribLabelsVC;
+
+
+    //Calculamos jerarquia de tipos
+    std::cout << "#############################" << std::endl;
+    std::cout << "Processing types..." << std::endl << std::endl;
+    std::map <std::string, std::vector <std::pair <std::string, std::string> > > cabeceras;
+    std::map <std::string, std::vector <std::pair <std::string, std::string> > > predicados;
+    std::vector < Type *> tipos = extractTypeHierarchy(PTS, &cabeceras, &predicados);
+    if(tipos.size() > 0){
+      typing = true;
+    }
+
+    std::cout << std::endl << "#############################" << std::endl << std::endl << std::endl;
+
     //to_table
     for (std::map < std::string, StatesLists >::iterator it=groupedStates.begin(); it!=groupedStates.end(); it++){
       for (unsigned int i = 0; i < datasets.size(); i++) {
@@ -108,30 +118,7 @@ int main(int argc, char const *argv[]) {
 
     }
 
-
-
-
-
-
-
-      //Calculamos jerarquia de tipos
-      std::cout << "#############################" << std::endl;
-      std::cout << "Processing types..." << std::endl << std::endl;
-      std::map <std::string, std::vector <std::pair <std::string, std::string> > > cabeceras;
-      std::vector < Type *> tipos = extractTypeHierarchy(PTS, &cabeceras);
-      if(tipos.size() > 0){
-        typing = true;
-      }
-
-      std::cout << std::endl << "#############################" << std::endl << std::endl << std::endl;
-
-
-
-
-
-
     for(auto it = datasetMap.begin(); it != datasetMap.end(); it++){
-
       std::cout << "\n\nTask: " << it -> first << std::endl;
       std::cout << "Attributes list:  " << std::endl;
 
@@ -162,10 +149,6 @@ int main(int argc, char const *argv[]) {
           }
           std::cout << std::endl;
         }
-
-
-
-
       }
     }
 
@@ -195,8 +178,8 @@ int main(int argc, char const *argv[]) {
         tokens.push_back(buf);
       }
       std::cout << tokens[0] << std::endl;
-      cleanDataset(&(it->second)[0], 0.05);
-      cleanDataset(&(it->second)[1], 0.05);
+      //cleanDataset(&(it->second)[0], 0.05);
+      //cleanDataset(&(it->second)[1], 0.05);
     }
 
 
@@ -212,74 +195,66 @@ int main(int argc, char const *argv[]) {
 
     std::string sPath;
     if(argc == 3){
-      sPath = "outputPM/" + string(argv[2]) + "/";
+      sPath = "outputPM/SLV/" + string(argv[2]) + "/";
     }else{
-      sPath = "outputPM/NODOMAINNAME/";
+      sPath = "outputPM/SLV/NODOMAINNAME/";
     }
     struct stat sb;
     if (stat(sPath.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)){
       std::cout << "Datasets folder found." << std::endl;
     }
-    else
-    {
+    else{
       std::cout << "Output folder not found. Creating " +  sPath  + " folder..." << std::endl;
       mode_t nMode = 0733; // UNIX style permissions
       int nError = 0;
       #if defined(_WIN32)
         nError = _mkdir("outputPM/");
+        nError = _mkdir("outputPM/SLV/");
         nError = _mkdir(sPath.c_str()); // can be used on Windows
-        nError = _mkdir((sPath + "res/").c_str()); // can be used on Windows
+        nError = _mkdir((sPath + "Logic/").c_str()); // can be used on Windows
+        nError = _mkdir((sPath + "Number/").c_str()); // can be used on Windows
+        nError = _mkdir((sPath + "Logic/res/").c_str()); // can be used on Windows
+        nError = _mkdir((sPath + "Number/res/").c_str()); // can be used on Windows
       #else
         nError = mkdir("outputPM/",nMode);
+        nError = mkdir("outputPM/SLV/",nMode);
         nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
-        nError = mkdir((sPath + "res/").c_str(),nMode); // can be used on non-Windows
+        nError = mkdir((sPath + "Logic/").c_str(),nMode); // can be used on non-Windows
+        nError = mkdir((sPath + "Number/").c_str(),nMode); // can be used on non-Windows
+        nError = mkdir((sPath + "Logic/res/").c_str(),nMode); // can be used on non-Windows
+        nError = mkdir((sPath + "Number/res/").c_str(),nMode); // can be used on non-Windows
       #endif
-
     }
 
-    /*
-    for(std::map < std::string, std::vector < std::vector < double > > >::iterator it = datasetMap.begin(); it != datasetMap.end(); it++){
-      tokens.clear();
-      std::stringstream ss(it->first); // Insert the string into a stream
-
-      while (ss >> buf){
-        tokens.push_back(buf);
-      }
-
-      std::ofstream output;
-      output.open(sPath + it->first + ".csv", std::ofstream::out | std::ofstream::trunc);
-
-      for(unsigned int index = 0; index < attribLabelsMap[it -> first].size(); index++){
-        if(index == 0){
-          output << attribLabelsMap[it -> first][index].first;
+    for(auto it = datasetMap.begin(); it != datasetMap.end(); it++){
+      for (unsigned int iDataset = 0; iDataset < attribLabelsMap[it -> first].size(); iDataset++){
+        std::ofstream output;
+        if(iDataset == 1){
+          output.open(sPath + "Number/" + it->first + ".csv", std::ofstream::out | std::ofstream::trunc);
         }
         else{
-          output << ";" << attribLabelsMap[it -> first][index].first;
+          output.open(sPath + "Logic/" + it->first + ".csv", std::ofstream::out | std::ofstream::trunc);
         }
-      }
-      output << std::endl;
 
-      unsigned int maxK = datasetMap[it -> first].size();
-      unsigned int maxL = datasetMap[it -> first][0].size();
-
-      for (unsigned int l = 0; l < maxL; l++) {
-        for (unsigned int k = 0; k < maxK; k++) {
-          if(k == 0){
-            output << datasetMap[it -> first][k][l];
-          }
-          else{
-            output << ";" << datasetMap[it -> first][k][l];
-          }
+        for (unsigned int attr = 0; attr < attribLabelsMap[it -> first][iDataset].size() - 1; attr++){
+          output << attribLabelsMap[it -> first][iDataset][attr].first <<";";
         }
-        output << std::endl;
+        output << attribLabelsMap[it -> first][iDataset][attribLabelsMap[it -> first][iDataset].size() - 1].first << std::endl;
+
+
+
+        for (unsigned int i = 0; i < it -> second[iDataset][0].size(); i++){
+          for (unsigned int attr = 0; attr < attribLabelsMap[it -> first][iDataset].size() - 1; attr++){
+            output << it -> second[iDataset][attr][i] << "; ";
+          }
+          output << it -> second[iDataset][attribLabelsMap[it -> first][iDataset].size() - 1][i] << std::endl;
+        }
+        output.close();
+        std::cout << "Dataset " +  it->first + to_string(iDataset) + ".csv" + " created." << std::endl;
       }
-
-
-      output.close();
-      std::cout << "Dataset " +  it->first + ".csv" + " created." << std::endl;
 
     }
-*/
+
     std::cout << "#############################" << std::endl << std::endl << std::endl;
 
 
@@ -329,7 +304,7 @@ int main(int argc, char const *argv[]) {
 
     pddl << "\t(:types" << endl;
 
-    for (std::map <std::string, std::vector <std::string> >::iterator mapIt= mapaTipos.begin(); mapIt != mapaTipos.end(); mapIt++) {
+    for (std::map <std::string, std::vector <std::string> >::iterator mapIt= mapaTipos.begin(); mapIt != mapaTipos.end(); mapIt++){
       pddl << "\t\t";
       for(unsigned int tip = 0; tip < (*mapIt).second.size(); tip++){
         salidaStr = (*mapIt).second[tip];
@@ -340,6 +315,9 @@ int main(int argc, char const *argv[]) {
       std::transform(salidaStr.begin(), salidaStr.end(), salidaStr.begin(), ::tolower);
       pddl << "- " << salidaStr << endl;
     }
+
+
+
     pddl << "\t)" << endl;
     std::map <std::string, char > predsInc;
 
@@ -370,29 +348,17 @@ int main(int argc, char const *argv[]) {
               while (ss >> buf){
                 tokens.push_back(buf);
               }
-
               if((mapIt -> second)[iDataset][iAttr].first != "Class" and not (tokens[0] == "opEQ" or tokens[0] == "opGT" or tokens[0] == "opLT"  or tokens[0] == "opARITH")){
-                std::string tokensTip;
-                tokensTip = tokens[1];
-                for (unsigned int l = 4; l < tokens.size()-1; l+=2) {
-                  tokensTip += " " + tokens[l] ;
-                }
-
-                if(predsInc.find(tokensTip) == predsInc.end()){
-                  predsInc[tokensTip] = 0;
-
-                  salidaStr = "(" + tokens[1];
-                  int counter = 0;
-
-                  for(unsigned int tokIndex= 2; tokIndex < tokens.size()-1; tokIndex+=3){
-                    salidaStr += " ?p" + to_string(counter) + " ";
-                    salidaStr += tokens[tokIndex+1] + " " + tokens[tokIndex+2];
-                    counter++;
+                if(predsInc.find(tokens[1]) == predsInc.end()){
+                  predsInc[tokens[1]] = 0;
+                  std::transform(tokens[1].begin(), tokens[1].end(), tokens[1].begin(), ::tolower);
+                  pddl << "\t\t(" << tokens[1];
+                  std::transform(tokens[1].begin(), tokens[1].end(), tokens[1].begin(), ::toupper);
+                  for(unsigned int pr = 0; pr < predicados[tokens[1]].size(); pr++){
+                    std::transform(predicados[tokens[1]][pr].second.begin(), predicados[tokens[1]][pr].second.end(), predicados[tokens[1]][pr].second.begin(), ::tolower);
+                    pddl << " ?" << predicados[tokens[1]][pr].first << " - " << predicados[tokens[1]][pr].second;
                   }
-                  salidaStr += ")";
-
-                  std::transform(salidaStr.begin(), salidaStr.end(), salidaStr.begin(), ::tolower);
-                  pddl << "\t\t" << salidaStr << endl;
+                  pddl << ")" << endl;
                 }
               }
             }
@@ -407,36 +373,24 @@ int main(int argc, char const *argv[]) {
       pddl << "\t(:functions" << endl;
       for (auto mapIt= attribLabelsMap.begin(); mapIt != attribLabelsMap.end(); mapIt++){
         for (unsigned int iDataset = 0; iDataset < (mapIt -> second).size(); iDataset++){
-          for (unsigned int iAttr = 0; iAttr < (mapIt -> second).size(); iAttr++){
+          for (unsigned int iAttr = 0; iAttr < (mapIt -> second)[iDataset].size(); iAttr++){
             if((mapIt -> second)[iDataset][iAttr].second == "Numerical"){
               tokens.clear();
               std::stringstream ss((mapIt -> second)[iDataset][iAttr].first); // Insert the string into a stream
               while (ss >> buf){
                 tokens.push_back(buf);
               }
-
-              if((mapIt -> second)[iDataset][iAttr].first != "Class" and not (tokens[0] == "DELTA" or tokens[0] == "opEQ" or tokens[0] == "opGT" or tokens[0] == "opLT"  or tokens[0] == "opARITH")){
-                std::string tokensTip;
-                tokensTip = tokens[1];
-                for (unsigned int l = 4; l < tokens.size()-1; l+=2) {
-                  tokensTip += " " + tokens[l] ;
-                }
-
-                if(predsInc.find(tokensTip) == predsInc.end()){
-                  predsInc[tokensTip] = 0;
-
-                  salidaStr = "(" + tokens[1];
-                  int counter = 0;
-
-                  for(unsigned int tokIndex= 2; tokIndex < tokens.size()-1; tokIndex+=3){
-                    salidaStr += " ?p" + to_string(counter) + " ";
-                    salidaStr += tokens[tokIndex+1] + " " + tokens[tokIndex+2];
-                    counter++;
+              if((mapIt -> second)[iDataset][iAttr].first != "Class" and not (tokens[0] == "opEQ" or tokens[0] == "opGT" or tokens[0] == "opLT"  or tokens[0] == "opARITH" or tokens[0] == "TIMESTAMP")){
+                if(predsInc.find(tokens[1]) == predsInc.end()){
+                  predsInc[tokens[1]] = 0;
+                  std::transform(tokens[1].begin(), tokens[1].end(), tokens[1].begin(), ::tolower);
+                  pddl << "\t\t(" << tokens[1];
+                  std::transform(tokens[1].begin(), tokens[1].end(), tokens[1].begin(), ::toupper);
+                  for(unsigned int pr = 0; pr < predicados[tokens[1]].size(); pr++){
+                    std::transform(predicados[tokens[1]][pr].second.begin(), predicados[tokens[1]][pr].second.end(), predicados[tokens[1]][pr].second.begin(), ::tolower);
+                    pddl << " ?" << predicados[tokens[1]][pr].first << " - " << predicados[tokens[1]][pr].second;
                   }
-                  salidaStr += ")";
-
-                  std::transform(salidaStr.begin(), salidaStr.end(), salidaStr.begin(), ::tolower);
-                  pddl << "\t\t" << salidaStr << endl;
+                  pddl << ")" << endl;
                 }
               }
             }
@@ -448,6 +402,7 @@ int main(int argc, char const *argv[]) {
 
 
     pddl.close();
+
 
     bool noRepe;
     vector <list< pair<string, string> > > reglas;
@@ -468,16 +423,14 @@ int main(int argc, char const *argv[]) {
       reglasInp2.clear();
       reglas.clear();
 
-
       if(attribLabelsMap[it -> first][0].size() > 1 ){
         conjuntosDiff = discretize(&datasetMap[it -> first][0], &attribLabelsMap[it -> first][0]);
-        inslv(nombreDom, it -> first, sPath, &datasetMap[it -> first][0], attribLabelsMap[it -> first][0], conjuntosDiff, &reglasInp1);
+        inslv(nombreDom, it -> first, sPath + "Logic/", &datasetMap[it -> first][0], attribLabelsMap[it -> first][0], conjuntosDiff, &reglasInp1);
       }
-
 
       if(attribLabelsMap[it -> first][1].size() > 1 ){
         conjuntosDiff = discretize(&datasetMap[it -> first][1], &attribLabelsMap[it -> first][1]);
-        inslv(nombreDom, it -> first, sPath, &datasetMap[it -> first][1], attribLabelsMap[it -> first][1], conjuntosDiff, &reglasInp2);
+        inslv(nombreDom, it -> first, sPath  + "Number/", &datasetMap[it -> first][1], attribLabelsMap[it -> first][1], conjuntosDiff, &reglasInp2);
       }
 
       if(reglasInp2.begin() != reglasInp2.end()){
@@ -486,202 +439,215 @@ int main(int argc, char const *argv[]) {
 
       fuseRules(&reglasInp1, &reglas, &datasetMap[it -> first][0], attribLabelsMap[it -> first][0], &(cabeceras[it -> first]));
 
-
-      noRepe = false;
-      pddl.open(nombreDom + ".pddl", std::ofstream::out | std::ofstream::app);
-      pddl << "\t(:action "<< it -> first << std::endl;
-      pddl << "\t\t:parameters (";
-
-      for(unsigned int paramT = 0; paramT < cabeceras[it -> first].size()-1; paramT++){
-        pddl << "?" << cabeceras[it -> first][paramT].first << " - " << cabeceras[it -> first][paramT].second <<", ";
-      }
-      pddl << cabeceras[it -> first][cabeceras[it -> first].size()-1].first << " - " << cabeceras[it -> first][cabeceras[it -> first].size()-1].second;
-      pddl << ")" <<  endl;
+      if(reglas.size() > 0){
+        noRepe = false;
+        pddl.open(nombreDom + ".pddl", std::ofstream::out | std::ofstream::app);
+        pddl << "\t(:action "<< it -> first << std::endl;
+        pddl << "\t\t:parameters (";
 
 
-      for (std::list< pair<string, string> >::iterator it=reglas[1].begin(); it != reglas[1].end(); ++it){
-        tokens.clear();
-        std::stringstream ss((*it).first);
-        while (ss >> buf){
-          tokens.push_back(buf);
+
+        for(unsigned int paramT = 0; paramT < cabeceras[it -> first].size()-1; paramT++){
+          std::transform(cabeceras[it -> first][paramT].second.begin(), cabeceras[it -> first][paramT].second.end(), cabeceras[it -> first][paramT].second.begin(), ::tolower);
+
+          pddl << "?" << cabeceras[it -> first][paramT].first << " - " << cabeceras[it -> first][paramT].second <<" ";
         }
 
-        if (tokens[0] == "DELTA" and tokens[2] == "TIMESTAMP"){
-          pddl << "\t\t:duration (= ?duration ";
+        std::transform(cabeceras[it -> first][cabeceras[it -> first].size()-1].second.begin(), cabeceras[it -> first][cabeceras[it -> first].size()-1].second.end(), cabeceras[it -> first][cabeceras[it -> first].size()-1].second.begin(), ::tolower);
+        pddl << "?" << cabeceras[it -> first][cabeceras[it -> first].size()-1].first << " - " << cabeceras[it -> first][cabeceras[it -> first].size()-1].second;
 
-          for(unsigned int i = 2; i < tokens.size(); i++){
-            if(tokens[i] != "-"){
-              pddl  << tokens[i] << " ";
-            }
-            else{
-              i++;
-            }
+
+
+        pddl << ")" <<  endl;
+
+
+        for (std::list< pair<string, string> >::iterator it=reglas[1].begin(); it != reglas[1].end(); ++it){
+          tokens.clear();
+          std::stringstream ss((*it).first);
+          while (ss >> buf){
+            tokens.push_back(buf);
           }
 
-          pddl << ")\n";
+          if (tokens[0] == "DELTA" and tokens[2] == "TIMESTAMP"){
+            // pddl << "\t\t:duration (= ?duration ";
+            //
+            // for(unsigned int i = 3; i < tokens.size(); i++){
+            //   if(tokens[i] != "~"){
+            //     pddl  << tokens[i] << " ";
+            //   }
+            //   else{
+            //     i++;
+            //   }
+            // }
+            //
+            // pddl << ")\n";
+          }
         }
-      }
 
 
-      pddl << "\t\t:precondition" << std::endl;
-      if(reglas[0].size() > 0){
-        pddl << "\t\t\t(and" << endl;
-      }
-      else{
-        pddl << "\t\t\t( )" << endl;
-      }
-
-      for (std::list< pair<string, string> >::iterator it=reglas[0].begin(); it != reglas[0].end(); ++it){
-        tokens.clear();
-        std::stringstream ss((*it).first);
-        while (ss >> buf){
-          tokens.push_back(buf);
-        }
-
-        if(tokens[0] == "opEQ" or tokens[0] == "opGT" or tokens[0] == "opGET" or tokens[0] == "opLT" or tokens[0] == "opLET"){
-          pddl << "\t\t\t\t(";
-          if(tokens[0] == "opEQ"){
-            pddl << "== ";
-          }
-          if(tokens[0] == "opGET"){
-            pddl << ">= ";
-          }
-          if( tokens[0] == "opGT"){
-            pddl << "> ";
-          }
-          if(tokens[0] == "opLET"){
-            pddl << "<= ";
-          }
-          if(tokens[0] == "opLT"){
-            pddl << "< ";
-          }
-
-          for(unsigned int i = 2; i < tokens.size(); i++){
-            if(tokens[i] == "-" and tokens[i+1] != "("){
-              i++;
-            }
-            else{
-              pddl  << tokens[i] << " ";
-            }
-
-          }
-          pddl << ")" << std::endl;
+        pddl << "\t\t:precondition" << std::endl;
+        if(reglas[0].size() > 0){
+          pddl << "\t\t\t(and" << endl;
         }
         else{
-          if((*it).second != "False"){
+          pddl << "\t\t\t( )" << endl;
+        }
+
+        for (std::list< pair<string, string> >::iterator it=reglas[0].begin(); it != reglas[0].end(); ++it){
+          tokens.clear();
+          std::stringstream ss((*it).first);
+          while (ss >> buf){
+            tokens.push_back(buf);
+          }
+          if(tokens[2] != "TIMESTAMP"){
+            if(tokens[0] == "opEQ" or tokens[0] == "opGT" or tokens[0] == "opGET" or tokens[0] == "opLT" or tokens[0] == "opLET"){
+              pddl << "\t\t\t\t(";
+              if(tokens[0] == "opEQ"){
+                pddl << "== ";
+              }
+              if(tokens[0] == "opGET"){
+                pddl << ">= ";
+              }
+              if( tokens[0] == "opGT"){
+                pddl << "> ";
+              }
+              if(tokens[0] == "opLET"){
+                pddl << "<= ";
+              }
+              if(tokens[0] == "opLT"){
+                pddl << "< ";
+              }
+
+              for(unsigned int i = 2; i < tokens.size(); i++){
+                if(tokens[i] == "~" and tokens[i+1] != "("){
+                  i++;
+                }
+                else{
+                  std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
+                  pddl  << tokens[i] << " ";
+                }
+
+              }
+              pddl << ")" << std::endl;
+            }
+            else{
+              if((*it).second != "False"){
+                pddl << "\t\t\t\t";
+                for(unsigned int i = 0; i < tokens.size(); i++){
+                  if(tokens[i] != "~"){
+                    std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
+                    pddl  << tokens[i] << " ";
+                  }
+                  else{
+                    i++;
+                  }
+                }
+                pddl << "\n";
+              }
+            }
+          }
+        }
+
+        if(reglas[0].size() > 0){
+          pddl << "\t\t\t)" << endl;
+        }
+
+        pddl << "\t\t:effect" << std::endl;
+        if(reglas[1].size() > 0){
+          pddl << "\t\t\t(and" << endl;
+        }
+        else{
+          pddl << "\t\t\t( )" << endl;
+        }
+
+        for (std::list< pair<string, string> >::iterator it=reglas[1].begin(); it != reglas[1].end(); ++it){
+          tokens.clear();
+          std::stringstream ss((*it).first);
+          while (ss >> buf){
+            tokens.push_back(buf);
+          }
+
+          if(tokens[2] != "TIMESTAMP"){
             pddl << "\t\t\t\t";
-            for(unsigned int i = 0; i < tokens.size(); i++){
-              if(tokens[i] != "-"){
-                pddl  << tokens[i] << " ";
+          }
+
+          if(tokens[0] == "DELTA"){
+            if(tokens[2] != "TIMESTAMP"){
+              if(stod((*it).second) > 0.0){
+                pddl << "( increase ";
               }
               else{
-                i++;
+                pddl << "( decrease ";
               }
+
+              for(unsigned int i = 2; i < tokens.size(); i++){
+                if(tokens[i] != "~"){
+                  std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
+                  pddl  << tokens[i] << " ";
+                }
+                else{
+                  i++;
+                }
+              }
+              pddl << " )\n";
             }
-            pddl << "\n";
-          }
-        }
-      }
-
-
-    if(reglas[0].size() > 0){
-      pddl << "\t\t\t)" << endl;
-    }
-
-
-    pddl << "\t\t:effect" << std::endl;
-    if(reglas[0].size() > 0){
-      pddl << "\t\t\t(and" << endl;
-    }
-    else{
-      pddl << "\t\t\t( )" << endl;
-    }
-
-
-
-    for (std::list< pair<string, string> >::iterator it=reglas[1].begin(); it != reglas[1].end(); ++it){
-      tokens.clear();
-      std::stringstream ss((*it).first);
-      while (ss >> buf){
-        tokens.push_back(buf);
-      }
-
-      pddl << "\t\t\t\t";
-
-      if(tokens[0] == "DELTA"){
-        if( stod((*it).second) > 0){
-          pddl << "( increase ";
-        }
-        else{
-          pddl << "( decrease ";
-        }
-
-        for(unsigned int i = 2; i < tokens.size(); i++){
-          if(tokens[i] != "-"){
-            pddl  << tokens[i] << " ";
           }
           else{
-            i++;
-          }
-        }
-
-        pddl << " )\n";
-
-      }
-      else{
-        if(tokens[0] == "opEQ"){
-          pddl << "( assign ";
-          for(unsigned int i = 2; i < tokens.size(); i++){
-            if(tokens[i] != "-"){
-              pddl  << tokens[i] << " ";
+            if(tokens[0] == "opEQ"){
+              pddl << "( assign ( ";
+              for(unsigned int i = 2; i < tokens.size(); i++){
+                if(tokens[i] != "~"){
+                  std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
+                  pddl  << tokens[i] << " ";
+                }
+                else{
+                  i++;
+                }
+              }
+              pddl << ")\n";
             }
             else{
-              i++;
-            }
-          }
-          pddl << " )\n";
-        }
-        else{
-          if((*it).second == "False"){
-            pddl << "( not ";
-          }
-          for(unsigned int i = 0; i < tokens.size(); i++){
-            if(tokens[i] != "-"){
-              pddl  << tokens[i] << " ";
-            }
-            else{
-              i++;
-            }
+              if((*it).second == "False"){
+                pddl << "( not ";
+              }
+              for(unsigned int i = 0; i < tokens.size(); i++){
+                if(tokens[i] != "~"){
+                  std::transform(tokens[i].begin(), tokens[i].end(), tokens[i].begin(), ::tolower);
+                  pddl  << tokens[i] << " ";
+                }
+                else{
+                  i++;
+                }
 
-          }
+              }
 
-          if((*it).second == "False"){
-            pddl << " )";
+              if((*it).second == "False"){
+                pddl << " )";
+              }
+              pddl << "\n";
+            }
           }
-          pddl << "\n";
         }
 
+
+        if(reglas[1].size() > 0){
+          pddl << "\t\t\t)" << endl;
+        }
+
+        pddl << "\t)" << std::endl;
+        pddl.close();
       }
     }
 
 
-    if(reglas[0].size() > 0){
-      pddl << "\t\t\t)" << endl;
-    }
-
-    pddl << "\t)" << std::endl;
+    pddl.open(nombreDom + ".pddl", std::ofstream::out | std::ofstream::app);
+    pddl << ")";
     pddl.close();
-  }
-
-
-  pddl.open(nombreDom + ".pddl", std::ofstream::out | std::ofstream::app);
-  pddl << ")";
-  pddl.close();
 
     exit(EXIT_SUCCESS);
   }
   else{
-    std::cout << "Input PT file not specified or doesn't not exist" << std::endl;
+    std::cout << "Input PT file not specified or does not exist" << std::endl;
     exit(EXIT_FAILURE);
   }
 

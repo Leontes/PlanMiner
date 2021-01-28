@@ -54,6 +54,12 @@ Dominios/
 Problemas/
 outputPM/
 res/
+src/bin/pruebas.cpp
+calcularDominios.sh
+CompareDoms.py
+
+#VAL
+VAL/
 
 # Basura variada
 *.sh
@@ -61,4 +67,3 @@ res/
 traza.txt
 *.py
 *.zip
-<

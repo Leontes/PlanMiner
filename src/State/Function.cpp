@@ -4,7 +4,6 @@
 #include "State/Function.hpp"
 
 Function::Function(std::vector <std::string> tokens):Predicate() {
-
   std::vector<std::string> aux (&tokens[1], &tokens[tokens.size()-1]);
   pred = new Atom(aux);
   value = stod(tokens[tokens.size()-1]);

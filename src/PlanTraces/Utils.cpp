@@ -2,10 +2,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
+#include <algorithm>
+#include <ctime>
 #include <queue>
-
-
+#include <set>
+#include <cmath>
 
 
 #include <boost/algorithm/string/split.hpp>
@@ -174,6 +175,7 @@ bool estaenLista(Estado hijo, std::vector<Estado> &listaCerrados){
   }
   return false;
 }
+
 bool vectorInutil(std::vector<double> vec){
   double elem = vec[0];
   for(unsigned int i = 1; i < vec.size(); i++){
@@ -185,6 +187,7 @@ bool vectorInutil(std::vector<double> vec){
   }
   return false;
 }
+
 bool vectorDeZeros(std::vector<double> vec){
     for(unsigned int i = 0; i < vec.size(); i++){
       if(vec[i] != -999999999.0){
@@ -204,6 +207,9 @@ std::vector<std::string> extract_keys(std::map<std::string, bool> const& input_m
   }
   return retval;
 }
+
+
+
 std::string sustituirVars(std::string formula, std::vector <std::pair <std::string, std::string> > pairVars){
   std::string formulaOut;
   std::vector<std::string> tokens;
@@ -219,21 +225,31 @@ std::string sustituirVars(std::string formula, std::vector <std::pair <std::stri
 
   for(unsigned int i = 0; i < tokens.size(); i++){
     sustituto = false;
+
+
     for(unsigned int j = 0; j < pairVars.size(); j++){
       if(tokens[i] == pairVars[j].first){
         sustituto = true;
         buf = pairVars[j].second;
       }
     }
+
+
     if(sustituto == true){
       formulaOut += buf + " ";
     }else{
       formulaOut += tokens[i] + " ";
     }
+
+
   }
 
   return formulaOut;
 }
+
+
+
+
 bool esDiff(std::vector <std::string> listadeDiffs, std::string str){
   for(unsigned int i = 0; i < listadeDiffs.size(); i++){
     if(listadeDiffs[i] == str){
@@ -376,7 +392,7 @@ std::vector< PlanTrace * > * parse(const char * filename){
 
       while(!regex_match(rBuffer,stateRE)){
           getline(ptFile, rBuffer);
-          if(!regex_match(rBuffer,taskRE) and rBuffer != "" and !regex_match(rBuffer,stateRE)){
+          if(!regex_match(rBuffer,taskRE) and rBuffer != "" and !regex_match(rBuffer,planRE) and !regex_match(rBuffer,stateRE)){
             taskVec.push_back(rBuffer);
           }
       }
@@ -390,7 +406,6 @@ std::vector< PlanTrace * > * parse(const char * filename){
                   break;
                 }
               }
-
               statesMap[rBuffer.substr(0, contador)] = parseState(rBuffer.substr(contador+2));
               (*statesMap[rBuffer.substr(0, contador)]).setTimeStamp(rBuffer.substr(1, contador-2));
             }
@@ -399,7 +414,9 @@ std::vector< PlanTrace * > * parse(const char * filename){
 
       std::string numPre = "", numPos = "";
       unsigned int indice = 0;
+
       for(unsigned int i = 0; i < taskVec.size(); i++){
+        //std::cout << taskVec[i] << std::endl;
         tareaParseada = parseTask(taskVec[i]);
         //Buscamos el primer numero
         indice = 1;
@@ -428,13 +445,23 @@ std::vector< PlanTrace * > * parse(const char * filename){
   return pt;
 }
 
-std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPrimitivasParam){
+bool incluido(std::pair <std::string, std::string> ParamsAux, std::vector <std::pair <std::string, std::string> > listaParamsFinal){
+  for (size_t i = 0; i < listaParamsFinal.size(); i++) {
+    if(ParamsAux.first == listaParamsFinal[i].first and ParamsAux.second == listaParamsFinal[i].second){
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPrimitivasParam,
+  std::map <std::string, std::vector <std::pair <std::string, std::string> > > * mapaPredicadosParam){
   std::vector < Type * > vectorAux;
   std::string tName;
   std::vector<Parameter*> parametros;
-
   std::map <std::string, std::vector <std::pair <std::string, std::string> > > mapaPrimitivasParamAUX;
-
+  std::map <std::string, std::vector <std::pair <std::string, std::string> > > mapaPredicadosParamAUX;
+  std::vector < std::vector <std::string> > outMat;
   //Tomamos 1 plan
   for(unsigned int i = 0; i < PTS -> size(); i++){
     //Tomamos un TS
@@ -444,97 +471,168 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
       parametros = (*PTS)[i] -> getTS(j) -> getTask() -> getParameters();
       //Creamos un mapa con todos los tipos distintos para los
       for(unsigned int k = 0; k < parametros.size(); k++){
-        mapaPrimitivasParamAUX[tName].push_back(std::pair <std::string, std::string> (parametros[k] -> getName(), parametros[k] -> getTypes()[0]) );
+        mapaPrimitivasParamAUX[tName].push_back(std::pair <std::string, std::string> (parametros[k] -> getName(), parametros[k] -> getTypes()[0]));
       }
-    }
-  }
 
 
-  //Limpiamos de elementos repetidos
-  std::vector<std::string> keys = extract_keys(mapaPrimitivasParamAUX);
-  bool encontrado = false;
-  for(unsigned int i = 0; i < keys.size(); i++){
-    for(unsigned int j = 0; j < mapaPrimitivasParamAUX[keys[i]].size(); j++){
-      encontrado = false;
-      for(unsigned int k = 0; k < (*mapaPrimitivasParam)[keys[i]].size(); k++){
-        if((mapaPrimitivasParamAUX[keys[i]][j].first == (*mapaPrimitivasParam)[keys[i]][k].first)
-              and (mapaPrimitivasParamAUX[keys[i]][j].second == (*mapaPrimitivasParam)[keys[i]][k].second)){
-          encontrado = true;
+      outMat = (*PTS)[i] -> getTS(j) -> getPreS() -> getTokens();
+      for (size_t m = 0; m < outMat.size(); m++) {
+        for (size_t n = 1; n < outMat[m].size(); n+=3) {
+          mapaPredicadosParamAUX[outMat[m][0]].push_back(std::pair <std::string, std::string> (outMat[m][n], outMat[m][n+2]));
         }
       }
-      if(encontrado == false){
-        (*mapaPrimitivasParam)[keys[i]].push_back(std::pair <std::string, std::string> (mapaPrimitivasParamAUX[keys[i]][j].first, mapaPrimitivasParamAUX[keys[i]][j].second));
-      }
-
-    }
-  }
-
-  std::vector <std::string> tiposDistintos;
-  for(unsigned int i = 0; i < keys.size(); i++){
-    for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
-      encontrado = false;
-      for(unsigned int k = 0; k < tiposDistintos.size(); k++){
-        if(tiposDistintos[k] ==  (*mapaPrimitivasParam)[keys[i]][j].second){
-          encontrado = true;
+      outMat = (*PTS)[i] -> getTS(j) -> getPostS() -> getTokens();
+      for (size_t m = 0; m < outMat.size(); m++) {
+        for (size_t n = 1; n < outMat[m].size(); n+=3) {
+          mapaPredicadosParamAUX[outMat[m][0]].push_back(std::pair <std::string, std::string> (outMat[m][n], outMat[m][n+2]));
         }
       }
-
-      if(encontrado == false){
-        tiposDistintos.push_back((*mapaPrimitivasParam)[keys[i]][j].second);
-      }
     }
   }
+  std::vector <std::pair <std::string, std::string> > listaParamsAux, listaParamsFinal;
+  for(auto it = mapaPrimitivasParamAUX.begin(); it != mapaPrimitivasParamAUX.end(); it++){
+    listaParamsAux = (*it).second;
+    for(unsigned int i = 0; i < listaParamsAux.size(); i++){
+        if (!incluido(listaParamsAux[i], listaParamsFinal)){
+          listaParamsFinal.push_back(listaParamsAux[i]);
+        }
+    }
+    mapaPrimitivasParamAUX[(*it).first] = listaParamsFinal;
+    listaParamsFinal.clear();
+  }
 
+  for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
+    listaParamsAux = (*it).second;
+    for(unsigned int i = 0; i < listaParamsAux.size(); i++){
+        if (!incluido(listaParamsAux[i], listaParamsFinal)){
+          listaParamsFinal.push_back(listaParamsAux[i]);
+        }
+    }
+    mapaPredicadosParamAUX[(*it).first] = listaParamsFinal;
+    listaParamsFinal.clear();
+  }
 
+  // for(auto it = mapaPrimitivasParamAUX.begin(); it != mapaPrimitivasParamAUX.end(); it++){
+  //   std::cout << "Tarea: " << (*it).first << std::endl << "[ ";
+  //   for(unsigned int i = 0; i < (*it).second.size(); i++){
+  //     std::cout << (*it).second[i].first << " - " << (*it).second[i].second << " ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  // }
 
-  //Encontramos los conflictos entre parametros con el mismo nombre en la misma tarea evitando los conflictos repetidos
+  // for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
+  //   std::cout << "Predicado: " << (*it).first << std::endl << "[ ";
+  //   for(unsigned int i = 0; i < (*it).second.size(); i++){
+  //     std::cout << (*it).second[i].first << " - " << (*it).second[i].second << " ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  // }
+
+  //Encontramos los conflictos entre parametros con el mismo nombre en la misma tarea/predicado evitando los conflictos repetidos
   std::vector <std::pair <std::string, std::string> > conflictos;
+  bool tipoencontrado = false;
 
-  for(unsigned int i = 0; i < keys.size(); i++){
-    for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
-      for(unsigned int k = j; k < (*mapaPrimitivasParam)[keys[i]].size(); k++){
-        if(((*mapaPrimitivasParam)[keys[i]][j].first == (*mapaPrimitivasParam)[keys[i]][k].first) and ((*mapaPrimitivasParam)[keys[i]][j].second != (*mapaPrimitivasParam)[keys[i]][k].second)){
-          encontrado = false;
-          for(unsigned int l = 0; l < conflictos.size(); l++){
-            if( ((conflictos[l].first ==  (*mapaPrimitivasParam)[keys[i]][j].second) and (conflictos[l].second == (*mapaPrimitivasParam)[keys[i]][k].second)) or ((conflictos[l].second ==  (*mapaPrimitivasParam)[keys[i]][j].second) and (conflictos[l].first == (*mapaPrimitivasParam)[keys[i]][k].second)) ){
-              encontrado = true;
-            }
-          }
-          if(encontrado == false){
-            conflictos.push_back(std::pair <std::string, std::string> ((*mapaPrimitivasParam)[keys[i]][j].second, (*mapaPrimitivasParam)[keys[i]][k].second));
-          }
+  for(auto it = mapaPrimitivasParamAUX.begin(); it != mapaPrimitivasParamAUX.end(); it++){
+    for(unsigned int i = 0; i < (*it).second.size(); i++){
+      tipoencontrado = false;
+      for (size_t j = 0; j < vectorAux.size(); j++) {
+        if((*it).second[i].second == vectorAux[j] -> name){
+          tipoencontrado = true;
+        }
+      }
+      if(tipoencontrado == false){
+        vectorAux.push_back(new Type((*it).second[i].second));
+      }
+      for(unsigned int j = i; j < (*it).second.size(); j++){
+        if((*it).second[i].first == (*it).second[j].first and (*it).second[i].second != (*it).second[j].second){
+          conflictos.push_back(std::pair <std::string, std::string> ((*it).second[i].second, (*it).second[j].second));
+        }
+      }
+    }
+  }
+  for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
+    for(unsigned int i = 0; i < (*it).second.size(); i++){
+      tipoencontrado = false;
+      for (size_t j = 0; j < vectorAux.size(); j++) {
+        if((*it).second[i].second == vectorAux[j] -> name){
+          tipoencontrado = true;
+        }
+      }
+      if(tipoencontrado == false){
+        vectorAux.push_back(new Type((*it).second[i].second));
+      }
+      for(unsigned int j = i; j < (*it).second.size(); j++){
+        if((*it).second[i].first == (*it).second[j].first and (*it).second[i].second != (*it).second[j].second){
+          conflictos.push_back(std::pair <std::string, std::string> ((*it).second[i].second, (*it).second[j].second));
+        }
+      }
+    }
+  }
+  std::cout << "Types found in PTs:\n";
+  for(unsigned int i = 0; i < vectorAux.size(); i++){
+    std::cout << vectorAux[i] -> name << " " << std::endl;
+  }
+  std::cout << std::endl;
+
+  std::cout << "Conflicts between types found: \n";
+  for (size_t i = 0; i < conflictos.size(); i++) {
+    std::cout << "\t" << conflictos[i].first << " < - > " << conflictos[i].second << std::endl;
+  }
+
+  int objetosencontrados = 0;
+  Type * tipo1, * tipo2;
+  for(unsigned int i = 0; i < conflictos.size(); i++){
+    objetosencontrados = 0;
+    for(unsigned int j = 0; (j < vectorAux.size()) and (objetosencontrados < 2); j++){
+      if(conflictos[i].first == vectorAux[j] -> name){
+        tipo1 = vectorAux[j];
+        objetosencontrados++;
+      }
+      if(conflictos[i].second == vectorAux[j] -> name){
+        tipo2 = vectorAux[j];
+        objetosencontrados++;
+      }
+    }
+
+    if((tipo1 -> parent == 0) and (tipo2 -> parent == 0)){
+      vectorAux.push_back(new Type("PARENTTYPE" + std::to_string(i)));
+      tipo1 -> parent = vectorAux[vectorAux.size()-1];
+      tipo2 -> parent = vectorAux[vectorAux.size()-1];
+    }
+    else{
+      if((tipo1 -> parent != 0) and (tipo2 -> parent != 0) and (tipo1 -> parent != tipo2 -> parent)){
+        conflictos.push_back(std::pair <std::string, std::string> ((tipo1 -> parent) -> name, (tipo2 -> parent) -> name));
+      }
+      else{
+        if(tipo1 -> parent != 0){
+          tipo2 -> parent = tipo1 -> parent;
+        }
+        if(tipo2 -> parent != 0){
+          tipo1 -> parent = tipo2 -> parent;
         }
       }
     }
   }
 
-  std::cout << "Types found:\n";
-  for(unsigned int i = 0; i < tiposDistintos.size(); i++){
-    std::cout << tiposDistintos[i] << " " << std::endl;
-    vectorAux.push_back(new Type(tiposDistintos[i]));
+  std::cout << "\nNew tipes calculated:\n";
+  for(unsigned int i = 0; i < vectorAux.size(); i++){
+    std::cout << vectorAux[i] -> name;
+    if(vectorAux[i] -> parent != 0){
+       std::cout << " - " << vectorAux[i] -> parent -> name << std::endl;
+    }
+    else{
+       std::cout << " - OBJECT" << std::endl;
+    }
   }
   std::cout << std::endl;
 
 
-  for(unsigned int i = 0; i < conflictos.size(); i++){
-    vectorAux.push_back(new Type("PARENTTYPE" + std::to_string(i)));
-    for(unsigned int j = 0; j < vectorAux.size(); j++){
-      if(conflictos[i].first == vectorAux[j] -> name){
-        vectorAux[j] -> parent = vectorAux[vectorAux.size()-1];
-      }
-      if(conflictos[i].second == vectorAux[j] -> name){
-        vectorAux[j] -> parent = vectorAux[vectorAux.size()-1];
-      }
-    }
-  }
 
   //Recalculamos las cabeceras con los conflictos entre parametros resueltos
-  mapaPrimitivasParamAUX = *mapaPrimitivasParam;
   mapaPrimitivasParam -> clear();
-
-  for(unsigned int i = 0; i < conflictos.size(); i++){
-    std::cout << "Conflict found between the type: " << conflictos[i].first << " and " << conflictos[i].second << std::endl;
-    std::cout << "\t- New Parent type created: " << solveConflict(conflictos[i].first, conflictos[i].second, &vectorAux) << std::endl;
+  std::vector <std::string> keys;
+  for(auto it = mapaPrimitivasParamAUX.begin(); it != mapaPrimitivasParamAUX.end(); it++){
+    keys.push_back((*it).first);
   }
 
   bool parametroConflictivo = false, parametroYaIncluido = false;
@@ -568,11 +666,58 @@ std::vector < Type *> extractTypeHierarchy(std::vector< PlanTrace * > * PTS, std
     }
   }
 
+  mapaPredicadosParam -> clear();
+  std::vector <std::string> keysPred;
+  for(auto it = mapaPredicadosParamAUX.begin(); it != mapaPredicadosParamAUX.end(); it++){
+    keysPred.push_back((*it).first);
+  }
+
+  parametroConflictivo = false;
+  parametroYaIncluido = false;
+
+  for(unsigned int i = 0; i < keysPred.size(); i++){
+    for(unsigned int j = 0; j < mapaPredicadosParamAUX[keysPred[i]].size(); j++){
+      parametroConflictivo = false;
+      for(unsigned int k = j; k < mapaPredicadosParamAUX[keysPred[i]].size(); k++){
+        if((mapaPredicadosParamAUX[keysPred[i]][j].first == mapaPredicadosParamAUX[keysPred[i]][k].first) and (mapaPredicadosParamAUX[keysPred[i]][j].second != mapaPredicadosParamAUX[keysPred[i]][k].second)){
+          parametroConflictivo = true;
+          resolucion = solveConflict(mapaPredicadosParamAUX[keysPred[i]][j].second, mapaPredicadosParamAUX[keysPred[i]][k].second, &vectorAux);
+        }
+      }
+
+      parametroYaIncluido = false;
+      for(unsigned int k = 0; k < (*mapaPredicadosParam)[keysPred[i]].size(); k++){
+        if(mapaPredicadosParamAUX[keysPred[i]][j].first == (*mapaPredicadosParam)[keysPred[i]][k].first){
+          parametroYaIncluido = true;
+        }
+      }
+      if(parametroConflictivo == true){
+
+        if(parametroYaIncluido == false){
+          (*mapaPredicadosParam)[keysPred[i]].push_back(std::pair <std::string, std::string> (mapaPredicadosParamAUX[keysPred[i]][j].first, resolucion));
+        }
+      }else{
+        if(parametroYaIncluido == false){
+          (*mapaPredicadosParam)[keysPred[i]].push_back(std::pair <std::string, std::string> (mapaPredicadosParamAUX[keysPred[i]][j].first, mapaPredicadosParamAUX[keysPred[i]][j].second));
+        }
+      }
+    }
+  }
+
   std::cout << "New tasks headers created: \n";
   for(unsigned int i = 0; i < keys.size(); i++){
     std::cout << keys[i];
     for(unsigned int j = 0; j < (*mapaPrimitivasParam)[keys[i]].size(); j++){
       std::cout << " " << (*mapaPrimitivasParam)[keys[i]][j].first  << " - " << (*mapaPrimitivasParam)[keys[i]][j].second;
+    }
+    std::cout << std::endl;
+  }
+
+  std::cout << "\n\nNew predicates headers created: \n";
+  for(unsigned int i = 0; i < keysPred.size(); i++){
+    std::cout << keysPred[i];
+    for(unsigned int j = 0; j < (*mapaPredicadosParam)[keysPred[i]].size(); j++){
+      std::cout << " " << (*mapaPredicadosParam)[keysPred[i]][j].first  << " - " << (*mapaPredicadosParam)[keysPred[i]][j].second;
     }
     std::cout << std::endl;
   }
@@ -615,103 +760,113 @@ std::map < std::string, StatesLists > groupTaskStates(std::vector< PlanTrace * >
       }
     }
   }
-
-  /*for (it=output.begin(); it!=output.end(); ++it){
-    std::cout << "Key: " << it->first;
-
-    std::cout << "\tNumber of Prestates: " << (it -> second).first.size() << std::endl;
-    cont = 0;
-    for (std::list<State *>::iterator stIt = (it -> second).first.begin(); stIt != (it -> second).first.end(); stIt ++){
-        std::cout << "Prestate: " << cont << std::endl;
-        std::cout << *(*stIt) << std::endl;
-        cont ++;
-    }
-
-
-    std::cout << "\tNumber of Poststates: " << (it -> second).second.size() << std::endl;
-    cont = 0;
-    for (std::list<State *>::iterator stIt = (it -> second).second.begin(); stIt != (it -> second).second.end(); stIt ++){
-        std::cout << "Poststate: " << cont << std::endl;
-        std::cout << *(*stIt) << std::endl;
-        cont++;
-    } s
-  } */
-
   return output;
 
 }
 
+
+
+bool noesta(std::set<std::string> & conjuntoElem, Estado actual){
+  std::vector<std::string> form = actual.getVectFormula();
+  std::string clave = "", otraClave = "";
+  bool esta = false;
+  if(form.size() == 1.0){
+    clave = form[0];
+    esta = (conjuntoElem.find(clave) == conjuntoElem.end());
+  }
+  else{
+    std::string operandoAct1 = form[0];
+    for(unsigned int i = 1; i < form.size()-4; i++){
+      operandoAct1 += " " + form[i];
+    }
+
+    std::string operadorAct = form[form.size()-3];
+    std::string operandoAct2 = form[form.size()-2];
+
+    clave += operandoAct1 + operadorAct + operandoAct2;
+    otraClave += operandoAct2 + operadorAct + operandoAct1;
+
+    if(operadorAct == "+" or operadorAct == "*"){
+      esta = ((conjuntoElem.find(clave) == conjuntoElem.end()) and (conjuntoElem.find(otraClave) == conjuntoElem.end()));
+
+    }
+    else{
+      esta = ((conjuntoElem.find(clave) == conjuntoElem.end()));
+    }
+  }
+
+  return esta;
+}
+
+
 //Simbolic Regression A*-based algorithm
 Estado Astar(std::vector <Estado> & estadosInit){
-  std::priority_queue<Estado, std::vector<Estado>, std::greater<Estado> > listaAbiertos, vacia;
+  std::vector<Estado> hijos, vectorHijos;
+  std::priority_queue<Estado, std::vector<Estado>, std::greater<Estado> > listaAbiertos;
+  std::set<std::string> conjuntoAbiertos, conjuntoCerrados;
 
-  std::vector<Estado> hijos;
-  std::vector<Estado> listaCerrados;
-
+  time_t start, finish;
+  time(&start);
 
   for(unsigned int i = 0; i < estadosInit.size(); i++){
     listaAbiertos.push(estadosInit[i]);
   }
 
+
   Estado estadoActual = listaAbiertos.top(), mejorEstado = listaAbiertos.top();
-  /*while (!listaAbiertos.empty()) {
-     estadoActual = listaAbiertos.top();
-     listaAbiertos.pop();
-     std::cout << estadoActual.to_string() << std::endl;
-  }*/
 
   bool seguir = true;
-  //std::cout << "\n\n--------------- Iniciando Busqueda ---------------\n";
-  mejorEstado = listaAbiertos.top();
   if(mejorEstado.final()){
     seguir = false;
   }
+  //double gScoreIncierto = 0.0;
+  //unsigned int nEstados = 1;
+  //unsigned int index;
 
   while(seguir and listaAbiertos.size() > 0){
-    //Se saca un elemento de lista de abiertos
     estadoActual = listaAbiertos.top();
     listaAbiertos.pop();
-    listaCerrados.push_back(estadoActual);
+    conjuntoAbiertos.insert(estadoActual.getFormula());
+    conjuntoCerrados.insert(estadoActual.getFormula());
 
-    /*std::cout << "*Estado actual: " << std::endl;
-    std::cout << "\t"<< estadoActual.to_string() << std::endl;
-    std::cout << "*Nodos abiertos: " << listaAbiertos.size() << std::endl;
-    std::cout << "*Nodos vistos: " << listaCerrados.size() << std::endl;
-    std::cout << "*Mejora respecto a inicio: " << estadoActual.getH()*100.0/tope << "%\n";*/
-
-    if(estadoActual < mejorEstado){
-      mejorEstado = estadoActual;
-      //std::cout << "***Mejor solucion actualizada!!***" << std::endl;
-
-      listaAbiertos = vacia;
-      listaAbiertos.push(mejorEstado);
-
-    }
-    //std::cout << std::endl << std::endl;
-
-    //Se comprueba que sea final
-    if(mejorEstado.final() or listaCerrados.size() >= 2000){
-    //if(mejorEstado.final() or listaCerrados.size() >= 2000){
-      //Si lo es: terminar
+    if (estadoActual.final()){
       seguir = false;
-      if(listaCerrados.size() >= 2000){
-        mejorEstado.timeout();
-      }
-    }else{
-      //Si no lo es: Generar hijos
-      hijos = estadoActual.generarHijos();
-      for (size_t i = 0; i < hijos.size(); i++) {
-        //std::cout << hijos[i].to_string() << std::endl;
-        //Si no esta en cerrados meter hijo en abiertos
-        if(!estaenLista(hijos[i], listaCerrados)){
+      mejorEstado = estadoActual;
+    }
+
+    //std::cout << "Numero de estados explorados: " << nEstados << std::endl;
+    //std::cout << estadoActual.to_string() << std::endl;
+
+    hijos = estadoActual.generarHijos();
+    vectorHijos.clear();
+    for(unsigned int i = 0; i < hijos.size(); i++){
+      if(noesta(conjuntoCerrados, hijos[i])){
+        //tentative_gScore := gScore[current] + dist_between(current, neighbor)
+        //gScoreIncierto = estadoActual.getC() + (hijos[i].getC() - estadoActual.getC());
+
+        if(noesta(conjuntoAbiertos, hijos[i])){
           listaAbiertos.push(hijos[i]);
         }
       }
     }
-    //And repeat...
+
+    time(&finish);
+    if(difftime(finish, start) >= 300.0){
+      seguir = false;
+    }
+
+
+    //std::cout << "Tiempo transcurrido: " << difftime(finish, start) << std::endl;
+    //nEstados++;
   }
+
+  time(&finish);
+  std::cout << "\t- Time elapsed: " << difftime(finish, start) << "s\n";
+
   return mejorEstado;
 }
+
+
 
 void to_table( std::string task, StatesLists states, std::vector < std::vector < std::vector < double > > > * datasets, std::vector < std::vector < std::pair<std::string, std::string> > > * attribLabelsVC){
 
@@ -831,7 +986,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
   std::vector<Estado> estadosInit;
   std::vector<std::string> problemVars;
   std::vector< std::vector <double> >problemData;
-  std::vector <double> aux;
+  std::vector <double> aux, goal;
   std::vector <std::pair <std::string, std::string> > pairVars, vectEquiv;
 
 
@@ -845,18 +1000,23 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
 
 
   //Ajustamos formulas para las diferencias
-  for (unsigned int i = 0; i < listadeDiffs.size(); i++) {
+  for (unsigned int i = 0; i < listadeDiffs.size(); i++){
     //Reseteamos el dataset para el regresor simbolico
     problemData.clear();
     problemVars.clear();
     pairVars.clear();
+    goal.clear();
 
     std::cout << "Adjusting numeric expression for: DELTA - " << listadeDiffs[i].first << std::endl;
+    for(unsigned int j = 0; j < listadeDiffs[i].second.size(); j++){
+      goal.push_back(abs(listadeDiffs[i].second[j]));
+      //goal.push_back(listadeDiffs[i].second[j]);
+    }
 
     //Buscamos todos los atributos numericos
     for(unsigned int attr = 0;attr < attribLabels->size(); attr++){
       //Ignorando aquel de el que surgió
-      if((*attribLabels)[attr].first != (listadeDiffs[i].first) and ((*attribLabels)[attr].second == "Numerical")){
+      if((*attribLabels)[attr].first != (listadeDiffs[i].first) and ((*attribLabels)[attr].second == "Numerical") and (*attribLabels)[attr].first != "TIMESTAMP"){
         aux.clear();
 
         //Y los vamos metiendo en el dataset para el regresor
@@ -873,7 +1033,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
 
     //Reseteamos la info de inicio del A*
     estadosInit.clear();
-    estadosInit = generarListaInit(&problemVars, &problemData, &listadeDiffs[i].second);
+    estadosInit = generarListaInit(&problemVars, &problemData, &goal);
 
     //Y lanzamos el regresor
     resultadoAstar = Astar(estadosInit);
@@ -882,11 +1042,11 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
     //Si el algoritmo ha terminado correctamente tras encontrar una solucion suficientemente buena, se acepta. Si no, se manda a tomar por culo el delta
     if(resultadoAstar.getTO() == false){
       //std::cout << resultadoAstar.to_string() << std::endl;
-      vectEquiv.push_back(std::pair <std::string, std::string> ("DELTA - " + listadeDiffs[i].first, sustituirVars(resultadoAstar.getFormulaPrefix(), pairVars)));
-      std::cout << "\t - Expression found: " << sustituirVars(resultadoAstar.getFormula(), pairVars) << " MAPE: "<< resultadoAstar.getErrorR() << "%"<< std::endl;
+      vectEquiv.push_back(std::pair <std::string, std::string> ("DELTA - " + listadeDiffs[i].first, sustituirVars(resultadoAstar.getFormulaArbol(), pairVars)));
+      std::cout << "\t - Expression found: " << sustituirVars(resultadoAstar.getFormula(), pairVars) << " MAPE: "<< resultadoAstar.getH()*10.0 << "%"<< std::endl;
     }else{
       vectEquiv.push_back(std::pair <std::string, std::string> ("N/A", "N/A"));
-      std::cout << "\t - [TIMEOUT] Expression NOT found. Best formula with MAPE: " << resultadoAstar.getErrorR() << "%"<< std::endl;
+      std::cout << "\t - [TIMEOUT] Expression NOT found. Best formula with MAPE: " << resultadoAstar.getH() << "%"<< std::endl;
     }
   }
 
@@ -964,7 +1124,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
 
         //Seleccionamos otro atributo numerico
         for(unsigned int attr2 = attr; attr2 < attribLabels->size(); attr2++){
-          if((attr != attr2) and ((*attribLabels)[attr2].second == "Numerical")){
+          if((attr != attr2) and ((*attribLabels)[attr2].second == "Numerical") and ((*attribLabels)[attr2].first != "TIMESTAMP")){
             //==
             nAttrib.clear();
             tieneAlgo = false;
@@ -1036,7 +1196,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
 
         //Repetimos para los diffs
         for(unsigned int attr2 = 0; attr2 < listadeDiffs.size(); attr2++){
-          if((*attribLabels)[attr].first != listadeDiffs[attr2].first){
+          if(((*attribLabels)[attr].first != listadeDiffs[attr2].first) and (listadeDiffs[attr2].first != "TIMESTAMP") ){
             //==
             nAttrib.clear();
             tieneAlgo = false;
@@ -1073,7 +1233,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
 
             }
 
-            if((tieneAlgo == true)){
+            if((tieneAlgo == true) and (vectorInutil(nAttrib) == true)){
               attribLabelsCP.push_back(std::pair<std::string, std::string>("opEQ - " + (*attribLabels)[attr].first + "  " +  getEquiv(listadeDiffs[attr2].first, vectEquiv), "Logical"));
               datasetCP.push_back(nAttrib);
             }
@@ -1113,7 +1273,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
               }
             }
 
-            if((tieneAlgo == true)){
+            if((tieneAlgo == true) and (vectorInutil(nAttrib) == true)){
               attribLabelsCP.push_back(std::pair<std::string, std::string>("opLT - " + (*attribLabels)[attr].first + "  " + getEquiv(listadeDiffs[attr2].first, vectEquiv), "Logical"));
               datasetCP.push_back(nAttrib);
             }
@@ -1153,7 +1313,7 @@ void to_table( std::string task, StatesLists states, std::vector < std::vector <
               }
             }
 
-            if((tieneAlgo == true)){
+            if((tieneAlgo == true) and (vectorInutil(nAttrib) == true)){
               attribLabelsCP.push_back(std::pair<std::string, std::string>("opGT - " + (*attribLabels)[attr].first + "  " + getEquiv(listadeDiffs[attr2].first, vectEquiv), "Logical"));
               datasetCP.push_back(nAttrib);
             }

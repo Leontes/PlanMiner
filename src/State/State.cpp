@@ -3,7 +3,17 @@
 #include "State/State.hpp"
 
 State::State(std::vector<std::string> tokens){
-  predicates.push_back(new Conector(tokens, AND));
+
+  unsigned int primerP = 0;
+  while(tokens[primerP] != "("){
+    primerP++;
+  }
+  unsigned int ultimoP = tokens.size()  - 1;
+  while(tokens[ultimoP] != ")"){
+    ultimoP--;
+  }
+
+  predicates.push_back(new Conector(std::vector <std::string> (&tokens[primerP + 1], &tokens[ultimoP - 1]), AND));
 }
 
 void State::clearParam(std::string newValue, std::string value, std::vector<std::string> types){
