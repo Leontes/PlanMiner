@@ -56,7 +56,4 @@ target_link_libraries(inslvLib dsLib)
 add_executable(${PROJECT_NAME} "src/bin/mainPlanMiner.cpp" ${SOURCES})
 target_link_libraries(${PROJECT_NAME} taskLib stateLib ptLib dsLib ruLib inslvLib)
 
-######################
-# Compile Testing program
-add_executable(testbin "src/bin/pruebas.cpp" ${SOURCES})
-target_link_libraries(testbin taskLib stateLib ptLib dsLib ruLib inslvLib)
+
