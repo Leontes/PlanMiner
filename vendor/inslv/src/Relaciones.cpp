@@ -17,7 +17,9 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include "INSLV/Relaciones.h"
+#include "Relaciones.h"
+
+namespace inslv {
 
 Relaciones::~Relaciones(){
   if (Nrelaciones>0){
@@ -85,3 +87,5 @@ int Relaciones::Second(int rel) const {
 int Relaciones::NumRel() const {
   return Nrelaciones;
 }
+
+}  // namespace inslv

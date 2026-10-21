@@ -1,6 +1,8 @@
 #ifndef _VECTORDOUBLEH_
 #define _VECTORDOUBLEH_
 
+namespace inslv {
+
 class vectordouble{
   private:
     static constexpr double MISSING=-999999999;
@@ -29,5 +31,7 @@ class vectordouble{
     double Average() const;
     void Sort();
 };
+
+}  // namespace inslv
 
 #endif

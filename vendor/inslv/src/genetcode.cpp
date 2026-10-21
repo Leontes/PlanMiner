@@ -15,7 +15,9 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "INSLV/genetcode.h"
+#include "genetcode.h"
+
+namespace inslv {
 
 genetcode::genetcode(){
   binary=integer=real=0;
@@ -290,3 +292,5 @@ void genetcode::LoadCode(ifstream &f){
     }
 
 }
+
+}  // namespace inslv

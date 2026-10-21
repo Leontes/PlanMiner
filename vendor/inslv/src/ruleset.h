@@ -25,6 +25,8 @@
 #include "VectorVar.h"
 #include "vectordouble.h"
 #include "Relaciones.h"
+
+namespace inslv {
 class ruleset {
   private:
     int reservado;
@@ -297,8 +299,9 @@ class ruleset {
     void SaveRuleInterpreted(const char *nomfich, const Relaciones &RI,
                              double training, double test) const;
 
-    void toPDDL(vector < pair <int, list< pair<string, string> > > > * reglas) const;
-    list<pair<string, string>  > SplitAntecedent(int i) const;
+    std::vector<Condition> Antecedente(int i) const;
 
 };
+}  // namespace inslv
+
 #endif

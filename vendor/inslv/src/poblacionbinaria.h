@@ -1,6 +1,8 @@
 #ifndef _POBLACIONBINARIAH_
 #define _POBLACIONBINARIAH_
 
+namespace inslv {
+
 class poblacionbinaria{
   private:
     double prob_mutacion;
@@ -56,5 +58,7 @@ class poblacionbinaria{
 };
 
 
+
+}  // namespace inslv
 
 #endif

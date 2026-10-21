@@ -1,7 +1,9 @@
 using namespace std;
 #include <iostream>
 #include <iomanip>
-#include "INSLV/vectordouble.h"
+#include "vectordouble.h"
+
+namespace inslv {
 
 
 vectordouble::vectordouble(){
@@ -239,3 +241,5 @@ void vectordouble::Sort(){
 	 data[j-1]=x;
       }
 }
+
+}  // namespace inslv

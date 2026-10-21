@@ -1,8 +1,10 @@
 #ifndef _FUZZY_TH_
 #define _FUZZY_TH_
-using namespace std;
 #include <string>
 #include <fstream>
+
+namespace inslv {
+using namespace std;
 
 class fuzzy_t {
    private:
@@ -184,5 +186,7 @@ bool mas);
 
 
 };
+
+}  // namespace inslv
 
 #endif

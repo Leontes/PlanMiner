@@ -18,8 +18,10 @@ using namespace std;
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include "INSLV/poblacionreal.h"
-#include "INSLV/operaciones.h"
+#include "poblacionreal.h"
+#include "operaciones.h"
+
+namespace inslv {
 
 poblacionreal::poblacionreal(){
   prob_mutacion=0.0;
@@ -682,3 +684,5 @@ void poblacionreal::CruceNAND_NOR_Estacionario(int indiv1, int indiv2){
       }
   //}
 }
+
+}  // namespace inslv

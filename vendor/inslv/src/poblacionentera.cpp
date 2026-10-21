@@ -2,8 +2,10 @@ using namespace std;
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
-#include "INSLV/poblacionentera.h"
-#include "INSLV/operaciones.h"
+#include "poblacionentera.h"
+#include "operaciones.h"
+
+namespace inslv {
 
 
 
@@ -473,3 +475,5 @@ void poblacionentera::Cruce2puntos_Estacionario(int indiv1, int indiv2){
         individuos[indiv1][j]=aux;
       }
 }
+
+}  // namespace inslv

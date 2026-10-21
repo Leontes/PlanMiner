@@ -35,3 +35,24 @@ planminer_add_legacy_golden(blocksworld_incomplete "BlocksWorld_STRIPS(incomplet
 planminer_add_legacy_golden(depots "Depots_Numerical.pts" depots)
 # Zenotravel no está: el original tarda 5 minutos y llega a 7 GB (el A* agota los 300 s en
 # REFUEL).
+
+# Los casos de equivalencia de INSLV (vendor/inslv/tests/cases): la entrada y la salida de
+# inslv() en el pipeline original. Para regenerarlos:
+#   PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.inslv_cases
+add_executable(planminer_dump_inslv_cases dump_inslv_cases.cpp)
+target_link_libraries(planminer_dump_inslv_cases PRIVATE planminer::legacy)
+target_compile_features(planminer_dump_inslv_cases PRIVATE cxx_std_20)
+planminer_set_warnings(planminer_dump_inslv_cases)
+
+set(inslv_traces
+    "blocksworld=${PLANMINER_LEGACY_TRACES}/BlocksWorld_STRIPS.pts"
+    "blocksworld_incomplete=${PLANMINER_LEGACY_TRACES}/BlocksWorld_STRIPS(incomplete).pts"
+    "depots=${PLANMINER_LEGACY_TRACES}/Depots_Numerical.pts")
+add_test(
+  NAME oracle.inslv_cases
+  COMMAND
+    "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:planminer_dump_inslv_cases>"
+    "-DTRACES=${inslv_traces}" "-DEXPECTED_DIR=${PROJECT_SOURCE_DIR}/vendor/inslv/tests/cases"
+    "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/inslv_cases" -P
+    "${CMAKE_CURRENT_SOURCE_DIR}/RunInslvCases.cmake")
+set_tests_properties(oracle.inslv_cases PROPERTIES LABELS oracle TIMEOUT 900)

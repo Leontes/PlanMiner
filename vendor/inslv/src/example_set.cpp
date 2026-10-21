@@ -4,7 +4,10 @@ using namespace std;
 #include <stdlib.h>
 #include <cmath>
 #include <algorithm>
-#include "INSLV/example_set.h"
+#include <utility>
+#include "example_set.h"
+
+namespace inslv {
 
 
 example_set::example_set(){
@@ -313,7 +316,10 @@ void example_set::AddExampleFich(const char *nom_fich, int par, bool order){
 	    //cout << vec[i-old_n_example] << " ";
 	}
 
-	std::random_shuffle(vec, vec+tam-1);
+	// std::random_shuffle(vec, vec+tam-1) ya no existe desde C++17: la misma mezcla
+	// (Fisher-Yates) de los tam-1 primeros, con rand().
+	for (int i=tam-2; i>0; i--)
+	  std::swap(vec[i], vec[rand() % (i+1)]);
     }
 
     for (int i=old_n_example; i<n_example; i++){
@@ -988,3 +994,5 @@ example_set example_set::Union(const example_set &A){
 
   return resultado;
 }
+
+}  // namespace inslv

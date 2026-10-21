@@ -11,15 +11,17 @@
 #include <fstream>
 #include <vector>
 #include <queue>
-#include "INSLV/domain_t.h"
-#include "INSLV/VectorVar.h"
-#include "INSLV/vectordouble.h"
-#include "INSLV/example_set.h"
-#include "INSLV/multipoblacion.h"
-#include "INSLV/genetcode.h"
-#include "INSLV/ruleset.h"
-#include "INSLV/Relaciones.h"
-#include "INSLV/operaciones.h"
+#include "domain_t.h"
+#include "VectorVar.h"
+#include "vectordouble.h"
+#include "example_set.h"
+#include "multipoblacion.h"
+#include "genetcode.h"
+#include "ruleset.h"
+#include "Relaciones.h"
+#include "operaciones.h"
+
+namespace inslv {
 
 
 //Funciones de SLAVE...
@@ -144,18 +146,16 @@ bool vectoresIguales(double *v1, double *v2, int tama);
 
 
 
-/** Method inslv
-*   @brief Method to extract a set of rules from a dataset.
-*   @param pDomainName  planning domain name of the task whose rules are going to be extracted.
-*   @param task  task whose rules are going to be extracted.
-*   @param sPath path where the execution information output are going to be stored.
-*   @param dataset pair of STD matrices of double values
-*   @param attribLabels pair of STD vector with the labels of the datasets' columns
-*   @param attribMap STD map with every attribute and its discrete sets calculated
-*   @param reglas output STD vector with the rules
+/** Aprender
+*   @brief Aprende las reglas descriptivas con el algoritmo incremental (por episodios).
+*   @param V las variables: los atributos y, al final, la clase.
+*   @param E el conjunto de ejemplos.
+*   @param options semilla e informe (ver inslv.hpp).
+*   @retval las reglas descriptivas.
 */
-int inslv(std::string pDomainName, std::string task, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap, vector < pair <int, list< pair<string, string> > > > * reglas);
+std::vector<Rule> Aprender(VectorVar &V, example_set &E, const Options &options);
 
 
+}  // namespace inslv
 
 #endif

@@ -80,7 +80,7 @@ jobs:
 
       - name: clang-format
         run: |
-          git ls-files -- '*.cpp' '*.hpp' '*.hpp.in' ':!Old' \
+          git ls-files -- '*.cpp' '*.hpp' '*.hpp.in' ':!Old' ':!vendor' \
             | xargs clang-format --dry-run --Werror
 
       - name: ruff

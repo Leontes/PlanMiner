@@ -1,7 +1,9 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include "INSLV/fuzzy_t.h"
+#include "fuzzy_t.h"
+
+namespace inslv {
 
 using namespace std;
 
@@ -272,3 +274,5 @@ void fuzzy_t::LoadBinaryCode(ifstream &f) {
   nombre=aux;
   delete [] aux;
 }
+
+}  // namespace inslv

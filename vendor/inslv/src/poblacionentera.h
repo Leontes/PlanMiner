@@ -1,6 +1,8 @@
 #ifndef _POBLACIONENTERAH_
 #define _POBLACIONENTERAH_
 
+namespace inslv {
+
 class poblacionentera{
   private:
     double prob_mutacion;
@@ -56,5 +58,7 @@ class poblacionentera{
 };
 
 
+
+}  // namespace inslv
 
 #endif

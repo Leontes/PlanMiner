@@ -6,6 +6,8 @@
 #include "genetcode.h"
 #include "example_set.h"
 
+namespace inslv {
+
 class multipoblacion{
   private:
     int elitismo;
@@ -107,5 +109,7 @@ class multipoblacion{
 };
 
 
+
+}  // namespace inslv
 
 #endif

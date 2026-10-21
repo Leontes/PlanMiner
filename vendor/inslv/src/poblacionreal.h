@@ -18,6 +18,8 @@
 #ifndef _POBLACIONREALH_
 #define _POBLACIONREALH_
 
+namespace inslv {
+
 class poblacionreal{
   private:
     double prob_mutacion;
@@ -77,5 +79,7 @@ class poblacionreal{
 };
 
 
+
+}  // namespace inslv
 
 #endif

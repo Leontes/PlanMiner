@@ -1,5 +1,7 @@
 #include <stdlib.h>
-#include "INSLV/operaciones.h"
+#include "operaciones.h"
+
+namespace inslv {
 
 bool Probabilidad(double x){
   double a=(1.0*rand()/(RAND_MAX*1.0));
@@ -56,3 +58,5 @@ void Swap_bool(bool &a, bool &b){
   a=b;
   b=aux;
 }
+
+}  // namespace inslv

@@ -2,8 +2,10 @@ using namespace std;
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
-#include "INSLV/poblacionbinaria.h"
-#include "INSLV/operaciones.h"
+#include "poblacionbinaria.h"
+#include "operaciones.h"
+
+namespace inslv {
 
 
 
@@ -549,3 +551,5 @@ void poblacionbinaria::CruceNAND_NOR_Estacionario(int indiv1, int indiv2){
           individuos[i+1][j]='1';
       }
 }
+
+}  // namespace inslv

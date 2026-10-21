@@ -15,9 +15,13 @@ indent_size = 4
 [*.sh]
 indent_size = 4
 
-# El código original se deja como está.
-[Old/**]
+# El código original y las dependencias se dejan como están.
+[{Old,vendor}/**]
 insert_final_newline = unset
 trim_trailing_whitespace = unset
 indent_size = unset
 max_line_length = unset
+
+# Algunos nombres de atributo de los casos de INSLV terminan en espacio.
+[*.case]
+trim_trailing_whitespace = false

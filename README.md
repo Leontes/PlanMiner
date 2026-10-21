@@ -57,6 +57,7 @@ Tests are grouped by CTest label (`ctest --preset debug -L <label>`):
 | `unit` | the new code |
 | `oracle` | the comparison with `Old/`. Some tests call the original functions through the `planminer::legacy` target. Others compare the domain the original learns from the `Old/Test` traces with the one stored in `tests/oracle/golden/` |
 | `planner` | learned domains: PyPlanner plans with them and VAL validates the plans against the reference domain (`tests/planner/evaluate_domain.py`) |
+| `inslv` | the INSLV library in `vendor/inslv`, including its equivalence with `Old/` |
 
 The planner tests are registered only when PyPlanner and VAL are available:
 
@@ -66,10 +67,11 @@ scripts/build_val.sh      # tools/bin/Validate
 cmake --preset debug      # reconfigure so CMake finds them
 ```
 
-To regenerate the oracle's reference domains:
+To regenerate the oracle's reference outputs (the domains in `tests/oracle/golden/` and the
+INSLV cases in `vendor/inslv/tests/cases/`):
 
 ```bash
-PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
+PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R "oracle.legacy|oracle.inslv_cases"
 ```
 
 ## Layout
@@ -84,7 +86,14 @@ PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
 | `tests/data/` | reference domains and problems |
 | `cmake/` | CMake modules: warnings, sanitizers, dependencies, `Old/` and the planner |
 | `scripts/` | PyPlanner and VAL setup |
+| `vendor/inslv/` | INSLV, the fuzzy rule learner (see its [README](vendor/inslv/README.md), in Spanish) |
 | `Old/` | the original implementation, with a minimal patch so it builds |
+
+## INSLV
+
+Fuzzy rule learning (INSLV) is out of scope for the rewrite. It lives in
+[`vendor/inslv`](vendor/inslv/) as an external dependency with its own interface
+(`inslv::learn`) until it gets its own repository.
 
 ## Conventions
 

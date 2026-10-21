@@ -2,7 +2,7 @@
                           Relaciones.h  -  description
                              -------------------
     begin                : jue mar 20 2003
-    copyright            : (C) 2003 by Raúl Pérez
+    copyright            : (C) 2003 by RaÃºl PÃ©rez
     email                : fgr@decsai.ugr.es
  ***************************************************************************/
 
@@ -17,6 +17,8 @@
 #ifndef _RELACIONESH_
 #define _RELACIONESH_
 #include <fstream>
+
+namespace inslv {
 using namespace std;
 
 class Relaciones {
@@ -34,5 +36,7 @@ class Relaciones {
 };
 
 
+
+}  // namespace inslv
 
 #endif

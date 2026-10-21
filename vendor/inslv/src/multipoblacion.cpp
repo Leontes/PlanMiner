@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <fstream>
 #include <cmath>
-#include "INSLV/multipoblacion.h"
-#include "INSLV/operaciones.h"
-#include "INSLV/example_set.h"
+#include "multipoblacion.h"
+#include "operaciones.h"
+#include "example_set.h"
+
+namespace inslv {
 
 using namespace std;
 
@@ -1754,3 +1756,5 @@ double multipoblacion::Refitness(double *agregacion, double *peso_agregacion, in
   else
     return aciertos-errores;
 }
+
+}  // namespace inslv

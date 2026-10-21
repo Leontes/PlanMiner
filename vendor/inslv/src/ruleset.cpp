@@ -18,8 +18,10 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include "INSLV/ruleset.h"
-#include "INSLV/Relaciones.h"
+#include "ruleset.h"
+#include "Relaciones.h"
+
+namespace inslv {
 
 using namespace std;
 
@@ -2009,14 +2011,19 @@ void ruleset::SaveRuleInterpreted(const char *nomfich, const Relaciones &RI,
   f.close();
 }
 
-list<pair<string, string>  > ruleset::SplitAntecedent(int i) const{
-  list< pair<string, string> > listaPred;
+// Condiciones del antecedente de la regla i: los atributos relevantes, con las etiquetas que
+// admiten. Un atributo es relevante si su nivel (parte real del código genético) llega al umbral
+// de la regla y no admite todas sus etiquetas.
+//
+// Es la parte general de SplitAntecedent, que estaba en Old/: la interpretación de PlanMiner
+// (solo atributos de hasta dos etiquetas, con el nombre de la etiqueta o su centro) se hace fuera.
+std::vector<Condition> ruleset::Antecedente(int i) const{
+  std::vector<Condition> condiciones;
 
   int b,*nb,n,*nn,**nnn,r,*nr;
   char **mb;
   double **mr;
-  string regla, regla_funcion;
-  int var1, var2;
+  string regla;
   int n_ant;
 
   // extraer la componente binaria
@@ -2029,15 +2036,6 @@ list<pair<string, string>  > ruleset::SplitAntecedent(int i) const{
   regla=s;
   delete []s;
 
-  s= new char[nb[1]+1];
-  for (int j=0; j<nb[1]; j++){
-    s[j]=mb[1][j];
-  }
-  s[nb[1]]='\0';
-  regla_funcion=s;
-  delete []s;
-
-
   rule[i][0].GetInteger(n,nn,nnn);
   rule[i][0].GetReal(r,nr,mr);
   n_ant = domain[0].N_Antecedente();
@@ -2045,44 +2043,25 @@ list<pair<string, string>  > ruleset::SplitAntecedent(int i) const{
   int j=0;
   int donde=0;
   int n_casos=0;
-  std::string cadena;
   while (j<n_ant){
     if (domain[0].IsActiva(j) && domain[0].IsAntecedente(j)){
       n_casos=domain[0].SizeDomain(j);
       for(z=0; z<n_casos && regla[donde+z]=='1';z++);
-        if (mr[0][j]>=mr[0][nr[0]-1] && z!=n_casos){
-          if( n_casos <= 2 ){
-            for(int t=donde; t<donde+n_casos;t++){
-              if (regla[t]=='1'){
-                cadena = domain[0].SPrintDomain(j,t-donde);
-                if(cadena == "True" or cadena == "False"){
-                  listaPred.push_back(pair<string,string>(domain[0].SPrintVar(j), cadena));
-                }
-                else{
-                  listaPred.push_back(pair<string,string>(domain[0].SPrintVar(j), to_string( (int) domain[0].CenterLabel(j, t-donde) ) ));
-                }
-              }
-            }
+      if (mr[0][j]>=mr[0][nr[0]-1] && z!=n_casos){
+        Condition condicion;
+        condicion.attribute = j;
+        for(int t=donde; t<donde+n_casos;t++){
+          if (regla[t]=='1'){
+            condicion.labels.push_back(t-donde);
           }
         }
+        condiciones.push_back(condicion);
       }
-      donde+=n_casos;
-      j++;
     }
-  return listaPred;
-}
-
-
-
-
-void ruleset::toPDDL(vector < pair <int, list< pair<string, string> > > > * reglas) const {
-  for (int i=0; i<n_rule; i++){
-    if("PostState"== domain[0].SPrintDomain(domain[0].Consecuente(), Class_of_rule(i))){
-      (*reglas).push_back(pair <int, list< pair<string, string> > > (n_mas[i], SplitAntecedent(i)));
-      //(*reglas)[1] = SplitAntecedent(i);
-    }else{
-      (*reglas).push_back(pair <int, list< pair<string, string> > > ( 0 - n_mas[i], SplitAntecedent(i)));
-      //(*reglas)[0] = SplitAntecedent(i);
-    }
+    donde+=n_casos;
+    j++;
   }
+  return condiciones;
 }
+
+}  // namespace inslv

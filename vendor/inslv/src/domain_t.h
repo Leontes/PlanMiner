@@ -4,6 +4,8 @@
 #include <string>
 #include "fuzzy_t.h"
 
+namespace inslv {
+
 class domain_t {
    private:
      int numero;        // Numero de etiquetas
@@ -54,5 +56,7 @@ class domain_t {
      void SaveBinaryCode(ofstream &f) const;
      void LoadBinaryCode(ifstream &f);
 };
+
+}  // namespace inslv
 
 #endif

@@ -1,10 +1,12 @@
-#include "Rules/RuleCreator.hpp"
+#include "RuleCreator.hpp"
+
+namespace inslv {
 
 
+// En el original esperaba una tecla tras los avisos de consistencia del análisis de patrones.
+// Como librería no puede bloquearse esperando la entrada estándar: solo avisa.
 void Pausa(){
-  cout << "Pulsa una Tecla para continuar...\n";
-  char ch;
-  cin >> ch;
+  cerr << "INSLV: aviso de consistencia en el análisis de patrones (ver la salida anterior)\n";
 }
 
 string itos(int n)
@@ -3439,7 +3441,9 @@ valida = (variables_irrelevantes < r1-1);
         diferencia_peso-=R.Get_Weight(i);
         //diferencia_estables-=R.Stable_of_rule(i);
         diferencia_estables=0;
-        balance=Diferencia_Adaptacion_Negativa(nr2,R.SeeAdaptaciones_of_rule(i),ne);
+        // balance no se usa en esta función (valor[2]=balance está comentado) y su cálculo leía
+        // fuera de la población real 1, que tiene tamaño 1 y no uno por ejemplo.
+        //balance=Diferencia_Adaptacion_Negativa(nr2,R.SeeAdaptaciones_of_rule(i),ne);
 	diferencia_ceros = ceros_variables - R.Numero_Ceros_of_rule(i);
         regla_afectada=i;
       }
@@ -3982,7 +3986,9 @@ double Bondad_E (multipoblacion &G, const VectorVar &V, const example_set &E, ru
         diferencia_peso-=R.Get_Weight(i);
         //diferencia_estables-=R.Stable_of_rule(i);
         diferencia_estables=0;
-        balance=Diferencia_Adaptacion_Negativa(nr2,R.SeeAdaptaciones_of_rule(i),ne);
+        // balance no se usa en esta función (valor[2]=balance está comentado) y su cálculo leía
+        // fuera de la población real 1, que tiene tamaño 1 y no uno por ejemplo.
+        //balance=Diferencia_Adaptacion_Negativa(nr2,R.SeeAdaptaciones_of_rule(i),ne);
 	diferencia_ceros = ceros_variables - R.Numero_Ceros_of_rule(i);
         regla_afectada=i;
       }
@@ -9325,32 +9331,25 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
 
 
 
- int inslv(std::string pDomainName ,std::string tName, std::string sPath, std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap, vector < pair <int, list< pair<string, string> > > > * reglas){
-  std::string task;
-  task = sPath + "res/" + tName;
+std::vector<Rule> Aprender(VectorVar &V, example_set &E, const Options &options){
+  // El informe (el antiguo <tarea>.res) solo se escribe si se pide.
+  const bool informe = !options.report.empty();
+  const std::string task_res = options.report.string();
   // Numero de particiones
   int num_par=1;
-  std::string comando;
 
-  VectorVar V(dataset, attribLabels, attribMap);
   V.Pinta();
-  example_set E(dataset);
-  int seed = 0;
+  int seed = options.seed;
 
-
-
-  //int nn = rand() % 1000;
-  ofstream out(task + ".res");
-  out << "Experiment: " << task << endl;
-  out.close();
-
-  comando = "date >> ";
-  comando = comando + task + ".res";
-  system (comando.c_str());
-
-  out.open(task + ".res",ios::app);
-  out << "===================================================\n\n";
-  out.close();
+  ofstream out;
+  if (informe){
+    out.open(task_res);
+    out << "Experiment: " << task_res << endl;
+    std::time_t ahora = std::time(nullptr);
+    out << std::ctime(&ahora);
+    out << "===================================================\n\n";
+    out.close();
+  }
 
   srand(seed);
   cout << "SEED " << seed << endl;
@@ -9416,7 +9415,7 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
 
     int antecedente;
 
-    string seedfich=task;
+    string seedfich=task_res;
     string ext=".rl0";
     string ext3=".rl_descrip0";
     string ext2=".rules";
@@ -9470,16 +9469,12 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
     int *basica_para_regla=0;
     int *errores_para_regla=0;
 
-    const long int MAX = 100000000;
-    int *psubi = new int[MAX];
-    int *psubf = new int[MAX];
+    // Inicio y fin de cada episodio. En el original eran dos vectores fijos de 10^8 enteros
+    // (800 MB por llamada); ahora se dimensionan con el número de episodios.
+    std::vector<int> psubi, psubf;
 
     int par;
     for (par=0; par<num_par; par++){
-      for (int k=0;k<MAX;++k) {
-        psubi[k] = 0;
-        psubf[k] = 0;
-      }
       ext[3]=(char)(par+'0');
       ext3[11]=(char)(par+'0');
       nomfich=seedfich+ext;
@@ -9487,9 +9482,11 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
       nomfich2=nomfich+ext2;
       nomfich3=nomfich3+ext2;
 
-      out.open(task + ".res",ios::app);
-      out <<"\n===============\n Ejecucion " << par << "\n===============\n";
-      out.close();
+      if (informe){
+        out.open(task_res,ios::app);
+        out <<"\n===============\n Ejecucion " << par << "\n===============\n";
+        out.close();
+      }
 
       E_Par_Completo=E.Extract_Training_Set(par, V.Consecuente(), 0);
 
@@ -9595,6 +9592,8 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
      int ult_act_rules;
 
      int episodios = (limite / paso)+2;
+     psubi.assign(episodios + 1, 0);
+     psubf.assign(episodios + 1, 0);
      double despl=0;
 
      double *evo_media_training, *evo_media_test, *evo_umbral,
@@ -9681,7 +9680,7 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
       cout << "Creando la tabla de adaptaciones.....\n";
       double ***Tabla = Crear_Tabla_Adaptaciones(V,E_Par);
       double ***Tabla_Nuevas = Crear_Tabla_Adaptaciones_Nuevas(F,E_Par);
-      double ***Tabla1, ***Tabla_Nuevas1, ***Tabla2, ***Tabla_Nuevas2;
+      double ***Tabla1 = nullptr, ***Tabla_Nuevas1 = nullptr, ***Tabla2 = nullptr, ***Tabla_Nuevas2 = nullptr;
       cout << "Tabla de adaptaciones creada!\n";
 
       char ch;
@@ -9979,12 +9978,14 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
         }
       }
 
-      ofstream salida("./traza.txt",std::ofstream::out | std::ofstream::app);
-      salida << "*****************************************************************\n";
-      for (int i=0; i<R[par].N_rule(); i++)
-      salida << i << ") " << R[par].SPrint(i) << endl;
-      salida << endl;
-      salida.close();
+      if (informe){
+        ofstream salida(task_res,std::ofstream::out | std::ofstream::app);
+        salida << "*****************************************************************\n";
+        for (int i=0; i<R[par].N_rule(); i++)
+        salida << i << ") " << R[par].SPrint(i) << endl;
+        salida << endl;
+        salida.close();
+      }
 
       int m=R[par].N_rule();
       for (int i=0; i<m; i++){
@@ -10019,8 +10020,8 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
 
     tiempo1=clock();
 
-    test[par]=Aciertos(R_prev_dis[par],V,E_Par,task + ".res", F);
-    test_Descrip[par]=Aciertos(R_prev[par],V,E_Par,task + ".res", F);
+    test[par]=informe ? Aciertos(R_prev_dis[par],V,E_Par,task_res, F) : Aciertos(R_prev_dis[par],V,E_Par,F);
+    test_Descrip[par]=informe ? Aciertos(R_prev[par],V,E_Par,task_res, F) : Aciertos(R_prev[par],V,E_Par,F);
 
     int *fallosR = new int[R_prev_dis[par].N_rule()];
     int *fallosR_Descrip = new int[R_prev[par].N_rule()];
@@ -10044,127 +10045,144 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
     tiempo_eje[par]=1.0*(tiempo1-tiempo0)/CLOCKS_PER_SEC;
     tiempo0=tiempo1;
 
-    out.open(task + ".res",ios::app);
-    out << "----------------------------------------------------\n";
-    out << "Aciertos Training: " << accuracy_new[par]  << endl;
-    out << "Aciertos Test: " << test_Descrip[par]  << endl;
-    out << "Numero de reglas: " << cardinal[par] <<endl;
-    out << "Variables por regla: " << variables_por_regla[par] << endl;
-    out << "Variables usadas: " << variables_usadas[par] << endl;
-    out << "Tiempo: " << tiempo_eje[par] << endl;
-    out << "Iteraciones: " << iteraciones[par] << endl;
-    out << "Condiciones: " << condiciones[par] << endl;
-    out << "Aciertos Discriminantes: " << test[par]  << endl;
-    out << "Aciertos Descriptivas: " << test_conjunto[par]  << endl;
-    out << "----------------------------------------------------\n";
-    out << "------------------- REGLAS -------------------------\n";
-    out << "----------------------------------------------------\n";
+    if (informe){
+      out.open(task_res,ios::app);
+      out << "----------------------------------------------------\n";
+      out << "Aciertos Training: " << accuracy_new[par]  << endl;
+      out << "Aciertos Test: " << test_Descrip[par]  << endl;
+      out << "Numero de reglas: " << cardinal[par] <<endl;
+      out << "Variables por regla: " << variables_por_regla[par] << endl;
+      out << "Variables usadas: " << variables_usadas[par] << endl;
+      out << "Tiempo: " << tiempo_eje[par] << endl;
+      out << "Iteraciones: " << iteraciones[par] << endl;
+      out << "Condiciones: " << condiciones[par] << endl;
+      out << "Aciertos Discriminantes: " << test[par]  << endl;
+      out << "Aciertos Descriptivas: " << test_conjunto[par]  << endl;
+      out << "----------------------------------------------------\n";
+      out << "------------------- REGLAS -------------------------\n";
+      out << "----------------------------------------------------\n";
 
-    out << "Descriptivas: " << endl;
-    out.close();
-    R_prev[par].SaveRuleInterpreted_append((task + ".res").c_str());
-    out.open(task + ".res",ios::app);
-    out << "Predictivas: " << endl;
-    out.close();
-    R_prev_dis[par].SaveRuleInterpreted_append((task + ".res").c_str());
-    out.open(task + ".res",ios::app);
-    out << "Patrones: " << endl;
+      out << "Descriptivas: " << endl;
+      out.close();
+      R_prev[par].SaveRuleInterpreted_append(task_res.c_str());
+      out.open(task_res,ios::app);
+      out << "Predictivas: " << endl;
+      out.close();
+      R_prev_dis[par].SaveRuleInterpreted_append(task_res.c_str());
+      out.open(task_res,ios::app);
+      out << "Patrones: " << endl;
 
-    for (int kk=0; kk<R_mix_prev[par].N_rule(); kk++){
-      string res="(0)";
-      res[1]=res[1]+R_mix_prev[par].Class_of_rule(kk);
-      res = Patron1Regla(R_mix_prev[par],V,kk) + res;
-      out << res << endl;
+      for (int kk=0; kk<R_mix_prev[par].N_rule(); kk++){
+        string res="(0)";
+        res[1]=res[1]+R_mix_prev[par].Class_of_rule(kk);
+        res = Patron1Regla(R_mix_prev[par],V,kk) + res;
+        out << res << endl;
+      }
+
+      out.close();
     }
 
-    out.close();
-
 
 
 
   }
 
-  R_prev[0].toPDDL(reglas);
-
-  double suma=0, suma2=0, suma3=0, suma4=0, suma5=0, suma6=0, suma7=0, suma8=0, suma9=0, suma10=0, suma11=0, suma12=0, suma13=0;
-  out.open(task + ".res",ios::app);
-
-  for (par=0; par <num_par; par++){
-
-    out << "\tAciertos en la base [" << par <<"] es: " << accuracy_new[par] << endl;
-    out << "\tAciertos en test [" << par <<"] es: " << test_conjunto[par] << endl;
-    out << "\tNumero de reglas [" << par <<"] es: " << cardinal[par] << endl;
-    out << "\tVariables por regla [" << par <<"] es: " << variables_por_regla[par] << endl;
-    out << "\tVariables usadas [" << par <<"] es: " << variables_usadas[par] << endl;
-    out << "\tTiempo [" << par <<"] es: " << tiempo_eje[par] << endl;
-    out << "\tIteraciones [" << par <<"] es: " << iteraciones[par] << endl;
-    out << "\tCondiciones [" << par <<"] es: " << condiciones[par] << endl << endl;
-    out << "\tDiscriminantes [" << par <<"] es: " << test[par] << endl << endl;
-    out << "\tDescriptivas [" << par <<"] es: " << test_Descrip[par] << endl << endl;
-
-    suma = suma + accuracy_new[par];
-    suma2 = suma2 + test_conjunto[par];
-    suma3 = suma3 + cardinal[par];
-    suma4 = suma4 + variables_por_regla[par];
-    suma5 = suma5 + variables_usadas[par];
-    suma6 = suma6 + tiempo_eje[par];
-    suma7 = suma7 + iteraciones[par];
-    suma8 = suma8 + condiciones[par];
-    suma9 = suma9 + test[par];
-    suma10 = suma10 + test_Descrip[par];
-  }
-  suma = suma/num_par;
-  suma2 = suma2/num_par;
-  suma3 = suma3/num_par;
-  suma4 = suma4/num_par;
-  suma5 = suma5/num_par;
-  suma6 = suma6/num_par;
-  suma7 = suma7/num_par;
-  suma8 = suma8/num_par;
-  suma9 = suma9/num_par;
-  suma10 = suma10/num_par;
-
-  double desv1=0, desv2=0, desv3=0, desv4=0, desv5=0, desv6=0, desv7=0, desv8=0, desv9=0, desv10=0, desv11=0, desv12=0, desv13=0;
-
-
-  for (par=0; par <num_par; par++){
-    desv1 = desv1 + pow(suma-accuracy_new[par],2);
-    desv2 = desv2 + pow(suma2-test_conjunto[par],2);
-    desv3 = desv3 + pow(suma3-cardinal[par],2);
-    desv4 = desv4 + pow(suma4-variables_por_regla[par],2);
-    desv5 = desv5 + pow(suma5-variables_usadas[par],2);
-    desv6 = desv6 + pow(suma6-tiempo_eje[par],2);
-    desv7 = desv7 + pow(suma7-iteraciones[par],2);
-    desv8 = desv8 + pow(suma8-condiciones[par],2);
-    desv9 = desv9 + pow(suma9-test_Descrip[par],2);
-    desv10 = desv10 + pow(suma10-test_Descrip[par],2);
+  std::vector<Rule> reglas;
+  for (int i=0; i<R_prev[0].N_rule(); i++){
+    Rule regla;
+    regla.antecedent = R_prev[0].Antecedente(i);
+    regla.consequent = R_prev[0].Class_of_rule(i);
+    regla.covered = R_prev[0].Get_N_Mas(i);
+    reglas.push_back(regla);
   }
 
-  out << "La media training: " << suma << "( " << sqrt(desv1/num_par)<<")"<<endl;
-  out << "La media test: " << suma2 <<"( " << sqrt(desv2/num_par)<<")"<< endl;
-  out << "La media de reglas: " << suma3 <<"( " << sqrt(desv3/num_par)<<")"<< endl;
-  out << "La media de variables por regla: " << suma4 <<"( " << sqrt(desv4/num_par)<<")"<< endl;
-  out << "La media de variables usadas: " << suma5 <<"( " << sqrt(desv5/num_par)<<")"<< endl;
-  out << "La media de tiempo: " << suma6 <<"( " << sqrt(desv6/num_par)<<")"<< endl;
-  out << "La media de iteraciones: " << suma7 <<"( " << sqrt(desv7/num_par)<<")"<< endl;
-  out << "La media de condiciones: " << suma8 <<"( " << sqrt(desv8/num_par)<<")"<< endl;
-  out << "La media de discriminantes: " << suma9 <<"( " << sqrt(desv9/num_par)<<")"<< endl;
-  out << "La media de conjuntas: " << suma10 <<"( " << sqrt(desv10/num_par)<<")"<< endl;
+  if (informe){
+    double suma=0, suma2=0, suma3=0, suma4=0, suma5=0, suma6=0, suma7=0, suma8=0, suma9=0, suma10=0, suma11=0, suma12=0, suma13=0;
+    out.open(task_res,ios::app);
 
-  out << "Frecuencia de aparicion de las " <<V.N_Antecedente() <<" distintas variables en las reglas: \n";
-  for (int i=0; i<V.N_Antecedente(); i++){
-    out << V.SPrintVar(i)<<": ";
-    suma6=0;
-    for (int j=0; j<num_par; j++){
-      suma6=suma6+(1.0*frecuencia_variables[j][i]/cardinal[j]);
+    for (par=0; par <num_par; par++){
+
+      out << "\tAciertos en la base [" << par <<"] es: " << accuracy_new[par] << endl;
+      out << "\tAciertos en test [" << par <<"] es: " << test_conjunto[par] << endl;
+      out << "\tNumero de reglas [" << par <<"] es: " << cardinal[par] << endl;
+      out << "\tVariables por regla [" << par <<"] es: " << variables_por_regla[par] << endl;
+      out << "\tVariables usadas [" << par <<"] es: " << variables_usadas[par] << endl;
+      out << "\tTiempo [" << par <<"] es: " << tiempo_eje[par] << endl;
+      out << "\tIteraciones [" << par <<"] es: " << iteraciones[par] << endl;
+      out << "\tCondiciones [" << par <<"] es: " << condiciones[par] << endl << endl;
+      out << "\tDiscriminantes [" << par <<"] es: " << test[par] << endl << endl;
+      out << "\tDescriptivas [" << par <<"] es: " << test_Descrip[par] << endl << endl;
+
+      suma = suma + accuracy_new[par];
+      suma2 = suma2 + test_conjunto[par];
+      suma3 = suma3 + cardinal[par];
+      suma4 = suma4 + variables_por_regla[par];
+      suma5 = suma5 + variables_usadas[par];
+      suma6 = suma6 + tiempo_eje[par];
+      suma7 = suma7 + iteraciones[par];
+      suma8 = suma8 + condiciones[par];
+      suma9 = suma9 + test[par];
+      suma10 = suma10 + test_Descrip[par];
     }
-    out << "--> "<<(suma6/num_par)*100 << " %\n";
+    suma = suma/num_par;
+    suma2 = suma2/num_par;
+    suma3 = suma3/num_par;
+    suma4 = suma4/num_par;
+    suma5 = suma5/num_par;
+    suma6 = suma6/num_par;
+    suma7 = suma7/num_par;
+    suma8 = suma8/num_par;
+    suma9 = suma9/num_par;
+    suma10 = suma10/num_par;
+
+    double desv1=0, desv2=0, desv3=0, desv4=0, desv5=0, desv6=0, desv7=0, desv8=0, desv9=0, desv10=0, desv11=0, desv12=0, desv13=0;
+
+
+    for (par=0; par <num_par; par++){
+      desv1 = desv1 + pow(suma-accuracy_new[par],2);
+      desv2 = desv2 + pow(suma2-test_conjunto[par],2);
+      desv3 = desv3 + pow(suma3-cardinal[par],2);
+      desv4 = desv4 + pow(suma4-variables_por_regla[par],2);
+      desv5 = desv5 + pow(suma5-variables_usadas[par],2);
+      desv6 = desv6 + pow(suma6-tiempo_eje[par],2);
+      desv7 = desv7 + pow(suma7-iteraciones[par],2);
+      desv8 = desv8 + pow(suma8-condiciones[par],2);
+      desv9 = desv9 + pow(suma9-test_Descrip[par],2);
+      desv10 = desv10 + pow(suma10-test_Descrip[par],2);
+    }
+
+    out << "La media training: " << suma << "( " << sqrt(desv1/num_par)<<")"<<endl;
+    out << "La media test: " << suma2 <<"( " << sqrt(desv2/num_par)<<")"<< endl;
+    out << "La media de reglas: " << suma3 <<"( " << sqrt(desv3/num_par)<<")"<< endl;
+    out << "La media de variables por regla: " << suma4 <<"( " << sqrt(desv4/num_par)<<")"<< endl;
+    out << "La media de variables usadas: " << suma5 <<"( " << sqrt(desv5/num_par)<<")"<< endl;
+    out << "La media de tiempo: " << suma6 <<"( " << sqrt(desv6/num_par)<<")"<< endl;
+    out << "La media de iteraciones: " << suma7 <<"( " << sqrt(desv7/num_par)<<")"<< endl;
+    out << "La media de condiciones: " << suma8 <<"( " << sqrt(desv8/num_par)<<")"<< endl;
+    out << "La media de discriminantes: " << suma9 <<"( " << sqrt(desv9/num_par)<<")"<< endl;
+    out << "La media de conjuntas: " << suma10 <<"( " << sqrt(desv10/num_par)<<")"<< endl;
+
+    out << "Frecuencia de aparicion de las " <<V.N_Antecedente() <<" distintas variables en las reglas: \n";
+    for (int i=0; i<V.N_Antecedente(); i++){
+      out << V.SPrintVar(i)<<": ";
+      suma6=0;
+      for (int j=0; j<num_par; j++){
+        suma6=suma6+(1.0*frecuencia_variables[j][i]/cardinal[j]);
+      }
+      out << "--> "<<(suma6/num_par)*100 << " %\n";
+    }
+    out.close();
   }
-  out.close();
   LiberaMedidasDeInformacion(Med_Inform,V.N_Antecedente());
 
   delete [] ejemplos_por_clase;
   delete [] R;
+  delete [] R_dis;
+  delete [] R_prev;
+  delete [] R_prev_dis;
+  delete [] R_mix;
+  delete [] R_mix_prev;
+  delete [] ponderacion_por_clase;
   delete [] accuracy_new;
   delete [] test;
   delete [] cardinal;
@@ -10185,12 +10203,13 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
   delete [] iteraciones;
   delete [] condiciones;
 
-  delete [] psubi;
-  delete [] psubf;
 
   for (int i=0; i<num_par; i++){
     delete [] frecuencia_variables[i];
   }
   delete [] frecuencia_variables;
-  return 0;
+
+  return reglas;
 }
+
+}  // namespace inslv

@@ -3,7 +3,9 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
-#include "INSLV/domain_t.h"
+#include "domain_t.h"
+
+namespace inslv {
 
 using namespace std;
 
@@ -655,3 +657,5 @@ void domain_t::LoadBinaryCode(ifstream &f) {
   for (int i=0; i<numero; i++)
     label[i].LoadBinaryCode(f);
 }
+
+}  // namespace inslv

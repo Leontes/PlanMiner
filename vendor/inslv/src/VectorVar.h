@@ -11,7 +11,9 @@
 #include "variable_t.h"
 #include "vectordouble.h"
 #include "genetcode.h"
-#include "DataSLib.hpp"
+#include "inslv/inslv.hpp"
+
+namespace inslv {
 
 struct combinado{
    int op;
@@ -29,7 +31,7 @@ class VectorVar {
     VectorVar();
     VectorVar(int tamano);
     VectorVar(const char *nom_fich);
-    VectorVar(std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap);
+    explicit VectorVar(const Dataset &data);
     ~VectorVar();
     VectorVar(const VectorVar &x);
     VectorVar &operator=(const VectorVar &x);
@@ -101,5 +103,7 @@ class VectorVar {
 
 
 };
+
+}  // namespace inslv
 
 #endif

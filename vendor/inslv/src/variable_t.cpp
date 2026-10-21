@@ -2,7 +2,9 @@ using namespace std;
 #include <iostream>
 #include <string>
 #include <cstdlib>
-#include "INSLV/variable_t.h"
+#include "variable_t.h"
+
+namespace inslv {
 
 using namespace std;
 
@@ -405,3 +407,5 @@ void variable_t::LoadBinaryCode(ifstream &f){
   dominio = new domain_t;
   dominio[0].LoadBinaryCode(f);
 }
+
+}  // namespace inslv

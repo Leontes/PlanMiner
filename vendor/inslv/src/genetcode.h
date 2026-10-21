@@ -2,7 +2,7 @@
                           genetcode.h  -  description
                              -------------------
     begin                : Tue Apr 30 2002
-    copyright            : (C) 2002 by Raúl Pérez
+    copyright            : (C) 2002 by RaÃºl PÃ©rez
     email                : fgr@decsai.ugr.es
  ***************************************************************************/
 
@@ -18,6 +18,8 @@
 #define _GENETCODEH_
 using namespace std;
 #include <fstream>
+
+namespace inslv {
 
 
 class genetcode {
@@ -54,5 +56,7 @@ class genetcode {
    void SaveCode(ofstream &f) const;
    void LoadCode(ifstream &f);
 };
+
+}  // namespace inslv
 
 #endif

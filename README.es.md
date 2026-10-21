@@ -58,6 +58,7 @@ Los tests van por etiquetas de CTest (`ctest --preset debug -L <etiqueta>`):
 | `unit` | el código nuevo |
 | `oracle` | la comparación con `Old/`. Hay tests de las funciones originales, que se enlazan con el target `planminer::legacy`, y del dominio que aprende el original con las trazas de `Old/Test`, comparado con el guardado en `tests/oracle/golden/` |
 | `planner` | los dominios aprendidos: PyPlanner planifica con ellos y VAL valida los planes con el dominio de referencia (`tests/planner/evaluate_domain.py`) |
+| `inslv` | la librería INSLV de `vendor/inslv`, incluida su equivalencia con `Old/` |
 
 Los tests del planificador solo se registran si están PyPlanner y VAL:
 
@@ -67,10 +68,11 @@ scripts/build_val.sh      # tools/bin/Validate
 cmake --preset debug      # volver a configurar para que los detecte
 ```
 
-Para regenerar los dominios de referencia del oráculo:
+Para regenerar las salidas de referencia del oráculo (los dominios de `tests/oracle/golden/` y
+los casos de INSLV de `vendor/inslv/tests/cases/`):
 
 ```bash
-PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
+PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R "oracle.legacy|oracle.inslv_cases"
 ```
 
 ## Estructura
@@ -85,7 +87,14 @@ PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
 | `tests/data/` | dominios y problemas de referencia |
 | `cmake/` | módulos de CMake: avisos, sanitizers, dependencias, `Old/` y planificador |
 | `scripts/` | preparación de PyPlanner y VAL |
+| `vendor/inslv/` | INSLV, el aprendizaje de reglas difusas (ver su [README](vendor/inslv/README.md)) |
 | `Old/` | la implementación original, con un parche mínimo para que compile |
+
+## INSLV
+
+El aprendizaje de reglas difusas (INSLV) queda fuera del alcance de la reescritura. Está en
+[`vendor/inslv`](vendor/inslv/) como dependencia externa, con una interfaz propia
+(`inslv::learn`), hasta que tenga su propio repositorio.
 
 ## Convenciones
 

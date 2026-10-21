@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 
+namespace inslv {
+
 class example_set {
   private:
     static constexpr double MISSING = -999999999;
@@ -78,5 +80,7 @@ class example_set {
     void OrderByClass(int order, int VarClase = 0);
 };
 
+
+}  // namespace inslv
 
 #endif

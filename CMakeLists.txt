@@ -31,10 +31,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CompilerWarnings)
 include(Sanitizers)
 
+if(BUILD_TESTING)
+  enable_testing()
+  # GoogleTest, antes de vendor/ para que lo compartan.
+  include(Dependencies)
+endif()
+
+# INSLV, el aprendizaje de reglas difusas: queda fuera de la reescritura y se usa como
+# dependencia externa hasta que tenga su propio repositorio. Sus tests llevan la etiqueta inslv.
+set(INSLV_BUILD_TESTS ${BUILD_TESTING})
+add_subdirectory(vendor/inslv)
+# Siempre optimizado: no se depura aquí y en Debug el genético es mucho más lento.
+target_compile_options(inslv PRIVATE -O2)
+
 add_subdirectory(src)
 add_subdirectory(apps)
 
 if(BUILD_TESTING)
-  enable_testing()
   add_subdirectory(tests)
 endif()

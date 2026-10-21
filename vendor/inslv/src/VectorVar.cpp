@@ -4,7 +4,9 @@ using namespace std;
 #include <cstdlib>
 #include <cmath>
 #include <limits>
-#include "INSLV/VectorVar.h"
+#include "VectorVar.h"
+
+namespace inslv {
 
 
 
@@ -81,79 +83,43 @@ VectorVar::VectorVar(int tamano){
   oper = new combinado[tamano];
 }
 
-VectorVar::VectorVar(std::vector < std::vector < double > > * dataset, std::vector< std::pair<std::string, std::string> > attribLabels, std::map < std::string, std::vector <FuzzSet> > attribMap){
-  double *va,*vb,*vc,*vd,inf,sup, c_factor;
-  string nom_var, *vname;
-  int antecedente, activa, n, unit;
+// Las variables del conjunto de ejemplos de la API: primero los atributos (antecedentes) y al
+// final la clase (consecuente). Las etiquetas no se extienden hasta el infinito (singleton).
+VectorVar::VectorVar(const Dataset &data){
+  double *va,*vb,*vc,*vd,inf,sup;
 
-  unsigned int cont = 0;
-  numero = attribLabels.size();
-  lista = new variable_t[attribLabels.size()];
-  oper = new combinado[attribLabels.size()];
+  numero = data.attributes.size() + 1;
+  lista = new variable_t[numero];
+  oper = new combinado[numero];
 
+  for(int v = 0; v < numero; v++){
+    const inslv::Variable &variable = v + 1 < numero ? data.attributes[v] : data.target;
+    // 0: antecedente; 1: consecuente.
+    int estado = v + 1 < numero ? 0 : 1;
+    int n = variable.labels.size();
 
-  for(unsigned int attrib = 0; attrib < attribLabels.size(); attrib++){
+    inf = variable.labels.front().a;
+    sup = variable.labels.back().d;
 
+    va = new double[n];
+    vb = new double[n];
+    vc = new double[n];
+    vd = new double[n];
+    string *vname = new string[n];
 
-    //nom_var nombre de la variable
-    nom_var = attribLabels[attrib].first;
-    //antecedente 1 si es clase, 0 si no
-    if(nom_var == "Class"){
-      antecedente = 1;
-    }else{
-      antecedente = 0;
+    for(int i = 0; i < n; i++){
+      va[i] = variable.labels[i].a;
+      vb[i] = variable.labels[i].b;
+      vc[i] = variable.labels[i].c;
+      vd[i] = variable.labels[i].d;
+      vname[i] = variable.labels[i].label;
     }
 
-    //unit poner a 0
-    unit = 0;
-
-    //c_factor poner a 0
-    c_factor = 0;
-
-    //inf
-    inf = attribMap[ attribLabels[attrib].first][0].a;
-    //sup
-    sup = attribMap[ attribLabels[attrib].first][attribMap[ attribLabels[attrib].first].size()-1].d;
-
-    va = new double[attribMap[ attribLabels[attrib].first].size()];
-    vb = new double[attribMap[ attribLabels[attrib].first].size()];
-    vc = new double[attribMap[ attribLabels[attrib].first].size()];
-    vd = new double[attribMap[ attribLabels[attrib].first].size()];
-    vname = new std::string[attribMap[ attribLabels[attrib].first].size()];
-
-    for(unsigned int i = 0; i < attribMap[ attribLabels[attrib].first].size(); i++){
-      va[i] = attribMap[ attribLabels[attrib].first][i].a;
-      vb[i] = attribMap[ attribLabels[attrib].first][i].b;
-      vc[i] = attribMap[ attribLabels[attrib].first][i].c;
-      vd[i] = attribMap[ attribLabels[attrib].first][i].d;
-      vname[i] = attribMap[ attribLabels[attrib].first][i].label;
-    }
-
-    /*
-    std::cout << "n: " << (*attrIT).second.size() << "\n";
-    std::cout << "nom_var: " << nom_var << "\n";
-    std::cout << "antecedente: " << antecedente << "\n";
-    std::cout << "unit: " << unit << "\n";
-    std::cout << "c_factor: " << c_factor << "\n";
-    std::cout << "inf: " << inf << "\n";
-    std::cout << "sup: " << sup << "\n";
-
-    for(unsigned int i = 0; i < (*attrIT).second.size(); i++){
-      std::cout << va[i] << " "  << vb[i] << " "  << vc[i] << " "  << vd[i] << " "  << vname[i] << "\n";
-    }
-    std::cout << "\n\n\n";
-    */
-
-    lista[cont].Asigna(attribMap[ attribLabels[attrib].first].size(), nom_var, antecedente, unit, c_factor, inf, sup, va, vb, vc, vd, vname, true);
-    oper[cont].op=0;
+    // unit = 0, c_factor = 0
+    lista[v].Asigna(n, variable.name, estado, 0, 0, inf, sup, va, vb, vc, vd, vname, true);
+    oper[v].op=0;
     Libera_Memoria_Var_aux(va,vb,vc,vd,vname);
-
-    cont++;
   }
-
-
-
-
 }
 
 
@@ -925,3 +891,5 @@ void VectorVar::Funcion(int pos, int &x1, int &x2, int &op) const{
     x2 = oper[pos].operando[1];
     op = oper[pos].op;
 }
+
+}  // namespace inslv

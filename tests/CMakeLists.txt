@@ -3,8 +3,8 @@
 # - unit: tests unitarios del código nuevo.
 # - oracle: comparaciones con Old/, función a función y con el pipeline completo.
 # - planner: los dominios aprendidos se validan planificando con PyPlanner y VAL.
+# - inslv: los de vendor/inslv (se registran allí).
 
-include(Dependencies)
 include(GoogleTest)
 
 add_subdirectory(unit)

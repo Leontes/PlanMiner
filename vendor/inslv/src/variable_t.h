@@ -5,6 +5,8 @@
 #include <fstream>
 #include "domain_t.h"
 #include "fuzzy_t.h"
+
+namespace inslv {
 class variable_t{
    private:
      string nombre;     // Nombre de la variable
@@ -65,5 +67,7 @@ class variable_t{
 
 };
 
+
+}  // namespace inslv
 
 #endif
