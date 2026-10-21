@@ -239,6 +239,7 @@ struct nodoArith {
         }
         break;
     }
+    return -999999999.0;
   }
 
   /** Method noVars
@@ -257,6 +258,7 @@ struct nodoArith {
           return (hijos[0].noVars() and hijos[1].noVars());
         break;
     }
+    return false;
   }
 
   /** Method size
@@ -274,6 +276,7 @@ struct nodoArith {
         break;
 
     }
+    return 0;
   }
 
   /** Method clearHijos
@@ -386,6 +389,7 @@ struct nodoArith {
         }
         break;
     }
+    return false;
   }
 };
 

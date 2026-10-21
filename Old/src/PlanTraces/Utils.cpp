@@ -9,11 +9,32 @@
 #include <cmath>
 
 
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
-
 #include "PlanTraces/Utils.hpp"
 
+
+//Sustituye a boost::split(tokens, s, boost::is_any_of(delims), modo) con la misma semántica:
+//cada separador delimita un token (puede haber tokens vacíos) y, con compress, los
+//separadores consecutivos cuentan como uno solo. Un separador al principio o al final
+//sigue dando un token vacío en ese extremo.
+static void splitAnyOf(std::vector<std::string> &tokens, const std::string &s, const std::string &delims, bool compress){
+  tokens.clear();
+  std::string current;
+  for (std::size_t i = 0; i < s.size(); i++) {
+    if (delims.find(s[i]) != std::string::npos) {
+      tokens.push_back(current);
+      current.clear();
+      if (compress) {
+        while (i + 1 < s.size() and delims.find(s[i + 1]) != std::string::npos) {
+          i++;
+        }
+      }
+    }
+    else {
+      current += s[i];
+    }
+  }
+  tokens.push_back(current);
+}
 
 //Auxiliary functions
 template<typename Out>
@@ -318,7 +339,7 @@ Task * parseTask(std::string taskSTR){
 
   if(strformateado.compare("") != 0){
     std::vector<std::string> tokens;
-    boost::split( tokens, strformateado, boost::is_any_of(" "), boost::algorithm::token_compress_on);
+    splitAnyOf(tokens, strformateado, " ", true);
 
     unsigned int contador = 0;
     while(tokens[contador] != ":"){
@@ -360,7 +381,7 @@ State * parseState(std::string stateSTR){
 
   if(strformateado.compare("") != 0){
     std::vector<std::string> tokens;
-    boost::split( tokens, strformateado, boost::is_any_of(" ") );
+    splitAnyOf(tokens, strformateado, " ", false);
     return new State(tokens);
   }
   else{

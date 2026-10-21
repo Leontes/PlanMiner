@@ -12,7 +12,7 @@
 */
 class Predicate {
 private:
-  virtual std::ostream& print(std::ostream&) const {};
+  virtual std::ostream& print(std::ostream& os) const { return os; }
 public:
   Predicate(){};
   Predicate(const Predicate & iPred){};
@@ -35,19 +35,19 @@ public:
   *   @brief Method to check if the parameters' list has been fully cleared using the clearParam method
   *   retval bool cheking value
   */
-  virtual bool erasable(){}
+  virtual bool erasable(){ return false; }
 
   /** Function getName
   *   @brief Method to get the name of the predicate
   *   @retval string atom name
   */
-  virtual std::string getName(){}
+  virtual std::string getName(){ return ""; }
 
   /** Function getValue
   *   @brief Method to get the value of the predicate
   *   @retval double atom value
   */
-  virtual double getValue(){}
+  virtual double getValue(){ return 0.0; }
 
   /** Function setValue
   *   @brief Method to set the value of the predicate

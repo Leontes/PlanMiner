@@ -5678,6 +5678,7 @@ double Operacion (double x1, double x2, int op)
         return x1;
         break;
     }
+  return 0.0;
 }
 
 void CalcularProbabilidadSimpleVariable_op(const VectorVar &V, const example_set &E, int v1, int v2,
@@ -10191,4 +10192,5 @@ double Bondad_old (multipoblacion &G, const VectorVar &V, const example_set &E, 
     delete [] frecuencia_variables[i];
   }
   delete [] frecuencia_variables;
+  return 0;
 }

@@ -680,6 +680,7 @@ double multipoblacion::Sort_4L(example_set &E, int n_clases, int *n_examples_per
 
   delete [] PobMinClase;
 
+  return 0.0;
 }
 
 

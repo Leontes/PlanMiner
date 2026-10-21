@@ -20,7 +20,7 @@ public:
       os << *(task.parameters[i]);
     }
 
-    os << std::string(")\n");
+    os << std::string(")\n"); return os;
   }
 
 };

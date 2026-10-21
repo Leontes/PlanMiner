@@ -134,6 +134,7 @@ ruleset& ruleset::operator=(const ruleset& x)
     return *this;
   }
 
+  return *this;
 }
 
 
