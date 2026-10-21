@@ -1,0 +1,17 @@
+# Compilación
+/build/
+CMakeUserPresets.json
+
+# Herramientas locales: VAL (scripts/build_val.sh) y el entorno de Python
+# (scripts/setup_python.sh)
+/tools/
+/.venv/
+
+# Python
+__pycache__/
+.ruff_cache/
+
+# Editores
+.cache/
+.vscode/
+.idea/

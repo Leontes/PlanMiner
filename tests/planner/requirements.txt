@@ -1,0 +1,2 @@
+# Entorno de Python de los tests del planificador (scripts/setup_python.sh).
+pyplanner @ git+https://github.com/Leontes/PyPlanner.git@v1.0

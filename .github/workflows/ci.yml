@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Compilación y tests (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar
+        run: cmake --preset ci-${{ matrix.compiler }}
+
+      - name: Compilar
+        run: cmake --build --preset ci-${{ matrix.compiler }} -j "$(nproc)"
+
+      - name: Tests (unit y oracle)
+        run: ctest --preset ci-${{ matrix.compiler }}
+
+  sanitizers:
+    name: AddressSanitizer y UBSan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar, compilar y probar
+        run: cmake --workflow --preset asan
+
+  planner:
+    name: Tests del planificador (PyPlanner y VAL)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Caché de VAL
+        id: val-cache
+        uses: actions/cache@v4
+        with:
+          path: tools/bin
+          key: val-${{ runner.os }}-${{ hashFiles('scripts/build_val.sh') }}
+
+      - name: Compilar VAL
+        if: steps.val-cache.outputs.cache-hit != 'true'
+        run: scripts/build_val.sh
+
+      - name: Entorno de Python con PyPlanner
+        run: scripts/setup_python.sh
+
+      - name: Configurar y compilar (sin Old/)
+        run: |
+          cmake --preset ci-gcc -DPLANMINER_BUILD_LEGACY=OFF
+          cmake --build --preset ci-gcc -j "$(nproc)"
+
+      - name: Tests del planificador
+        run: ctest --preset ci-gcc -L planner
+
+  lint:
+    name: Formato y lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Herramientas
+        run: pip install clang-format==18.1.3 ruff mypy
+
+      - name: clang-format
+        run: |
+          git ls-files -- '*.cpp' '*.hpp' '*.hpp.in' ':!Old' \
+            | xargs clang-format --dry-run --Werror
+
+      - name: ruff
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: mypy
+        run: mypy --strict tests/planner

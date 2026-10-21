@@ -1,0 +1,20 @@
+// Versión de PlanMiner. CMake genera version.hpp a partir de este fichero.
+#pragma once
+
+#include <string>
+#include <string_view>
+
+namespace planminer {
+
+// clang-format off: las variables de CMake (@...@) no son C++.
+inline constexpr std::string_view version = "@PROJECT_VERSION@";
+inline constexpr int version_major = @PROJECT_VERSION_MAJOR@;
+inline constexpr int version_minor = @PROJECT_VERSION_MINOR@;
+inline constexpr int version_patch = @PROJECT_VERSION_PATCH@;
+// clang-format on
+
+/// Versión, compilador y tipo de compilación, para dejar constancia en las salidas de los
+/// experimentos. Por ejemplo: "planminer 0.1.0 (GNU 13.3.0, Release)".
+std::string build_description();
+
+}  // namespace planminer
