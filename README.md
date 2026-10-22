@@ -105,7 +105,8 @@ libraries it links to. Its unit tests are in `tests/unit/<library>`.
 
 | Library | What it does |
 |---------|--------------|
-| `plantraces` | reads plan traces |
+| `plantraces` | reads plan traces and groups the applications of each action |
+| `datasets` | builds the example table of each action |
 
 | Path | Contents |
 |------|----------|

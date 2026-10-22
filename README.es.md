@@ -108,7 +108,8 @@ cabeceras de las librerías con las que enlaza. Sus tests unitarios están en
 
 | Librería | Qué hace |
 |----------|----------|
-| `plantraces` | lee las trazas de plan |
+| `plantraces` | lee las trazas de plan y agrupa las aplicaciones de cada acción |
+| `datasets` | construye la tabla de ejemplos de cada acción |
 
 | Ruta | Qué hay |
 |------|---------|

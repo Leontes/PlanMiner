@@ -4,11 +4,15 @@ set(PLANMINER_LEGACY_TRACES "${PROJECT_SOURCE_DIR}/Old/Test")
 
 # Función a función: los tests enlazan con las librerías de Old/ (planminer::legacy). A medida
 # que se porte cada parte, su test comparará la versión nueva con la original.
-add_executable(planminer_oracle_tests test_legacy_parser.cpp)
-target_link_libraries(planminer_oracle_tests PRIVATE planminer::legacy GTest::gtest_main)
+add_executable(planminer_oracle_tests pts.cpp test_legacy_parser.cpp test_legacy_tables.cpp)
+target_link_libraries(planminer_oracle_tests PRIVATE planminer::legacy datasets plantraces
+                                                     GTest::gtest_main)
 target_compile_features(planminer_oracle_tests PRIVATE cxx_std_20)
-target_compile_definitions(planminer_oracle_tests
-                           PRIVATE PLANMINER_LEGACY_TRACES="${PLANMINER_LEGACY_TRACES}")
+target_compile_definitions(
+  planminer_oracle_tests
+  PRIVATE PLANMINER_LEGACY_TRACES="${PLANMINER_LEGACY_TRACES}"
+          PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces"
+          PLANMINER_ORACLE_WORK_DIR="${CMAKE_CURRENT_BINARY_DIR}/work")
 planminer_set_warnings(planminer_oracle_tests)
 
 gtest_discover_tests(planminer_oracle_tests TEST_PREFIX "oracle." DISCOVERY_MODE PRE_TEST
