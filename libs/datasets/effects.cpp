@@ -1,8 +1,9 @@
 #include "datasets/effects.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <utility>
+
+#include "changes.hpp"
 
 namespace datasets {
 
@@ -10,13 +11,6 @@ namespace {
 
 using regression::Expression;
 using regression::Operation;
-
-// Tolerancia relativa para decidir que un valor no ha cambiado.
-constexpr double tolerance = 1e-6;
-
-bool same(double before, double after) {
-  return std::abs(after - before) <= tolerance * std::max(1.0, std::abs(before));
-}
 
 std::vector<double> rows(const std::vector<double>& column, std::size_t from, std::size_t count) {
   const auto start = column.begin() + static_cast<std::ptrdiff_t>(from);
@@ -92,17 +86,8 @@ std::vector<FluentChange> numeric_effects(const Table& table, const EffectOption
     const std::vector<double> before = rows(table.columns[target], 0, n);
     const std::vector<double> after = rows(table.columns[target], n, n);
 
-    std::size_t known = 0;
-    std::size_t unchanged = 0;
-    for (std::size_t i = 0; i < n; ++i) {
-      if (!std::isnan(before[i]) && !std::isnan(after[i])) {
-        ++known;
-        unchanged += same(before[i], after[i]) ? 1U : 0U;
-      }
-    }
-    if (unchanged == known ||
-        (options.null_model &&
-         static_cast<double>(unchanged) >= options.max_unchanged * static_cast<double>(known))) {
+    if (!detail::count_unchanged(table.columns[target], n)
+             .changes(options.null_model, options.max_unchanged)) {
       continue;
     }
 

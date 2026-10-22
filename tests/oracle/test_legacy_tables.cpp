@@ -235,8 +235,8 @@ std::string legacy_relation_label(const datasets::Relation& relation,
     return legacy_label({datasets::AttributeKind::fluent, term}, transition);
   };
   return std::string{op} + " - " + label(relation.left) + "  " +
-         (relation.right_kind == datasets::OperandKind::fall ? "DELTA " : "") +
-         label(relation.right);
+         (relation.right.kind == datasets::OperandKind::fall ? "DELTA " : "") +
+         label(relation.right.variables.front());
 }
 
 // Que las columnas nuevas, con el nombre que les da el original, sean las del original.
@@ -266,8 +266,10 @@ class LegacyTables : public testing::TestWithParam<Case> {
     traces_ = read_traces(GetParam());
     ASSERT_FALSE(traces_.empty());
 
-    const fs::path work = fs::path{PLANMINER_ORACLE_WORK_DIR} /
-                          (GetParam().collection + "." + GetParam().variant + ".pts");
+    // Uno por test: los de un mismo caso pueden ir en paralelo.
+    const fs::path work =
+        fs::path{PLANMINER_ORACLE_WORK_DIR} /
+        (std::string{testing::UnitTest::GetInstance()->current_test_info()->name()} + ".pts");
     fs::create_directories(work.parent_path());
     std::ofstream(work) << oracle::to_pts(traces_);
 
@@ -311,7 +313,8 @@ TEST_P(LegacyTables, SameRelationsAsTheOriginal) {
     const datasets::Table table = datasets::build_table(vocabulary_, transitions);
     std::vector<std::string> labels;
     std::vector<std::vector<double>> columns;
-    for (const datasets::Relation& relation : datasets::numeric_relations(table)) {
+    for (const datasets::Relation& relation :
+         datasets::numeric_relations(table, {}, datasets::RelationOptions::original())) {
       labels.push_back(legacy_relation_label(relation, transitions.front()));
       columns.push_back(relation.column);
     }

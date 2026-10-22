@@ -17,54 +17,20 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <filesystem>
-#include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "datasets/effects.hpp"
+#include "zenotravel.hpp"
 
 namespace {
 
-namespace fs = std::filesystem;
-
 using datasets::EffectKind;
+using datasets::test::Tables;
 using plantraces::LiftedAtom;
 using regression::Expression;
 using regression::Operation;
-
-std::vector<plantraces::Trace> zenotravel(const std::string& variant) {
-  std::vector<fs::path> files;
-  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / "zenotravel")) {
-    if (entry.path().filename().string().ends_with("." + variant + ".json")) {
-      files.push_back(entry.path());
-    }
-  }
-  std::sort(files.begin(), files.end());
-  std::vector<plantraces::Trace> traces;
-  for (const fs::path& file : files) {
-    traces.push_back(plantraces::read_trace(file));
-  }
-  return traces;
-}
-
-// Las tablas de las acciones de una variante.
-class Tables {
- public:
-  explicit Tables(const std::string& variant) : traces_(zenotravel(variant)) {
-    const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces_);
-    for (const auto& [name, transitions] : plantraces::group_by_action(traces_)) {
-      tables_.emplace(name, datasets::build_table(vocabulary, transitions));
-    }
-  }
-  const datasets::Table& at(const std::string& action) const { return tables_.at(action); }
-  const std::map<std::string, datasets::Table>& all() const { return tables_; }
-
- private:
-  std::vector<plantraces::Trace> traces_;
-  std::map<std::string, datasets::Table> tables_;
-};
 
 // Los valores de la expresión (sobre los fluentes variables) en los estados de antes de la tabla.
 std::vector<double> evaluate(const datasets::Table& table, const std::vector<LiftedAtom>& variables,
