@@ -1,4 +1,4 @@
-add_executable(datasets_tests test_effects.cpp test_table.cpp)
+add_executable(datasets_tests test_effects.cpp test_relations.cpp test_table.cpp)
 target_link_libraries(datasets_tests PRIVATE datasets planminer_test_main)
 target_compile_definitions(datasets_tests
                            PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces")
