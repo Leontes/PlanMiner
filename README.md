@@ -106,7 +106,8 @@ libraries it links to. Its unit tests are in `tests/unit/<library>`.
 | Library | What it does |
 |---------|--------------|
 | `plantraces` | reads plan traces and groups the applications of each action |
-| `datasets` | builds the example table of each action |
+| `regression` | symbolic regression: the A* that looks for the expression of a numeric effect |
+| `datasets` | builds the example table of each action and finds its numeric effects |
 
 | Path | Contents |
 |------|----------|

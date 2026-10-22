@@ -109,7 +109,8 @@ cabeceras de las librerías con las que enlaza. Sus tests unitarios están en
 | Librería | Qué hace |
 |----------|----------|
 | `plantraces` | lee las trazas de plan y agrupa las aplicaciones de cada acción |
-| `datasets` | construye la tabla de ejemplos de cada acción |
+| `regression` | la regresión simbólica: el A* que busca la expresión de un efecto numérico |
+| `datasets` | construye la tabla de ejemplos de cada acción y busca sus efectos numéricos |
 
 | Ruta | Qué hay |
 |------|---------|
