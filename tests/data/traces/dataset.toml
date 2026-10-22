@@ -16,7 +16,7 @@ problems = ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08"]
 
 [[collections]]
 collection = "ipc-2023-numeric/zenotravel"
-problems = ["p01", "p02", "p03", "p04", "p05"]
+problems = ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p09", "p10"]
 
 # Una traza por problema y variante, con estas opciones de pddldomains trace: world, universe,
 # missing, missing_states, noise, numeric_noise y seed.
