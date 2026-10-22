@@ -30,6 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CompilerWarnings)
 include(Sanitizers)
+include(Json)
 
 if(BUILD_TESTING)
   enable_testing()

@@ -1,5 +1,8 @@
-add_executable(planminer_unit_tests test_version.cpp)
-target_link_libraries(planminer_unit_tests PRIVATE planminer::core GTest::gtest_main)
+add_executable(planminer_unit_tests test_trace.cpp test_trace_dataset.cpp test_version.cpp)
+target_link_libraries(planminer_unit_tests PRIVATE planminer::core nlohmann_json::nlohmann_json
+                                                   GTest::gtest_main)
+target_compile_definitions(planminer_unit_tests
+                           PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces")
 planminer_set_warnings(planminer_unit_tests)
 planminer_enable_sanitizers(planminer_unit_tests)
 

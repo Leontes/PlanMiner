@@ -12,8 +12,16 @@ El proyecto se está **reescribiendo desde cero en C++20**, portando el algoritm
 La implementación original está en [`Old/`](Old/) y sirve de oráculo en los tests: cada
 parte portada se compara con la original.
 
-Por ahora solo está la infraestructura de compilación y de tests. La línea de comandos
-`planminer` solo informa de la versión.
+Por ahora están la infraestructura de compilación y de tests y el lector de trazas. La línea
+de comandos `planminer` solo informa de la versión.
+
+## Trazas
+
+PlanMiner aprende de trazas en el formato de
+[PDDLDomains](https://github.com/Leontes/PDDLDomains) (`pddldomains trace`): los estados por
+los que pasa la ejecución de un plan, con huecos, estados que faltan y ruido, y las acciones.
+El formato está descrito en
+[`vendor/PDDLDomains/docs/es/trazas.md`](https://github.com/Leontes/PDDLDomains/blob/main/docs/es/trazas.md).
 
 ## Requisitos
 
@@ -24,8 +32,10 @@ Por ahora solo está la infraestructura de compilación y de tests. La línea de
 
 Para los tests del planificador, además:
 
-- Python 3.12 o posterior, con
-  [PyPlanner](https://github.com/Leontes/PyPlanner) (`scripts/setup_python.sh`).
+- El submódulo `vendor/PDDLDomains` (`git clone --recursive`, o
+  `git submodule update --init` en un clon ya hecho).
+- Python 3.12 o posterior, con [PyPlanner](https://github.com/Leontes/PyPlanner) y
+  `pddldomains` (`scripts/setup_python.sh`).
 - [VAL](https://github.com/KCL-Planning/VAL) (`scripts/build_val.sh`, necesita git, cmake y
   g++).
 
@@ -57,13 +67,13 @@ Los tests van por etiquetas de CTest (`ctest --preset debug -L <etiqueta>`):
 |----------|---------------|
 | `unit` | el código nuevo |
 | `oracle` | la comparación con `Old/`. Hay tests de las funciones originales, que se enlazan con el target `planminer::legacy`, y del dominio que aprende el original con las trazas de `Old/Test`, comparado con el guardado en `tests/oracle/golden/` |
-| `planner` | los dominios aprendidos: PyPlanner planifica con ellos y VAL valida los planes con el dominio de referencia (`tests/planner/evaluate_domain.py`) |
+| `planner` | los dominios aprendidos: PyPlanner planifica con ellos y VAL valida los planes con el dominio de referencia (`tests/planner/evaluate_domain.py`). Y las trazas de prueba, que se tienen que regenerar igual |
 | `inslv` | la librería INSLV de `vendor/inslv`, incluida su equivalencia con `Old/` |
 
-Los tests del planificador solo se registran si están PyPlanner y VAL:
+Los tests del planificador solo se registran si están PyPlanner, pddldomains y VAL:
 
 ```bash
-scripts/setup_python.sh   # .venv con PyPlanner
+scripts/setup_python.sh   # .venv con PyPlanner y pddldomains
 scripts/build_val.sh      # tools/bin/Validate
 cmake --preset debug      # volver a configurar para que los detecte
 ```
@@ -75,6 +85,19 @@ los casos de INSLV de `vendor/inslv/tests/cases/`):
 PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R "oracle.legacy|oracle.inslv_cases"
 ```
 
+### Trazas de prueba
+
+`tests/data/traces/` tiene trazas de problemas del catálogo PDDLDomains, con planes de
+PyPlanner. Qué problemas y qué variantes (completa, mundo cerrado, con huecos, con ruido y con
+estados que faltan) lo dice `tests/data/traces/dataset.toml`. Los planes se guardan para poder
+regenerar las trazas sin volver a planificar:
+
+```bash
+.venv/bin/python scripts/generate_traces.py            # genera lo que falta y las trazas
+.venv/bin/python scripts/generate_traces.py --replan   # también los planes
+.venv/bin/python scripts/generate_traces.py --check    # comprueba que se regeneran igual
+```
+
 ## Estructura
 
 | Ruta | Qué hay |
@@ -84,10 +107,11 @@ PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R "oracle.legacy|oracle.inslv_ca
 | `tests/unit/` | tests unitarios |
 | `tests/oracle/` | comparaciones con `Old/` y dominios de referencia (`golden/`) |
 | `tests/planner/` | validación de dominios con PyPlanner y VAL |
-| `tests/data/` | dominios y problemas de referencia |
+| `tests/data/` | dominios y problemas de referencia, y las trazas de prueba (`traces/`) |
 | `cmake/` | módulos de CMake: avisos, sanitizers, dependencias, `Old/` y planificador |
-| `scripts/` | preparación de PyPlanner y VAL |
+| `scripts/` | preparación de PyPlanner, pddldomains y VAL, y generación de las trazas de prueba |
 | `vendor/inslv/` | INSLV, el aprendizaje de reglas difusas (ver su [README](vendor/inslv/README.md)) |
+| `vendor/PDDLDomains/` | submódulo: el catálogo de dominios y la utilidad de trazas |
 | `Old/` | la implementación original, con un parche mínimo para que compile |
 
 ## INSLV
