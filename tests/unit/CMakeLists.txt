@@ -1,6 +1,7 @@
 # Los tests unitarios de cada librería de libs/, en tests/unit/<librería>, con el prefijo
 # unit.<librería>.
 add_subdirectory(plantraces)
+add_subdirectory(regression)
 add_subdirectory(datasets)
 
 # La línea de comandos.
