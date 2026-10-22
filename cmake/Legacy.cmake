@@ -5,6 +5,11 @@
 # - el target planminer::legacy, para enlazar los tests con las funciones originales y
 #   compararlas con las portadas.
 
+# Old/ solo está en local: no se sube al repositorio, aunque sigue en su historial.
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/Old/CMakeLists.txt")
+  message(FATAL_ERROR "PLANMINER_BUILD_LEGACY necesita Old/, que solo está en local")
+endif()
+
 add_subdirectory("${PROJECT_SOURCE_DIR}/Old" "${PROJECT_BINARY_DIR}/legacy")
 
 # Las librerías de Old/, en orden de enlace (cada una antes de las que usa).

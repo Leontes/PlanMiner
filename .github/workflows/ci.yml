@@ -21,7 +21,7 @@ jobs:
       - name: Compilar
         run: cmake --build --preset ci-${{ matrix.compiler }} -j "$(nproc)"
 
-      - name: Tests (unit y oracle)
+      - name: Tests
         run: ctest --preset ci-${{ matrix.compiler }}
 
   sanitizers:
@@ -59,9 +59,9 @@ jobs:
       - name: Entorno de Python con PyPlanner y pddldomains
         run: scripts/setup_python.sh
 
-      - name: Configurar y compilar (sin Old/)
+      - name: Configurar y compilar
         run: |
-          cmake --preset ci-gcc -DPLANMINER_BUILD_LEGACY=OFF
+          cmake --preset ci-gcc
           cmake --build --preset ci-gcc -j "$(nproc)"
 
       - name: Tests del planificador

@@ -17,7 +17,14 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 option(BUILD_TESTING "Compila los tests" ON)
 option(PLANMINER_WARNINGS_AS_ERRORS "Trata los avisos del código nuevo como errores" OFF)
 option(PLANMINER_SANITIZERS "Compila el código nuevo con AddressSanitizer y UBSan" OFF)
-option(PLANMINER_BUILD_LEGACY "Compila Old/ como oráculo de los tests" ${BUILD_TESTING})
+# Old/, la implementación original, solo está en local (no se sube): el oráculo de los tests se
+# compila si está.
+if(BUILD_TESTING AND EXISTS "${PROJECT_SOURCE_DIR}/Old/CMakeLists.txt")
+  set(_legacy_default ON)
+else()
+  set(_legacy_default OFF)
+endif()
+option(PLANMINER_BUILD_LEGACY "Compila Old/ como oráculo de los tests" ${_legacy_default})
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Tipo de compilación" FORCE)
