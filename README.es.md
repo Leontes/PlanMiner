@@ -100,15 +100,25 @@ regenerar las trazas sin volver a planificar:
 
 ## Estructura
 
+PlanMiner se organiza en librerías, una por cada parte del algoritmo, en `libs/<librería>`:
+las fuentes en la raíz y las cabeceras públicas en `include/<librería>/`, que se incluyen como
+`<librería>/<cabecera>.hpp`. Cada librería tiene su espacio de nombres y solo ve las
+cabeceras de las librerías con las que enlaza. Sus tests unitarios están en
+`tests/unit/<librería>`.
+
+| Librería | Qué hace |
+|----------|----------|
+| `plantraces` | lee las trazas de plan |
+
 | Ruta | Qué hay |
 |------|---------|
-| `include/planminer/`, `src/` | la librería `planminer::core` |
+| `libs/` | las librerías |
 | `apps/planminer/` | la línea de comandos |
 | `tests/unit/` | tests unitarios |
 | `tests/oracle/` | comparaciones con `Old/` y dominios de referencia (`golden/`) |
 | `tests/planner/` | validación de dominios con PyPlanner y VAL |
 | `tests/data/` | dominios y problemas de referencia, y las trazas de prueba (`traces/`) |
-| `cmake/` | módulos de CMake: avisos, sanitizers, dependencias, `Old/` y planificador |
+| `cmake/` | módulos de CMake: librerías, avisos, sanitizers, dependencias, `Old/` y planificador |
 | `scripts/` | preparación de PyPlanner, pddldomains y VAL, y generación de las trazas de prueba |
 | `vendor/inslv/` | INSLV, el aprendizaje de reglas difusas (ver su [README](vendor/inslv/README.md)) |
 | `vendor/PDDLDomains/` | submódulo: el catálogo de dominios y la utilidad de trazas |

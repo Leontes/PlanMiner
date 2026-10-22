@@ -1,4 +1,4 @@
-#include "planminer/trace.hpp"
+#include "plantraces/trace.hpp"
 
 #include <cstddef>
 #include <fstream>
@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-namespace planminer {
+namespace plantraces {
 
 namespace {
 
@@ -334,4 +334,4 @@ Trace read_trace(const std::filesystem::path& file) {
   return parse_trace(content.str(), file.string());
 }
 
-}  // namespace planminer
+}  // namespace plantraces

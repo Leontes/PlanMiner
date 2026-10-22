@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "planminer/trace.hpp"
+#include "plantraces/trace.hpp"
 
 namespace {
 
 namespace fs = std::filesystem;
 
-using planminer::Trace;
+using plantraces::Trace;
 
 std::vector<fs::path> plans() {
   std::vector<fs::path> files;
@@ -45,8 +45,8 @@ class TraceDataset : public testing::TestWithParam<fs::path> {
  protected:
   Trace variant(const std::string& name) const {
     const fs::path& plan = GetParam();
-    return planminer::read_trace(plan.parent_path() /
-                                 (plan.stem().string() + "." + name + ".json"));
+    return plantraces::read_trace(plan.parent_path() /
+                                  (plan.stem().string() + "." + name + ".json"));
   }
 };
 
@@ -58,8 +58,8 @@ TEST_P(TraceDataset, EveryVariantFollowsThePlan) {
     const Trace trace = variant(name);
     ASSERT_EQ(trace.states.size(), expected.size() + 1) << name;
     for (std::size_t i = 0; i < expected.size(); ++i) {
-      const planminer::GroundAction& action = trace.actions[i];
-      EXPECT_EQ(planminer::to_string({action.name, action.arguments}), expected[i])
+      const plantraces::GroundAction& action = trace.actions[i];
+      EXPECT_EQ(plantraces::to_string({action.name, action.arguments}), expected[i])
           << name << ", acción " << i + 1;
     }
   }
@@ -67,7 +67,7 @@ TEST_P(TraceDataset, EveryVariantFollowsThePlan) {
 
 TEST_P(TraceDataset, CompleteTracesHaveNoGaps) {
   for (const std::string name : {"complete", "closed"}) {
-    for (const planminer::Observation& state : variant(name).states) {
+    for (const plantraces::Observation& state : variant(name).states) {
       EXPECT_FALSE(state.missing) << name << ", estado " << state.step;
       EXPECT_TRUE(state.unknown_atoms.empty()) << name << ", estado " << state.step;
       EXPECT_TRUE(state.unknown_values.empty()) << name << ", estado " << state.step;
@@ -78,29 +78,29 @@ TEST_P(TraceDataset, CompleteTracesHaveNoGaps) {
 TEST_P(TraceDataset, ClosedAndOpenWorldAgree) {
   const Trace open = variant("complete");
   const Trace closed = variant("closed");
-  EXPECT_EQ(open.world, planminer::World::open);
-  EXPECT_EQ(closed.world, planminer::World::closed);
+  EXPECT_EQ(open.world, plantraces::World::open);
+  EXPECT_EQ(closed.world, plantraces::World::closed);
 
   ASSERT_EQ(open.states.size(), closed.states.size());
   for (std::size_t i = 0; i < open.states.size(); ++i) {
     EXPECT_EQ(open.states[i].true_atoms, closed.states[i].true_atoms) << "estado " << i;
     EXPECT_EQ(open.states[i].values, closed.states[i].values) << "estado " << i;
     EXPECT_TRUE(closed.states[i].false_atoms.empty()) << "estado " << i;
-    for (const planminer::GroundAtom& atom : open.states[i].false_atoms) {
+    for (const plantraces::GroundAtom& atom : open.states[i].false_atoms) {
       EXPECT_EQ(closed.states[i].truth(atom), false)
-          << "estado " << i << ", " << planminer::to_string(atom);
+          << "estado " << i << ", " << plantraces::to_string(atom);
     }
   }
 }
 
 TEST_P(TraceDataset, DegradedTracesHaveGaps) {
-  for (const planminer::Observation& state : variant("missing30").states) {
+  for (const plantraces::Observation& state : variant("missing30").states) {
     EXPECT_FALSE(state.unknown_atoms.empty()) << "missing30, estado " << state.step;
   }
 
   const Trace missing_states = variant("missing-states20");
   EXPECT_TRUE(std::any_of(missing_states.states.begin(), missing_states.states.end(),
-                          [](const planminer::Observation& state) { return state.missing; }));
+                          [](const plantraces::Observation& state) { return state.missing; }));
 
   // El ruido invierte átomos: algún estado dice algo distinto que la traza completa.
   const Trace complete = variant("complete");

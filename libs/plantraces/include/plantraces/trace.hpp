@@ -14,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-namespace planminer {
+namespace plantraces {
 
 /// Un átomo instanciado: (nombre arg1 arg2 ...). También se usa para los términos de los fluentes
 /// numéricos, como (fuel plane1).
@@ -94,4 +94,4 @@ Trace parse_trace(std::string_view json, std::string_view source = "<traza>");
 /// Lee una traza de un fichero (ver parse_trace).
 Trace read_trace(const std::filesystem::path& file);
 
-}  // namespace planminer
+}  // namespace plantraces

@@ -1,13 +1,6 @@
-add_executable(planminer_unit_tests test_trace.cpp test_trace_dataset.cpp test_version.cpp)
-target_link_libraries(planminer_unit_tests PRIVATE planminer::core nlohmann_json::nlohmann_json
-                                                   GTest::gtest_main)
-target_compile_definitions(planminer_unit_tests
-                           PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces")
-planminer_set_warnings(planminer_unit_tests)
-planminer_enable_sanitizers(planminer_unit_tests)
-
-gtest_discover_tests(planminer_unit_tests TEST_PREFIX "unit." DISCOVERY_MODE PRE_TEST
-                     NO_PRETTY_VALUES PROPERTIES LABELS unit)
+# Los tests unitarios de cada librería de libs/, en tests/unit/<librería>, con el prefijo
+# unit.<librería>.
+add_subdirectory(plantraces)
 
 # La línea de comandos.
 add_test(NAME unit.cli.version COMMAND planminer --version)

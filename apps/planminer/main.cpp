@@ -8,7 +8,7 @@
 #include <span>
 #include <string_view>
 
-#include "planminer/version.hpp"
+#include "version.hpp"
 
 namespace {
 
@@ -39,7 +39,8 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
   }
   if (option == "--version") {
-    std::cout << planminer::build_description() << '\n';
+    std::cout << "planminer " << planminer::version << " (" << planminer::compiler << ", "
+              << planminer::build_type << ")\n";
     return EXIT_SUCCESS;
   }
 

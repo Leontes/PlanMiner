@@ -4,15 +4,15 @@
 #include <string>
 #include <vector>
 
-#include "planminer/trace.hpp"
+#include "plantraces/trace.hpp"
 
 namespace {
 
 using nlohmann::json;
-using planminer::GroundAtom;
-using planminer::parse_atom;
-using planminer::parse_trace;
-using planminer::TraceError;
+using plantraces::GroundAtom;
+using plantraces::parse_atom;
+using plantraces::parse_trace;
+using plantraces::TraceError;
 
 // Una traza de mundo cerrado con dos estados y una acción.
 json closed_trace() {
@@ -47,7 +47,7 @@ std::string error_of(const json& trace) {
 TEST(ParseAtom, ReadsNameAndArguments) {
   EXPECT_EQ(parse_atom("(on a b)"), (GroundAtom{"on", {"a", "b"}}));
   EXPECT_EQ(parse_atom("(handempty)"), (GroundAtom{"handempty", {}}));
-  EXPECT_EQ(planminer::to_string(parse_atom("(on a b)")), "(on a b)");
+  EXPECT_EQ(plantraces::to_string(parse_atom("(on a b)")), "(on a b)");
 }
 
 TEST(ParseAtom, RejectsMalformedAtoms) {
@@ -57,16 +57,16 @@ TEST(ParseAtom, RejectsMalformedAtoms) {
 }
 
 TEST(ParseTrace, ReadsAClosedWorldTrace) {
-  const planminer::Trace trace = parse_trace(closed_trace().dump());
+  const plantraces::Trace trace = parse_trace(closed_trace().dump());
 
   EXPECT_EQ(trace.domain, "blocks");
   EXPECT_EQ(trace.problem, "blocks-2");
-  EXPECT_EQ(trace.world, planminer::World::closed);
+  EXPECT_EQ(trace.world, plantraces::World::closed);
   EXPECT_EQ(trace.objects.at("a"), std::vector<std::string>{"block"});
   EXPECT_EQ(trace.objects.at("b"), (std::vector<std::string>{"block", "thing"}));
 
   ASSERT_EQ(trace.states.size(), 2U);
-  const planminer::Observation& initial = trace.states[0];
+  const plantraces::Observation& initial = trace.states[0];
   EXPECT_EQ(initial.truth({"clear", {"a"}}), true);
   EXPECT_EQ(initial.truth({"on", {"a", "b"}}), std::nullopt);
   // En mundo cerrado, lo que no se lista es falso.
@@ -87,8 +87,8 @@ TEST(ParseTrace, ReadsTheFalseAtomsOfAnOpenWorldTrace) {
   trace["states"][0]["false"] = {"(holding a)"};
   trace["states"][1]["false"] = json::array();
 
-  const planminer::Trace read = parse_trace(trace.dump());
-  EXPECT_EQ(read.world, planminer::World::open);
+  const plantraces::Trace read = parse_trace(trace.dump());
+  EXPECT_EQ(read.world, plantraces::World::open);
   EXPECT_TRUE(read.states[0].false_atoms.contains({"holding", {"a"}}));
   EXPECT_EQ(read.states[0].truth({"holding", {"a"}}), false);
 }
@@ -97,7 +97,7 @@ TEST(ParseTrace, AMissingStateIsUnknown) {
   json trace = closed_trace();
   trace["states"][1] = {{"step", 1}, {"time", 1}, {"missing", true}};
 
-  const planminer::Observation state = parse_trace(trace.dump()).states[1];
+  const plantraces::Observation state = parse_trace(trace.dump()).states[1];
   EXPECT_TRUE(state.missing);
   EXPECT_EQ(state.truth({"holding", {"a"}}), std::nullopt);
   EXPECT_EQ(state.truth({"on", {"b", "a"}}), std::nullopt);
@@ -109,7 +109,7 @@ TEST(ParseTrace, AcceptsRealTimesAndValues) {
   trace["actions"][0]["time"] = 0.5;
   trace["states"][1]["values"] = {{"(weight a)", 3}};
 
-  const planminer::Trace read = parse_trace(trace.dump());
+  const plantraces::Trace read = parse_trace(trace.dump());
   EXPECT_EQ(read.states[1].time, 1.5);
   EXPECT_EQ(read.actions[0].time, 0.5);
   EXPECT_EQ(read.states[1].value({"weight", {"a"}}), 3.0);
@@ -200,7 +200,7 @@ TEST(ParseTrace, RejectsInvalidJson) {
 }
 
 TEST(ReadTrace, ReportsFilesThatCannotBeRead) {
-  EXPECT_THROW(planminer::read_trace("/no/existe.json"), TraceError);
+  EXPECT_THROW(plantraces::read_trace("/no/existe.json"), TraceError);
 }
 
 }  // namespace

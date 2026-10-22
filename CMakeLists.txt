@@ -30,6 +30,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CompilerWarnings)
 include(Sanitizers)
+include(Libraries)
 include(Json)
 
 if(BUILD_TESTING)
@@ -45,7 +46,7 @@ add_subdirectory(vendor/inslv)
 # Siempre optimizado: no se depura aquí y en Debug el genético es mucho más lento.
 target_compile_options(inslv PRIVATE -O2)
 
-add_subdirectory(src)
+add_subdirectory(libs)
 add_subdirectory(apps)
 
 if(BUILD_TESTING)

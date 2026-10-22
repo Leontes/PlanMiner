@@ -98,15 +98,24 @@ traces can be regenerated without planning again:
 
 ## Layout
 
+PlanMiner is split into libraries, one per part of the algorithm, in `libs/<library>`: sources
+at the root and public headers in `include/<library>/`, included as
+`<library>/<header>.hpp`. Each library has its own namespace and only sees the headers of the
+libraries it links to. Its unit tests are in `tests/unit/<library>`.
+
+| Library | What it does |
+|---------|--------------|
+| `plantraces` | reads plan traces |
+
 | Path | Contents |
 |------|----------|
-| `include/planminer/`, `src/` | the `planminer::core` library |
+| `libs/` | the libraries |
 | `apps/planminer/` | the command line |
 | `tests/unit/` | unit tests |
 | `tests/oracle/` | comparisons with `Old/` and reference domains (`golden/`) |
 | `tests/planner/` | domain validation with PyPlanner and VAL |
 | `tests/data/` | reference domains and problems, and the test traces (`traces/`) |
-| `cmake/` | CMake modules: warnings, sanitizers, dependencies, `Old/` and the planner |
+| `cmake/` | CMake modules: libraries, warnings, sanitizers, dependencies, `Old/` and the planner |
 | `scripts/` | PyPlanner, pddldomains and VAL setup, and test trace generation |
 | `vendor/inslv/` | INSLV, the fuzzy rule learner (see its [README](vendor/inslv/README.md), in Spanish) |
 | `vendor/PDDLDomains/` | submodule: the domain catalog and the trace tool |
