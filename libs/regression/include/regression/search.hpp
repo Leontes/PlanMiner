@@ -71,6 +71,11 @@ struct Options {
   /// de tiempo, da siempre el mismo resultado.
   std::size_t max_expansions = 50000;
   std::chrono::milliseconds time_limit{60000};
+  /// Límite blando de memoria (MB de memoria residente del proceso), que se comprueba cada
+  /// memory_check_interval expansiones; 0, sin límite. Si el proceso tiene un límite duro
+  /// (resources::limit_process) y una reserva falla, la búsqueda también para.
+  double max_memory_mb = 2048;
+  std::size_t memory_check_interval = 1024;
 
   /// La búsqueda del PlanMiner original: crecimiento por la derecha, duplicados por texto,
   /// constantes de 0 a 10 y -1, sin quitar variables, sin límite de tamaño y 300 s. A diferencia
@@ -87,7 +92,7 @@ struct Result {
   std::size_t target = 0;
   double error = 0.0;
   std::size_t expansions = 0;
-  /// Si la búsqueda ha parado por un límite de seguridad.
+  /// Si la búsqueda ha parado por un límite de seguridad: expansiones, tiempo o memoria.
   bool limit_reached = false;
 };
 

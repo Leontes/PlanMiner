@@ -2,7 +2,10 @@
 # de referencia.
 #
 #   cmake -DLEGACY=<ejecutable> -DTRACE=<traza.pts> -DDOMAIN_NAME=<nombre>
-#         -DEXPECTED=<referencia.pddl> -DWORK_DIR=<directorio> -P RunLegacy.cmake
+#         -DEXPECTED=<referencia.pddl> -DWORK_DIR=<directorio>
+#         [-DLIMIT=<planminer_limit_memory> -DMEMORY_MB=<MB>] -P RunLegacy.cmake
+#
+# Con LIMIT y MEMORY_MB, el original se ejecuta con ese límite duro de memoria.
 #
 # Con la variable de entorno PLANMINER_UPDATE_GOLDEN definida, en vez de comparar, copia el
 # dominio aprendido sobre el de referencia.
@@ -17,8 +20,13 @@ endforeach()
 file(REMOVE_RECURSE "${WORK_DIR}")
 file(MAKE_DIRECTORY "${WORK_DIR}")
 
+set(launcher "")
+if(DEFINED LIMIT AND DEFINED MEMORY_MB)
+  set(launcher "${LIMIT}" "${MEMORY_MB}")
+endif()
+
 execute_process(
-  COMMAND "${LEGACY}" "${TRACE}" "${DOMAIN_NAME}"
+  COMMAND ${launcher} "${LEGACY}" "${TRACE}" "${DOMAIN_NAME}"
   WORKING_DIRECTORY "${WORK_DIR}"
   OUTPUT_FILE "${WORK_DIR}/stdout.log"
   ERROR_FILE "${WORK_DIR}/stderr.log"

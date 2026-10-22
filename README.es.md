@@ -98,6 +98,31 @@ regenerar las trazas sin volver a planificar:
 .venv/bin/python scripts/generate_traces.py --check    # comprueba que se regeneran igual
 ```
 
+## Memoria
+
+En WSL, Windows limita la memoria de toda la máquina virtual y, si un proceso la agota, WSL
+entero se congela. Por eso, como en PyPlanner, todo lo que puede crecer sin control tiene un
+límite (ver [`resources/memory.hpp`](libs/resources/include/resources/memory.hpp)):
+
+- **Límite duro por proceso** (`RLIMIT_DATA`): al pasarlo, las reservas de memoria fallan con
+  `std::bad_alloc` en lugar de agotar la de la máquina.
+  - La línea de comandos se lo pone al empezar: el 80 % de la memoria disponible, más un margen.
+  - Cada ejecutable de tests se lo pone en su `main`: `PLANMINER_TEST_MEMORY_MB`, por defecto
+    2048 MB (0, sin límite). Con `ctest` en paralelo (4 trabajos), el peor caso es 8 GB.
+  - El original de `Old/` necesita unos 1,6 GB por ejecución: se lanza con
+    `PLANMINER_LEGACY_MEMORY_MB` (variable de CMake, por defecto 2560 MB) y de uno en uno.
+  - Con AddressSanitizer no se puede usar `RLIMIT_DATA`: el preset `asan` pone en su lugar
+    `ASAN_OPTIONS=hard_rss_limit_mb=2048`.
+- **Límite blando en las búsquedas**: el A* de la regresión simbólica comprueba la memoria
+  residente cada 1024 expansiones (`max_memory_mb`, por defecto 2048 MB) y para con
+  `limit_reached`, igual que si choca con el límite duro.
+- **PyPlanner** se lanza siempre con `-m`: sin él reserva el 80 % de la memoria disponible, y
+  varios a la vez la agotarían (`memory_limit` en `tests/data/traces/dataset.toml` y
+  `--memory-limit` en `evaluate_domain.py`).
+
+Cualquier otro experimento pesado conviene lanzarlo también con límite, por ejemplo
+`prlimit --data=$((4 * 1024**3)) -- <programa>`.
+
 ## Estructura
 
 PlanMiner se organiza en librerías, una por cada parte del algoritmo, en `libs/<librería>`:
@@ -108,6 +133,7 @@ cabeceras de las librerías con las que enlaza. Sus tests unitarios están en
 
 | Librería | Qué hace |
 |----------|----------|
+| `resources` | mide la memoria y pone el límite duro de cada proceso |
 | `plantraces` | lee las trazas de plan y agrupa las aplicaciones de cada acción |
 | `regression` | la regresión simbólica: el A* que busca la expresión de un efecto numérico |
 | `datasets` | construye la tabla de ejemplos de cada acción y busca sus efectos numéricos |

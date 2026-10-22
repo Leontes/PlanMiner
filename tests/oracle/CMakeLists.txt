@@ -6,7 +6,7 @@ set(PLANMINER_LEGACY_TRACES "${PROJECT_SOURCE_DIR}/Old/Test")
 # que se porte cada parte, su test comparará la versión nueva con la original.
 add_executable(planminer_oracle_tests pts.cpp test_legacy_parser.cpp test_legacy_tables.cpp)
 target_link_libraries(planminer_oracle_tests PRIVATE planminer::legacy datasets plantraces
-                                                     GTest::gtest_main)
+                                                     planminer_test_main)
 target_compile_features(planminer_oracle_tests PRIVATE cxx_std_20)
 target_compile_definitions(
   planminer_oracle_tests
@@ -18,6 +18,11 @@ planminer_set_warnings(planminer_oracle_tests)
 gtest_discover_tests(planminer_oracle_tests TEST_PREFIX "oracle." DISCOVERY_MODE PRE_TEST
                      NO_PRETTY_VALUES PROPERTIES LABELS oracle)
 
+# El original reserva unos 1,6 GB en cada ejecución (dos vectores de 10^8 enteros en inslv()): se
+# ejecuta con este límite y de uno en uno (RESOURCE_LOCK), para no agotar la memoria con ctest en
+# paralelo.
+set(PLANMINER_LEGACY_MEMORY_MB 2560 CACHE STRING "Límite de memoria (MB) de cada ejecución de Old/")
+
 # El pipeline completo: el dominio que aprende el original con cada traza tiene que coincidir
 # con el guardado en golden/. Para regenerarlos:
 #   PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
@@ -26,11 +31,13 @@ function(planminer_add_legacy_golden name trace domain_name)
     NAME oracle.legacy.${name}
     COMMAND
       "${CMAKE_COMMAND}" "-DLEGACY=$<TARGET_FILE:PlanMinerLegacy>"
+      "-DLIMIT=$<TARGET_FILE:planminer_limit_memory>" "-DMEMORY_MB=${PLANMINER_LEGACY_MEMORY_MB}"
       "-DTRACE=${PLANMINER_LEGACY_TRACES}/${trace}" "-DDOMAIN_NAME=${domain_name}"
       "-DEXPECTED=${CMAKE_CURRENT_SOURCE_DIR}/golden/${name}.pddl"
       "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/legacy/${name}" -P
       "${CMAKE_CURRENT_SOURCE_DIR}/RunLegacy.cmake")
-  set_tests_properties(oracle.legacy.${name} PROPERTIES LABELS oracle TIMEOUT 600)
+  set_tests_properties(oracle.legacy.${name} PROPERTIES LABELS oracle TIMEOUT 600 RESOURCE_LOCK
+                                                         legacy_memory)
 endfunction()
 
 planminer_add_legacy_golden(blocksworld "BlocksWorld_STRIPS.pts" blocksworld)
@@ -56,7 +63,9 @@ add_test(
   NAME oracle.inslv_cases
   COMMAND
     "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:planminer_dump_inslv_cases>"
+    "-DLIMIT=$<TARGET_FILE:planminer_limit_memory>" "-DMEMORY_MB=${PLANMINER_LEGACY_MEMORY_MB}"
     "-DTRACES=${inslv_traces}" "-DEXPECTED_DIR=${PROJECT_SOURCE_DIR}/vendor/inslv/tests/cases"
     "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/inslv_cases" -P
     "${CMAKE_CURRENT_SOURCE_DIR}/RunInslvCases.cmake")
-set_tests_properties(oracle.inslv_cases PROPERTIES LABELS oracle TIMEOUT 900)
+set_tests_properties(oracle.inslv_cases PROPERTIES LABELS oracle TIMEOUT 900 RESOURCE_LOCK
+                                                   legacy_memory)

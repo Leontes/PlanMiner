@@ -5,10 +5,12 @@
 # <colección>/<problema>.<variante>.json. Los planes se guardan (<colección>/<problema>.plan) para
 # que las trazas se puedan regenerar sin volver a planificar.
 
-# PyPlanner, con un solo núcleo para que el plan sea siempre el mismo.
+# PyPlanner, con un solo núcleo para que el plan sea siempre el mismo, y con límite de memoria
+# (MB): sin él reserva el 80 % de la disponible, y en WSL agotarla congela todo.
 [planner]
 config = "gbfs-ff-pref"
 time_limit = 60
+memory_limit = 2048
 
 [[collections]]
 collection = "ipc-2000/blocks-strips-untyped"

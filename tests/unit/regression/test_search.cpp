@@ -1,12 +1,15 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <string>
 #include <vector>
 
 #include "regression/search.hpp"
+#include "resources/memory.hpp"
 
 namespace {
 
@@ -162,6 +165,37 @@ TEST(Search, WithASizeLimitTheSearchIsFinite) {
   const Result result = regression::search(small, options);
   EXPECT_FALSE(result.expression);
   EXPECT_FALSE(result.limit_reached);
+}
+
+TEST(Search, StopsAtTheSoftMemoryLimit) {
+  Options options;
+  options.max_memory_mb = 1;  // el proceso ya ocupa más
+  options.memory_check_interval = 1;
+  const Result result = regression::search(
+      problem([](double a, double b, double c) { return a * a * a - b * c / 7; }), options);
+  EXPECT_FALSE(result.expression);
+  EXPECT_TRUE(result.limit_reached);
+}
+
+// En un proceso hijo con un límite duro pequeño y una búsqueda sin más límites: al agotarse la
+// memoria, la búsqueda termina con limit_reached en lugar de abortar.
+TEST(SearchDeathTest, TheHardMemoryLimitIsALimitReached) {
+  if (!resources::hard_limit_supported()) {
+    GTEST_SKIP() << "sin límite duro (por ejemplo, con AddressSanitizer)";
+  }
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  EXPECT_EXIT(
+      {
+        Options unbounded = Options::original();
+        unbounded.max_expansions = 0;
+        unbounded.max_memory_mb = 0;
+        unbounded.time_limit = std::chrono::milliseconds{0};
+        resources::limit_process(*resources::data_memory_mb() + 32);
+        const Result result = regression::search(
+            problem([](double a, double b, double c) { return a * a * a - b * c / 7; }), unbounded);
+        std::exit(result.limit_reached && !result.expression ? 0 : 1);
+      },
+      testing::ExitedWithCode(0), "");
 }
 
 TEST(Search, IsDeterministic) {

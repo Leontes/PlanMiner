@@ -1,6 +1,6 @@
 add_executable(plantraces_tests test_actions.cpp test_trace.cpp test_trace_dataset.cpp)
 target_link_libraries(plantraces_tests PRIVATE plantraces nlohmann_json::nlohmann_json
-                                               GTest::gtest_main)
+                                               planminer_test_main)
 target_compile_definitions(plantraces_tests
                            PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces")
 planminer_set_warnings(plantraces_tests)

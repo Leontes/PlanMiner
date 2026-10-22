@@ -3,12 +3,15 @@
 #include <bit>
 #include <cmath>
 #include <cstdint>
+#include <new>
 #include <queue>
 #include <set>
 #include <string>
 #include <tuple>
 #include <unordered_set>
 #include <utility>
+
+#include "resources/memory.hpp"
 
 namespace regression {
 
@@ -74,10 +77,22 @@ class Search {
   }
 
   Result run() {
+    Result result;
+    try {
+      explore(result);
+    } catch (const std::bad_alloc&) {
+      // El límite duro del proceso: la lista de abiertos se libera al salir.
+      result.expression.reset();
+      result.limit_reached = true;
+    }
+    return result;
+  }
+
+ private:
+  void explore(Result& result) {
     for (const Expression& terminal : terminals_) {
       push(terminal);
     }
-    Result result;
     while (!open_.empty()) {
       Node node = open_.top();
       open_.pop();
@@ -85,11 +100,11 @@ class Search {
         result.expression = node.expression;
         result.target = node.target;
         result.error = node.error;
-        return result;
+        return;
       }
       if (limit_reached(result.expansions)) {
         result.limit_reached = true;
-        return result;
+        return;
       }
       ++result.expansions;
       if (options_.max_size == 0 || node.expression.size() + 2 <= options_.max_size) {
@@ -98,10 +113,8 @@ class Search {
         }
       }
     }
-    return result;
   }
 
- private:
   static bool constant_variable(const std::vector<double>& values) {
     std::set<double> known;
     for (const double value : values) {
@@ -115,6 +128,13 @@ class Search {
   bool limit_reached(std::size_t expansions) const {
     if (options_.max_expansions != 0 && expansions >= options_.max_expansions) {
       return true;
+    }
+    if (options_.max_memory_mb > 0 && options_.memory_check_interval > 0 &&
+        expansions % options_.memory_check_interval == 0) {
+      const std::optional<double> resident = resources::resident_memory_mb();
+      if (resident && *resident > options_.max_memory_mb) {
+        return true;
+      }
     }
     return options_.time_limit.count() > 0 &&
            std::chrono::steady_clock::now() - start_ >= options_.time_limit;

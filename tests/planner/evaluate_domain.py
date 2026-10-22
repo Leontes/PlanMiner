@@ -10,7 +10,9 @@ Uso::
     evaluate_domain.py --learned aprendido.pddl --reference referencia.pddl \\
         --validate tools/bin/Validate p01.pddl p02.pddl ...
 
-PyPlanner se ejecuta con el mismo intérprete que este script (``python -m pyplanner``).
+PyPlanner se ejecuta con el mismo intérprete que este script (``python -m pyplanner``) y con
+un límite de memoria (``--memory-limit``): sin él se reserva el 80 % de la disponible, y varios
+tests en paralelo agotarían la de la máquina, que en WSL congela todo.
 
 Códigos de salida: 0 si todos los planes son válidos, 1 si alguno falta o no es válido y 2
 si los argumentos no son válidos.
@@ -55,14 +57,20 @@ def _summary_line(text: str, *markers: str) -> str:
     return lines[-1] if lines else ""
 
 
+@dataclass(frozen=True)
+class Limits:
+    time: int  # segundos
+    memory: int  # MB
+
+
 def evaluate_problem(
-    learned: Path, reference: Path, problem: Path, validate: Path, time_limit: int, workdir: Path
+    learned: Path, reference: Path, problem: Path, validate: Path, limits: Limits, workdir: Path
 ) -> Outcome:
     """Busca un plan con el dominio aprendido y lo valida con el de referencia."""
     plan = workdir / f"{problem.stem}.plan"
     solve = subprocess.run(
-        [sys.executable, "-m", "pyplanner", "solve", "-j", "1", "-t", str(time_limit)]
-        + ["-o", str(plan), str(learned), str(problem)],
+        [sys.executable, "-m", "pyplanner", "solve", "-j", "1", "-t", str(limits.time)]
+        + ["-m", str(limits.memory), "-o", str(plan), str(learned), str(problem)],
         capture_output=True,
         text=True,
         check=False,
@@ -99,6 +107,12 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--time-limit", type=int, default=60, help="segundos por problema (por defecto, 60)"
     )
+    parser.add_argument(
+        "--memory-limit",
+        type=int,
+        default=1024,
+        help="MB de memoria de PyPlanner en cada problema (por defecto, 1024)",
+    )
     parser.add_argument("problems", type=Path, nargs="+", help="problemas PDDL")
     args = parser.parse_args(argv)
 
@@ -114,7 +128,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     with tempfile.TemporaryDirectory(prefix="planminer-plans-") as tmp:
         outcomes = [
             evaluate_problem(
-                args.learned, args.reference, problem, args.validate, args.time_limit, Path(tmp)
+                args.learned,
+                args.reference,
+                problem,
+                args.validate,
+                Limits(args.time_limit, args.memory_limit),
+                Path(tmp),
             )
             for problem in args.problems
         ]

@@ -65,7 +65,8 @@
       "name": "asan",
       "inherits": "base",
       "configurePreset": "asan",
-      "filter": { "include": { "label": "unit" } }
+      "filter": { "include": { "label": "unit" } },
+      "environment": { "ASAN_OPTIONS": "hard_rss_limit_mb=2048" }
     },
     { "name": "ci-gcc", "inherits": "base", "configurePreset": "ci-gcc" },
     { "name": "ci-clang", "inherits": "base", "configurePreset": "ci-clang" }

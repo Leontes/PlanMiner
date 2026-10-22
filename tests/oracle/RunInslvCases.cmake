@@ -2,7 +2,10 @@
 # vendor/inslv/tests/cases.
 #
 #   cmake -DGENERATOR=<dump_inslv_cases> -DTRACES=<prefijo>=<traza.pts>;...
-#         -DEXPECTED_DIR=<casos guardados> -DWORK_DIR=<directorio> -P RunInslvCases.cmake
+#         -DEXPECTED_DIR=<casos guardados> -DWORK_DIR=<directorio>
+#         [-DLIMIT=<planminer_limit_memory> -DMEMORY_MB=<MB>] -P RunInslvCases.cmake
+#
+# Con LIMIT y MEMORY_MB, el generador se ejecuta con ese límite duro de memoria.
 #
 # Con la variable de entorno PLANMINER_UPDATE_GOLDEN definida, en vez de comparar, sustituye los
 # casos guardados por los generados.
@@ -16,8 +19,13 @@ endforeach()
 file(REMOVE_RECURSE "${WORK_DIR}")
 file(MAKE_DIRECTORY "${WORK_DIR}/run")
 
+set(launcher "")
+if(DEFINED LIMIT AND DEFINED MEMORY_MB)
+  set(launcher "${LIMIT}" "${MEMORY_MB}")
+endif()
+
 execute_process(
-  COMMAND "${GENERATOR}" "${WORK_DIR}/cases" ${TRACES}
+  COMMAND ${launcher} "${GENERATOR}" "${WORK_DIR}/cases" ${TRACES}
   WORKING_DIRECTORY "${WORK_DIR}/run"
   OUTPUT_FILE "${WORK_DIR}/stdout.log"
   ERROR_FILE "${WORK_DIR}/stderr.log"

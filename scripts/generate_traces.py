@@ -74,7 +74,7 @@ def solve(task: Task, planner: dict[str, Any], plan: Path) -> None:
     files = CATALOG / task.collection
     run(
         [sys.executable, "-m", "pyplanner", "solve", "-j", "1", "-c", planner["config"]]
-        + ["-t", str(planner["time_limit"]), "-o", str(plan)]
+        + ["-t", str(planner["time_limit"]), "-m", str(planner["memory_limit"]), "-o", str(plan)]
         + [str(files / "domain.pddl"), str(files / f"{task.problem}.pddl")],
         cwd=ROOT,
     )

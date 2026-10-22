@@ -96,6 +96,31 @@ traces can be regenerated without planning again:
 .venv/bin/python scripts/generate_traces.py --check    # check they regenerate identically
 ```
 
+## Memory
+
+On WSL, Windows limits the memory of the whole virtual machine and, if a process exhausts it, all
+of WSL freezes. So, as in PyPlanner, everything that can grow without bound has a limit (see
+[`resources/memory.hpp`](libs/resources/include/resources/memory.hpp), in Spanish):
+
+- **Hard limit per process** (`RLIMIT_DATA`): beyond it, memory allocations fail with
+  `std::bad_alloc` instead of exhausting the machine's memory.
+  - The command line sets it at startup: 80 % of the available memory, plus a margin.
+  - Every test executable sets it in its `main`: `PLANMINER_TEST_MEMORY_MB`, 2048 MB by default
+    (0, no limit). With `ctest` in parallel (4 jobs), the worst case is 8 GB.
+  - The original in `Old/` needs about 1.6 GB per run: it is launched with
+    `PLANMINER_LEGACY_MEMORY_MB` (a CMake variable, 2560 MB by default), one at a time.
+  - `RLIMIT_DATA` does not work with AddressSanitizer: the `asan` preset sets
+    `ASAN_OPTIONS=hard_rss_limit_mb=2048` instead.
+- **Soft limit in searches**: the symbolic-regression A* checks the resident memory every 1024
+  expansions (`max_memory_mb`, 2048 MB by default) and stops with `limit_reached`, as it does if
+  it hits the hard limit.
+- **PyPlanner** always runs with `-m`: without it, it takes 80 % of the available memory and
+  several at once would exhaust it (`memory_limit` in `tests/data/traces/dataset.toml` and
+  `--memory-limit` in `evaluate_domain.py`).
+
+Any other heavy experiment should also run with a limit, for example
+`prlimit --data=$((4 * 1024**3)) -- <program>`.
+
 ## Layout
 
 PlanMiner is split into libraries, one per part of the algorithm, in `libs/<library>`: sources
@@ -105,6 +130,7 @@ libraries it links to. Its unit tests are in `tests/unit/<library>`.
 
 | Library | What it does |
 |---------|--------------|
+| `resources` | measures memory and sets each process's hard limit |
 | `plantraces` | reads plan traces and groups the applications of each action |
 | `regression` | symbolic regression: the A* that looks for the expression of a numeric effect |
 | `datasets` | builds the example table of each action and finds its numeric effects |

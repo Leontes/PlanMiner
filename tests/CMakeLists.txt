@@ -7,6 +7,12 @@
 
 include(GoogleTest)
 
+# Cada proceso de los tests tiene un límite duro de memoria: en WSL, agotar la memoria congela
+# todo (ver resources/memory.hpp). Los de GoogleTest lo fijan en su main (planminer_test_main,
+# PLANMINER_TEST_MEMORY_MB); los programas que no son de PlanMiner se lanzan con
+# planminer_limit_memory.
+add_subdirectory(support)
+
 add_subdirectory(unit)
 
 if(PLANMINER_BUILD_LEGACY)
