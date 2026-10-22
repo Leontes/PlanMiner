@@ -1,0 +1,106 @@
+{
+  "format": "pddldomains-trace",
+  "version": 1,
+  "generator": "pddldomains 0.1.0",
+  "collection": "ipc-2000/blocks-strips-untyped",
+  "domain": {
+    "name": "blocks",
+    "file": "ipc-2000/blocks-strips-untyped/domain.pddl",
+    "sha256": "7c9ce70e27cfc17cd9aa91451de1f22c5fe6032645bca17208ccab02bd2bc3fc"
+  },
+  "problem": {
+    "name": "blocks-5-2",
+    "file": "ipc-2000/blocks-strips-untyped/p06.pddl",
+    "id": "p06",
+    "sha256": "d2a8ddfa3ebb5733328a941381ad7185ed47ec07698ee4f6396538d75a07e4c1"
+  },
+  "plan": {
+    "file": "p06.plan",
+    "sha256": "b4a0014aa7caab6ab500e5408a09c02a1a7bb8fa0a92835fa829719fddf42547",
+    "length": 24,
+    "planner": "pyplanner 1.0.0",
+    "config": "gbfs-ff-pref",
+    "seed": null
+  },
+  "execution": {
+    "goal_reached": true,
+    "val": null
+  },
+  "degradation": {
+    "seed": 0,
+    "missing_percent": 0.0,
+    "missing_states_percent": 0.0,
+    "noise_percent": 0.0,
+    "numeric_noise_percent": 10.0,
+    "hidden_atoms": 0,
+    "hidden_values": 0,
+    "flipped_atoms": 0,
+    "perturbed_values": 0,
+    "missing_states": []
+  },
+  "world": "open",
+  "universe": {
+    "kind": "dynamic",
+    "size": 41
+  },
+  "objects": {
+    "a": "object",
+    "b": "object",
+    "c": "object",
+    "d": "object",
+    "e": "object"
+  },
+  "states": [
+    {"step": 0, "time": 0, "true": ["(clear d)", "(handempty)", "(on a b)", "(on c a)", "(on d e)", "(on e c)", "(ontable b)"], "false": ["(clear a)", "(clear b)", "(clear c)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on e a)", "(on e b)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 1, "time": 1, "true": ["(clear e)", "(holding d)", "(on a b)", "(on c a)", "(on e c)", "(ontable b)"], "false": ["(clear a)", "(clear b)", "(clear c)", "(clear d)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 2, "time": 2, "true": ["(clear d)", "(clear e)", "(handempty)", "(on a b)", "(on c a)", "(on e c)", "(ontable b)", "(ontable d)"], "false": ["(clear a)", "(clear b)", "(clear c)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 3, "time": 3, "true": ["(clear c)", "(clear d)", "(holding e)", "(on a b)", "(on c a)", "(ontable b)", "(ontable d)"], "false": ["(clear a)", "(clear b)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 4, "time": 4, "true": ["(clear c)", "(clear d)", "(clear e)", "(handempty)", "(on a b)", "(on c a)", "(ontable b)", "(ontable d)", "(ontable e)"], "false": ["(clear a)", "(clear b)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 5, "time": 5, "true": ["(clear a)", "(clear d)", "(clear e)", "(holding c)", "(on a b)", "(ontable b)", "(ontable d)", "(ontable e)"], "false": ["(clear b)", "(clear c)", "(handempty)", "(holding a)", "(holding b)", "(holding d)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable a)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 6, "time": 6, "true": ["(clear a)", "(clear c)", "(clear d)", "(clear e)", "(handempty)", "(on a b)", "(ontable b)", "(ontable c)", "(ontable d)", "(ontable e)"], "false": ["(clear b)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable a)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 7, "time": 7, "true": ["(clear b)", "(clear c)", "(clear d)", "(clear e)", "(holding a)", "(ontable b)", "(ontable c)", "(ontable d)", "(ontable e)"], "false": ["(clear a)", "(handempty)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable a)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 8, "time": 8, "true": ["(clear a)", "(clear b)", "(clear c)", "(clear d)", "(clear e)", "(handempty)", "(ontable a)", "(ontable b)", "(ontable c)", "(ontable d)", "(ontable e)"], "false": ["(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 9, "time": 9, "true": ["(clear a)", "(clear c)", "(clear d)", "(clear e)", "(holding b)", "(ontable a)", "(ontable c)", "(ontable d)", "(ontable e)"], "false": ["(clear b)", "(handempty)", "(holding a)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 10, "time": 10, "true": ["(clear a)", "(clear b)", "(clear c)", "(clear d)", "(handempty)", "(on b e)", "(ontable a)", "(ontable c)", "(ontable d)", "(ontable e)"], "false": ["(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 11, "time": 11, "true": ["(clear a)", "(clear b)", "(clear c)", "(holding d)", "(on b e)", "(ontable a)", "(ontable c)", "(ontable e)"], "false": ["(clear d)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 12, "time": 12, "true": ["(clear a)", "(clear b)", "(clear d)", "(handempty)", "(on b e)", "(on d c)", "(ontable a)", "(ontable c)", "(ontable e)"], "false": ["(clear c)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 13, "time": 13, "true": ["(clear a)", "(clear d)", "(clear e)", "(holding b)", "(on d c)", "(ontable a)", "(ontable c)", "(ontable e)"], "false": ["(clear b)", "(clear c)", "(handempty)", "(holding a)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 14, "time": 14, "true": ["(clear a)", "(clear b)", "(clear d)", "(clear e)", "(handempty)", "(on d c)", "(ontable a)", "(ontable b)", "(ontable c)", "(ontable e)"], "false": ["(clear c)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable d)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 15, "time": 15, "true": ["(clear a)", "(clear b)", "(clear d)", "(holding e)", "(on d c)", "(ontable a)", "(ontable b)", "(ontable c)"], "false": ["(clear c)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e a)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 16, "time": 16, "true": ["(clear b)", "(clear d)", "(clear e)", "(handempty)", "(on d c)", "(on e a)", "(ontable a)", "(ontable b)", "(ontable c)"], "false": ["(clear a)", "(clear c)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 17, "time": 17, "true": ["(clear d)", "(clear e)", "(holding b)", "(on d c)", "(on e a)", "(ontable a)", "(ontable c)"], "false": ["(clear a)", "(clear b)", "(clear c)", "(handempty)", "(holding a)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on b e)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 18, "time": 18, "true": ["(clear b)", "(clear d)", "(handempty)", "(on b e)", "(on d c)", "(on e a)", "(ontable a)", "(ontable c)"], "false": ["(clear a)", "(clear c)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 19, "time": 19, "true": ["(clear b)", "(clear c)", "(holding d)", "(on b e)", "(on e a)", "(ontable a)", "(ontable c)"], "false": ["(clear a)", "(clear d)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 20, "time": 20, "true": ["(clear b)", "(clear c)", "(clear d)", "(handempty)", "(on b e)", "(on e a)", "(ontable a)", "(ontable c)", "(ontable d)"], "false": ["(clear a)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 21, "time": 21, "true": ["(clear b)", "(clear d)", "(holding c)", "(on b e)", "(on e a)", "(ontable a)", "(ontable d)"], "false": ["(clear a)", "(clear c)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable c)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 22, "time": 22, "true": ["(clear c)", "(clear d)", "(handempty)", "(on b e)", "(on c b)", "(on e a)", "(ontable a)", "(ontable d)"], "false": ["(clear a)", "(clear b)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable c)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 23, "time": 23, "true": ["(clear c)", "(holding d)", "(on b e)", "(on c b)", "(on e a)", "(ontable a)"], "false": ["(clear a)", "(clear b)", "(clear d)", "(clear e)", "(handempty)", "(holding a)", "(holding b)", "(holding c)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable c)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 24, "time": 24, "true": ["(clear d)", "(handempty)", "(on b e)", "(on c b)", "(on d c)", "(on e a)", "(ontable a)"], "false": ["(clear a)", "(clear b)", "(clear c)", "(clear e)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(holding e)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on a e)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c c)", "(on c d)", "(on c e)", "(on d a)", "(on d b)", "(on d d)", "(on d e)", "(on e b)", "(on e c)", "(on e d)", "(on e e)", "(ontable b)", "(ontable c)", "(ontable d)", "(ontable e)"], "unknown": [], "values": {}, "unknown_values": []}
+  ],
+  "actions": [
+    {"step": 1, "time": 1, "name": "unstack", "arguments": ["d", "e"]},
+    {"step": 2, "time": 2, "name": "put-down", "arguments": ["d"]},
+    {"step": 3, "time": 3, "name": "unstack", "arguments": ["e", "c"]},
+    {"step": 4, "time": 4, "name": "put-down", "arguments": ["e"]},
+    {"step": 5, "time": 5, "name": "unstack", "arguments": ["c", "a"]},
+    {"step": 6, "time": 6, "name": "put-down", "arguments": ["c"]},
+    {"step": 7, "time": 7, "name": "unstack", "arguments": ["a", "b"]},
+    {"step": 8, "time": 8, "name": "put-down", "arguments": ["a"]},
+    {"step": 9, "time": 9, "name": "pick-up", "arguments": ["b"]},
+    {"step": 10, "time": 10, "name": "stack", "arguments": ["b", "e"]},
+    {"step": 11, "time": 11, "name": "pick-up", "arguments": ["d"]},
+    {"step": 12, "time": 12, "name": "stack", "arguments": ["d", "c"]},
+    {"step": 13, "time": 13, "name": "unstack", "arguments": ["b", "e"]},
+    {"step": 14, "time": 14, "name": "put-down", "arguments": ["b"]},
+    {"step": 15, "time": 15, "name": "pick-up", "arguments": ["e"]},
+    {"step": 16, "time": 16, "name": "stack", "arguments": ["e", "a"]},
+    {"step": 17, "time": 17, "name": "pick-up", "arguments": ["b"]},
+    {"step": 18, "time": 18, "name": "stack", "arguments": ["b", "e"]},
+    {"step": 19, "time": 19, "name": "unstack", "arguments": ["d", "c"]},
+    {"step": 20, "time": 20, "name": "put-down", "arguments": ["d"]},
+    {"step": 21, "time": 21, "name": "pick-up", "arguments": ["c"]},
+    {"step": 22, "time": 22, "name": "stack", "arguments": ["c", "b"]},
+    {"step": 23, "time": 23, "name": "pick-up", "arguments": ["d"]},
+    {"step": 24, "time": 24, "name": "stack", "arguments": ["d", "c"]}
+  ]
+}

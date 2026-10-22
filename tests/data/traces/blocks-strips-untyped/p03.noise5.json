@@ -1,0 +1,69 @@
+{
+  "format": "pddldomains-trace",
+  "version": 1,
+  "generator": "pddldomains 0.1.0",
+  "collection": "ipc-2000/blocks-strips-untyped",
+  "domain": {
+    "name": "blocks",
+    "file": "ipc-2000/blocks-strips-untyped/domain.pddl",
+    "sha256": "7c9ce70e27cfc17cd9aa91451de1f22c5fe6032645bca17208ccab02bd2bc3fc"
+  },
+  "problem": {
+    "name": "blocks-4-2",
+    "file": "ipc-2000/blocks-strips-untyped/p03.pddl",
+    "id": "p03",
+    "sha256": "a5af5b097424e40918e286ae4675530b3ebad196e9998f5b637fc2fc806661f9"
+  },
+  "plan": {
+    "file": "p03.plan",
+    "sha256": "0a4e5df8486a93cab533537d09855e1fc6f0766ccc00f4f3fdec987c39ca11c9",
+    "length": 6,
+    "planner": "pyplanner 1.0.0",
+    "config": "gbfs-ff-pref",
+    "seed": null
+  },
+  "execution": {
+    "goal_reached": true,
+    "val": null
+  },
+  "degradation": {
+    "seed": 1,
+    "missing_percent": 0.0,
+    "missing_states_percent": 0.0,
+    "noise_percent": 5.0,
+    "numeric_noise_percent": 10.0,
+    "hidden_atoms": 0,
+    "hidden_values": 0,
+    "flipped_atoms": 7,
+    "perturbed_values": 0,
+    "missing_states": []
+  },
+  "world": "open",
+  "universe": {
+    "kind": "dynamic",
+    "size": 29
+  },
+  "objects": {
+    "a": "object",
+    "b": "object",
+    "c": "object",
+    "d": "object"
+  },
+  "states": [
+    {"step": 0, "time": 0, "true": ["(clear a)", "(clear c)", "(clear d)", "(handempty)", "(holding b)", "(on c b)", "(ontable a)", "(ontable b)", "(ontable d)"], "false": ["(clear b)", "(holding a)", "(holding c)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c c)", "(on c d)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 1, "time": 1, "true": ["(clear a)", "(clear b)", "(clear d)", "(handempty)", "(holding c)", "(ontable a)", "(ontable b)", "(ontable d)"], "false": ["(clear c)", "(holding a)", "(holding b)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on c d)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 2, "time": 2, "true": ["(clear a)", "(clear b)", "(clear c)", "(handempty)", "(holding c)", "(on c d)", "(ontable a)", "(ontable b)", "(ontable d)"], "false": ["(clear d)", "(holding a)", "(holding b)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 3, "time": 3, "true": ["(clear a)", "(clear c)", "(holding b)", "(on c d)", "(on d d)", "(ontable a)", "(ontable d)"], "false": ["(clear b)", "(clear d)", "(handempty)", "(holding a)", "(holding c)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b c)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on d a)", "(on d b)", "(on d c)", "(ontable b)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 4, "time": 4, "true": ["(clear a)", "(clear b)", "(handempty)", "(on b c)", "(on c d)", "(on d d)", "(ontable a)", "(ontable d)"], "false": ["(clear c)", "(clear d)", "(holding a)", "(holding b)", "(holding c)", "(holding d)", "(on a a)", "(on a b)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on d a)", "(on d b)", "(on d c)", "(ontable b)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 5, "time": 5, "true": ["(clear b)", "(holding a)", "(on a b)", "(on b c)", "(on c d)", "(ontable d)"], "false": ["(clear a)", "(clear c)", "(clear d)", "(handempty)", "(holding b)", "(holding c)", "(holding d)", "(on a a)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(ontable a)", "(ontable b)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []},
+    {"step": 6, "time": 6, "true": ["(clear a)", "(handempty)", "(holding d)", "(on a b)", "(on b c)", "(on c d)", "(ontable d)"], "false": ["(clear b)", "(clear c)", "(clear d)", "(holding a)", "(holding b)", "(holding c)", "(on a a)", "(on a c)", "(on a d)", "(on b a)", "(on b b)", "(on b d)", "(on c a)", "(on c b)", "(on c c)", "(on d a)", "(on d b)", "(on d c)", "(on d d)", "(ontable a)", "(ontable b)", "(ontable c)"], "unknown": [], "values": {}, "unknown_values": []}
+  ],
+  "actions": [
+    {"step": 1, "time": 1, "name": "unstack", "arguments": ["c", "b"]},
+    {"step": 2, "time": 2, "name": "stack", "arguments": ["c", "d"]},
+    {"step": 3, "time": 3, "name": "pick-up", "arguments": ["b"]},
+    {"step": 4, "time": 4, "name": "stack", "arguments": ["b", "c"]},
+    {"step": 5, "time": 5, "name": "pick-up", "arguments": ["a"]},
+    {"step": 6, "time": 6, "name": "stack", "arguments": ["a", "b"]}
+  ]
+}

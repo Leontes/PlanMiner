@@ -1,0 +1,8 @@
+(refuel plane1)
+(fly-slow plane1 city0 city2)
+(board person1 plane1 city2)
+(fly-slow plane1 city2 city1)
+(debark person1 plane1 city1)
+(fly-slow plane1 city1 city2)
+; cost = 6786
+; metric = 6786

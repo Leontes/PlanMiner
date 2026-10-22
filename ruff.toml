@@ -1,6 +1,6 @@
 line-length = 100
 target-version = "py312"
-extend-exclude = ["Old", "build", "tools"]
+extend-exclude = ["Old", "build", "tools", "vendor"]
 
 [lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]

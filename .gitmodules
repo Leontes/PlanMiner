@@ -1,0 +1,3 @@
+[submodule "vendor/PDDLDomains"]
+	path = vendor/PDDLDomains
+	url = https://github.com/Leontes/PDDLDomains.git

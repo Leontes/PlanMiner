@@ -1,5 +1,6 @@
 # Validación de dominios aprendidos: PyPlanner planifica con el dominio aprendido y VAL valida
-# los planes con el de referencia (evaluate_domain.py).
+# los planes con el de referencia (evaluate_domain.py). Y las trazas de prueba, que tienen que
+# regenerarse igual (scripts/generate_traces.py).
 
 set(blocksworld "${PROJECT_SOURCE_DIR}/tests/data/blocksworld")
 set(blocksworld_problems "${blocksworld}/p01.pddl" "${blocksworld}/p02.pddl"
@@ -25,6 +26,11 @@ planminer_add_domain_evaluation(harness.detects_invalid_plans
                                 "${blocksworld}/domain.pddl" "${blocksworld}/p01.pddl")
 set_tests_properties(planner.harness.detects_invalid_plans
                      PROPERTIES PASS_REGULAR_EXPRESSION "inválido +p01.pddl: Plan failed")
+
+# Las trazas de tests/data/traces se regeneran igual a partir de sus planes.
+add_test(NAME planner.traces_reproducible
+         COMMAND "${PLANMINER_PYTHON}" "${PROJECT_SOURCE_DIR}/scripts/generate_traces.py" --check)
+set_tests_properties(planner.traces_reproducible PROPERTIES LABELS planner TIMEOUT 900)
 
 # Línea base: el dominio que aprende Old/ con las trazas completas de BlocksWorld. El de las
 # trazas incompletas no está: su STACK exige (ontable ?param_1) y deja los tres problemas sin

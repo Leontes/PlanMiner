@@ -34,10 +34,12 @@ jobs:
         run: cmake --workflow --preset asan
 
   planner:
-    name: Tests del planificador (PyPlanner y VAL)
+    name: Tests del planificador (PyPlanner, pddldomains y VAL)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: actions/setup-python@v5
         with:
@@ -54,7 +56,7 @@ jobs:
         if: steps.val-cache.outputs.cache-hit != 'true'
         run: scripts/build_val.sh
 
-      - name: Entorno de Python con PyPlanner
+      - name: Entorno de Python con PyPlanner y pddldomains
         run: scripts/setup_python.sh
 
       - name: Configurar y compilar (sin Old/)
@@ -89,4 +91,4 @@ jobs:
           ruff format --check .
 
       - name: mypy
-        run: mypy --strict tests/planner
+        run: mypy --strict tests/planner scripts

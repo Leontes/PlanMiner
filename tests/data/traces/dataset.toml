@@ -1,0 +1,47 @@
+# Trazas de prueba de PlanMiner.
+#
+# Problemas del catálogo PDDLDomains (submódulo vendor/PDDLDomains), planes de PyPlanner y
+# trazas de `pddldomains trace`. Las genera scripts/generate_traces.py en
+# <colección>/<problema>.<variante>.json. Los planes se guardan (<colección>/<problema>.plan) para
+# que las trazas se puedan regenerar sin volver a planificar.
+
+# PyPlanner, con un solo núcleo para que el plan sea siempre el mismo.
+[planner]
+config = "gbfs-ff-pref"
+time_limit = 60
+
+[[collections]]
+collection = "ipc-2000/blocks-strips-untyped"
+problems = ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08"]
+
+[[collections]]
+collection = "ipc-2023-numeric/zenotravel"
+problems = ["p01", "p02", "p03", "p04", "p05"]
+
+# Una traza por problema y variante, con estas opciones de pddldomains trace: world, universe,
+# missing, missing_states, noise, numeric_noise y seed.
+[[variants]]
+name = "complete"
+world = "open"
+
+[[variants]]
+name = "closed"
+world = "closed"
+
+[[variants]]
+name = "missing30"
+world = "open"
+missing = 30
+seed = 1
+
+[[variants]]
+name = "noise5"
+world = "open"
+noise = 5
+seed = 1
+
+[[variants]]
+name = "missing-states20"
+world = "open"
+missing_states = 20
+seed = 1
