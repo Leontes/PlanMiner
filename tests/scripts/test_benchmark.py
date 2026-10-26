@@ -4,10 +4,12 @@ banco completo, con ellos, es el test planner.benchmark)."""
 import contextlib
 import io
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import benchmark as bm
 import evaluate_domain as ed
@@ -185,6 +187,18 @@ class Outcomes(unittest.TestCase):
         ]
         for status, detail, expected in cases:
             self.assertEqual(bm.kind(ed.Outcome(path, status, detail)), expected)
+
+    def test_wall_time_limit(self) -> None:
+        # Un PyPlanner que no termina (el grounding no tiene límite) cuenta como límite.
+        limits = ed.Limits(1, 64)
+        timeout = subprocess.TimeoutExpired("pyplanner", 2)
+        with mock.patch("evaluate_domain.subprocess.run", side_effect=timeout) as run:
+            outcome = ed.evaluate_problem(
+                Path("d.pddl"), Path("r.pddl"), Path("p01.pddl"), Path("Validate"), limits, Path()
+            )
+        self.assertEqual(run.call_args.kwargs["timeout"], ed.WALL_FACTOR * limits.time)
+        self.assertEqual(outcome.status, ed.Status.NO_PLAN)
+        self.assertEqual(bm.kind(outcome), "l")
 
     def test_learning_status(self) -> None:
         self.assertEqual(bm.learning_status(0), "ok")

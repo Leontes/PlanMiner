@@ -12,7 +12,10 @@ Uso::
 
 PyPlanner se ejecuta con el mismo intérprete que este script (``python -m pyplanner``) y con
 un límite de memoria (``--memory-limit``): sin él se reserva el 80 % de la disponible, y varios
-tests en paralelo agotarían la de la máquina, que en WSL congela todo.
+tests en paralelo agotarían la de la máquina, que en WSL congela todo. El límite de tiempo
+(``--time-limit``) es el de la búsqueda; el de PyPlanner no cubre el grounding, que con un
+dominio aprendido con pocas precondiciones puede no terminar, y por eso la ejecución entera se
+corta al doble.
 
 Códigos de salida: 0 si todos los planes son válidos, 1 si alguno falta o no es válido y 2
 si los argumentos no son válidos.
@@ -30,6 +33,10 @@ from pathlib import Path
 # Códigos de salida de `pyplanner solve`.
 PLAN_FOUND = 0
 INVALID_INPUT = 2
+
+# La ejecución entera de PyPlanner se corta a este múltiplo del límite de tiempo: el suyo es el
+# de la búsqueda y no cubre el grounding.
+WALL_FACTOR = 2
 
 
 class Status(StrEnum):
@@ -71,13 +78,19 @@ def evaluate_problem(
     """Busca un plan con el dominio aprendido y lo valida con el de referencia."""
     plan = workdir / f"{problem.stem}.plan"
     config = ["-c", limits.config] if limits.config else []
-    solve = subprocess.run(
-        [sys.executable, "-m", "pyplanner", "solve", "-j", "1", *config, "-t", str(limits.time)]
-        + ["-m", str(limits.memory), "-o", str(plan), str(learned), str(problem)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        solve = subprocess.run(
+            [sys.executable, "-m", "pyplanner", "solve", "-j", "1", *config]
+            + ["-t", str(limits.time), "-m", str(limits.memory), "-o", str(plan)]
+            + [str(learned), str(problem)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=WALL_FACTOR * limits.time,
+        )
+    except subprocess.TimeoutExpired:
+        detail = f"Resultado: limit_reached (sin terminar en {WALL_FACTOR * limits.time} s)"
+        return Outcome(problem, Status.NO_PLAN, detail)
     if solve.returncode == INVALID_INPUT:
         return Outcome(problem, Status.ERROR, _summary_line(solve.stderr, "error:"))
     if solve.returncode != PLAN_FOUND:
@@ -108,7 +121,10 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--reference", type=Path, required=True, help="dominio de referencia")
     parser.add_argument("--validate", type=Path, required=True, help="ejecutable Validate de VAL")
     parser.add_argument(
-        "--time-limit", type=int, default=60, help="segundos por problema (por defecto, 60)"
+        "--time-limit",
+        type=int,
+        default=60,
+        help="segundos de búsqueda por problema (por defecto, 60; la ejecución se corta al doble)",
     )
     parser.add_argument(
         "--memory-limit",
