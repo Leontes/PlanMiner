@@ -1,0 +1,69 @@
+# Banco de pruebas de PlanMiner (scripts/benchmark.py): los dominios STRIPS y PDDL 2.1 sin
+# tiempo (fluentes numéricos) del catálogo de PDDLDomains, los que PlanMiner puede aprender.
+#
+# De cada dominio se generan `problems` problemas con su plan y, de cada plan, una traza por
+# variante. La evaluación es una validación cruzada con `folds` particiones de los problemas:
+# PlanMiner aprende con las trazas de las demás particiones y planifica con el dominio aprendido
+# en los problemas de la suya (PyPlanner y VAL).
+
+description = "Dominios STRIPS y numéricos (PDDL 2.1 sin tiempo) de PDDLDomains"
+seed = 1
+problems = 30
+folds = 3
+
+# Las colecciones, con los filtros de los [[select]] de los datasets de PDDLDomains:
+# collections, exclude-collections, types, exclude-types, requirements, exclude-requirements,
+# levels, min-level y max-level. Se descartan las de un dominio por problema: PlanMiner aprende
+# uno solo.
+[[select]]
+types = ["strips"]
+
+[[select]]
+types = ["numeric"]
+exclude-types = [
+  "temporal", "continuous", "pddlplus", "til", "derived", "preferences", "constraints",
+]
+
+# Los problemas de las colecciones clásicas: paseos aleatorios (random-walk de PDDLDomains) desde
+# los `bases` problemas más pequeños de la colección. El paseo es el plan.
+[walk]
+bases = 3
+mode = "both"
+steps = "10..40"
+goals = "2..6"
+
+# Los de las numéricas: el generador de la colección en PDDLDomains, con sus parámetros por
+# defecto y los que se den aquí ("<colección>" = { parámetro = valor }). Los planes, de
+# PyPlanner: se generan la mitad más de problemas y se quedan los primeros que resuelve.
+[generators]
+
+# PyPlanner: los planes de las numéricas, qué problemas resuelve el dominio de referencia y los
+# planes con los dominios aprendidos. Límites por problema, en segundos y MB.
+[planner]
+config = "gbfs-ff-pref"
+time_limit = 60
+memory_limit = 1024
+
+# PlanMiner: las configuraciones (original, improved) y los límites de cada aprendizaje.
+[planminer]
+configurations = ["original", "improved"]
+time_limit = 1800
+memory_limit = 2560
+
+# Las variantes de las trazas, con las opciones de `pddldomains trace`: world, universe, missing,
+# missing_states, noise, numeric_noise y seed.
+[[variants]]
+name = "complete"
+world = "open"
+
+[[variants]]
+name = "missing30"
+world = "open"
+missing = 30
+seed = 1
+
+[[variants]]
+name = "noise5"
+world = "open"
+noise = 5
+seed = 1

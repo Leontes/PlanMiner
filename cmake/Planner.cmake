@@ -1,9 +1,9 @@
 # Herramientas de los tests del planificador: PyPlanner, pddldomains y VAL.
 #
-# Los tests del planificador (etiqueta planner) comprueban los dominios aprendidos (PyPlanner
-# busca planes con ellos y VAL los valida con el dominio de referencia) y que las trazas de
-# tests/data/traces se regeneran igual (pddldomains). Se registran solo si están las
-# herramientas:
+# Los tests del planificador (etiqueta planner) comprueban el arnés que valida dominios
+# aprendidos (PyPlanner busca planes con ellos y VAL los valida con el dominio de referencia), que
+# las trazas de tests/data/traces se regeneran igual (pddldomains) y el banco de pruebas mínimo
+# (benchmarks/smoke.toml). Se registran solo si están las herramientas:
 #
 # - PLANMINER_PYTHON: intérprete de Python con PyPlanner y pddldomains. Por defecto, el de
 #   .venv (scripts/setup_python.sh).

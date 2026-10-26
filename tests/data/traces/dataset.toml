@@ -1,4 +1,6 @@
-# Trazas de prueba de PlanMiner.
+# Trazas de prueba de PlanMiner: los datos fijos de los tests unitarios y del oráculo, que
+# comparan con Old/ estas trazas concretas. Para evaluar PlanMiner está el banco de pruebas
+# (benchmarks/, scripts/benchmark.py).
 #
 # Problemas del catálogo PDDLDomains (submódulo vendor/PDDLDomains), planes de PyPlanner y
 # trazas de `pddldomains trace`. Las genera scripts/generate_traces.py en

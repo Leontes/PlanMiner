@@ -58,7 +58,7 @@ Tests are grouped by CTest label (`ctest --preset debug -L <label>`):
 | Label | What it checks |
 |-------|----------------|
 | `unit` | the libraries, the command line and the scripts |
-| `planner` | learned domains: PyPlanner plans with them and VAL validates the plans against the reference domain |
+| `planner` | with PyPlanner, VAL and PDDLDomains: the harness that validates learned domains, the test traces and the minimal benchmark |
 | `inslv` | the fuzzy rule learning library (`vendor/inslv`) |
 
 The planner tests are registered only when PyPlanner, pddldomains and VAL are available:
@@ -94,6 +94,8 @@ With `--original` and a numeric domain, the learned domain declares its function
 
 ## Evaluation
 
+### Comparing a domain
+
 `scripts/compare_domains.py` compares a learned domain with the reference one (it only needs
 Python 3.12 or later):
 
@@ -128,6 +130,60 @@ with `--symmetric` (once per symbol).
 It exits with 0 if the domains could be compared and 2 if the arguments or the domains are not
 valid.
 
+### Benchmark
+
+`scripts/benchmark.py` evaluates PlanMiner on the domains of the PDDLDomains catalog that it can
+learn: STRIPS (with types and action costs) and PDDL 2.1 without durative actions (numeric
+fluents). It needs the Python environment, VAL and PlanMiner built with the `release` preset:
+
+```bash
+.venv/bin/python scripts/benchmark.py generate   # problems, plans and traces
+.venv/bin/python scripts/benchmark.py run        # cross-validation
+.venv/bin/python scripts/benchmark.py report     # tables in build/benchmark/default/report.md
+```
+
+The benchmark is defined in [`benchmarks/default.toml`](benchmarks/default.toml), which explains
+each setting:
+
+- **Domains.** The collections that the selection asks PDDLDomains for. Those with a domain per
+  problem are left out, because PlanMiner learns a single domain.
+- **Problems.** 30 per domain, each with its plan. In classical domains, they are random walks
+  (the `random-walk` generator of PDDLDomains) from the 3 smallest problems of the collection,
+  and the walk is the plan. In numeric domains, the collection's generator gives the problems
+  and PyPlanner the plans; the problems it does not solve are discarded.
+- **Traces.** One per plan and variant: complete, with 30 % of the atoms and values unknown
+  (`missing30`) and with 5 % noise (`noise5`).
+- **Cross-validation.** The problems of each domain are split into 3 folds. For each fold,
+  variant and configuration (`--original` or not), PlanMiner learns the domain from the traces
+  of the other folds. The learned domain is compared with the reference one (precision, recall
+  and F in tolerant mode, and also exact). PyPlanner then plans the fold's problems with it,
+  and VAL validates the plans against the reference domain. Validity only counts the problems
+  that the reference domain solves.
+- **Report.** For each domain, variant and configuration: the mean and standard deviation over
+  the folds of precision, recall and F, and the valid plans. The plans that are not valid are
+  broken down by cause: invalid, unsolvable, planner limit, error (PyPlanner rejects the
+  domain) and no domain (PlanMiner failed).
+
+Everything is reproducible:
+
+- The seeds are fixed.
+- `generate` checks the hashes of what it generates against `benchmarks/default.lock.json`, and
+  exits with 1 if they differ (`--update-lock` saves the new ones).
+- `run` saves the result of every learning and continues where it left off (`--force` repeats
+  them).
+
+Other options:
+
+| Option | Use |
+|--------|-----|
+| `--jobs N` | parallel jobs (3 by default); they must fit in 80 % of the available memory |
+| `--collections PATTERN...` | only these collections (`'ipc-2011/*'`) |
+| `--output DIR` | the output directory (by default, `build/benchmark/<benchmark>`) |
+| `--planminer FILE`, `--validate FILE` | the PlanMiner and VAL executables |
+
+Another benchmark is another TOML: `scripts/benchmark.py run my.toml`.
+[`benchmarks/smoke.toml`](benchmarks/smoke.toml) is the minimal one of the `planner` tests.
+
 ## Memory
 
 PlanMiner limits the memory it uses so it cannot exhaust the machine's (on WSL, exhausting it
@@ -139,6 +195,9 @@ freezes all of WSL):
 - Every test executable is limited to 2048 MB (`PLANMINER_TEST_MEMORY_MB`; 0, no limit). With
   `ctest` in parallel (4 jobs), the worst case is 8 GB.
 - The tests always run PyPlanner with a memory limit (`-m`).
+- The benchmark runs PlanMiner and PyPlanner with the limits of its definition (2560 MB and
+  1024 MB by default), and refuses to start if its jobs do not fit in 80 % of the available
+  memory.
 
 ## License
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Genera las trazas de prueba de tests/data/traces.
+"""Genera las trazas de prueba de tests/data/traces: los datos fijos de los tests unitarios y
+del oráculo (para evaluar PlanMiner está scripts/benchmark.py).
 
 Lee tests/data/traces/dataset.toml. Para cada problema, el plan es
 <colección>/<problema>.plan: si falta (o con --replan) lo busca PyPlanner. Para cada variante,

@@ -1,6 +1,7 @@
-# Validación de dominios aprendidos: PyPlanner planifica con el dominio aprendido y VAL valida
-# los planes con el de referencia (evaluate_domain.py). Y las trazas de prueba, que tienen que
-# regenerarse igual (scripts/generate_traces.py).
+# Los tests con PyPlanner, VAL y PDDLDomains: el arnés que valida dominios aprendidos
+# (scripts/evaluate_domain.py), las trazas de prueba de tests/data/traces, que tienen que
+# regenerarse igual (scripts/generate_traces.py), y el banco de pruebas mínimo
+# (benchmarks/smoke.toml, scripts/benchmark.py).
 
 set(blocksworld "${PROJECT_SOURCE_DIR}/tests/data/blocksworld")
 set(blocksworld_problems "${blocksworld}/p01.pddl" "${blocksworld}/p02.pddl"
@@ -9,7 +10,7 @@ set(blocksworld_problems "${blocksworld}/p01.pddl" "${blocksworld}/p02.pddl"
 function(planminer_add_domain_evaluation name learned reference)
   add_test(
     NAME planner.${name}
-    COMMAND "${PLANMINER_PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/evaluate_domain.py" --learned
+    COMMAND "${PLANMINER_PYTHON}" "${PROJECT_SOURCE_DIR}/scripts/evaluate_domain.py" --learned
             "${learned}" --reference "${reference}" --validate "${PLANMINER_VAL}" ${ARGN})
   set_tests_properties(planner.${name} PROPERTIES LABELS planner TIMEOUT 900)
 endfunction()
@@ -32,54 +33,21 @@ add_test(NAME planner.traces_reproducible
          COMMAND "${PLANMINER_PYTHON}" "${PROJECT_SOURCE_DIR}/scripts/generate_traces.py" --check)
 set_tests_properties(planner.traces_reproducible PROPERTIES LABELS planner TIMEOUT 900)
 
-# Línea base: el dominio que aprende Old/ con las trazas completas de BlocksWorld. El de las
-# trazas incompletas no está: su STACK exige (ontable ?param_1) y deja los tres problemas sin
-# solución.
-planminer_add_domain_evaluation(
-  legacy.blocksworld "${PROJECT_SOURCE_DIR}/tests/oracle/golden/blocksworld.pddl"
-  "${blocksworld}/domain.pddl" ${blocksworld_problems})
-
-# El dominio que aprende la línea de comandos, con la configuración mejorada y con la original, con
-# las trazas completas de blocksworld, evaluado con problemas del catálogo que no están en las
-# trazas.
-set(blocks "${PROJECT_SOURCE_DIR}/vendor/PDDLDomains/dominios/ipc-2000/blocks-strips-untyped")
-file(GLOB blocks_traces
-     "${PROJECT_SOURCE_DIR}/tests/data/traces/blocks-strips-untyped/*.complete.json")
-foreach(configuration IN ITEMS improved original)
-  set(learned "${CMAKE_CURRENT_BINARY_DIR}/blocks.${configuration}.pddl")
-  set(flags "")
-  if(configuration STREQUAL "original")
-    set(flags --original)
-  endif()
-  add_test(NAME planner.learn.blocksworld.${configuration}
-           COMMAND planminer ${flags} -o "${learned}" ${blocks_traces})
-  set_tests_properties(planner.learn.blocksworld.${configuration}
-                       PROPERTIES LABELS planner FIXTURES_SETUP learned_blocksworld_${configuration})
-  planminer_add_domain_evaluation(
-    learned.blocksworld.${configuration} "${learned}" "${blocks}/domain.pddl" "${blocks}/p09.pddl"
-    "${blocks}/p10.pddl" "${blocks}/p11.pddl")
-  set_tests_properties(planner.learned.blocksworld.${configuration}
-                       PROPERTIES FIXTURES_REQUIRED learned_blocksworld_${configuration})
-endforeach()
-
-# Con la configuración mejorada, los dominios numéricos: zenotravel y counters aprendidos con sus
-# trazas completas, con problemas que el dominio de referencia resuelve en el límite de tiempo.
-foreach(spec IN ITEMS "zenotravel|p01 p02 p03 p04 p05 p06 p07 p09"
-                      "counters|p01 p02 p03 p04 p05")
-  string(REPLACE "|" ";" spec "${spec}")
-  list(GET spec 0 name)
-  list(GET spec 1 problems)
-  separate_arguments(problems)
-  set(catalog "${PROJECT_SOURCE_DIR}/vendor/PDDLDomains/dominios/ipc-2023-numeric/${name}")
-  set(learned "${CMAKE_CURRENT_BINARY_DIR}/${name}.improved.pddl")
-  file(GLOB traces "${PROJECT_SOURCE_DIR}/tests/data/traces/${name}/*.complete.json")
-  add_test(NAME planner.learn.${name}.improved COMMAND planminer -o "${learned}" ${traces})
-  set_tests_properties(planner.learn.${name}.improved
-                       PROPERTIES LABELS planner FIXTURES_SETUP learned_${name}_improved)
-  list(TRANSFORM problems PREPEND "${catalog}/")
-  list(TRANSFORM problems APPEND ".pddl")
-  planminer_add_domain_evaluation(learned.${name}.improved "${learned}" "${catalog}/domain.pddl"
-                                  ${problems})
-  set_tests_properties(planner.learned.${name}.improved
-                       PROPERTIES FIXTURES_REQUIRED learned_${name}_improved)
-endforeach()
+# El banco de pruebas mínimo, de principio a fin: genera los datos, que tienen que coincidir con
+# las huellas de benchmarks/smoke.lock.json; hace la validación cruzada con el PlanMiner recién
+# compilado (--force: aunque haya resultados de antes); y escribe el informe. Un solo trabajo:
+# cabe junto a los demás tests en paralelo.
+set(benchmark "${PLANMINER_PYTHON}" "${PROJECT_SOURCE_DIR}/scripts/benchmark.py")
+set(smoke --output "${CMAKE_CURRENT_BINARY_DIR}/benchmark-smoke")
+add_test(NAME planner.benchmark.generate
+         COMMAND ${benchmark} generate smoke ${smoke} --validate "${PLANMINER_VAL}" --jobs 1)
+add_test(NAME planner.benchmark.run
+         COMMAND ${benchmark} run smoke ${smoke} --validate "${PLANMINER_VAL}" --jobs 1 --force
+                 --planminer $<TARGET_FILE:planminer>)
+add_test(NAME planner.benchmark.report COMMAND ${benchmark} report smoke ${smoke})
+set_tests_properties(planner.benchmark.generate planner.benchmark.run planner.benchmark.report
+                     PROPERTIES LABELS planner TIMEOUT 900)
+set_tests_properties(planner.benchmark.generate PROPERTIES FIXTURES_SETUP benchmark_smoke_data)
+set_tests_properties(planner.benchmark.run PROPERTIES FIXTURES_REQUIRED benchmark_smoke_data
+                                                      FIXTURES_SETUP benchmark_smoke_runs)
+set_tests_properties(planner.benchmark.report PROPERTIES FIXTURES_REQUIRED benchmark_smoke_runs)

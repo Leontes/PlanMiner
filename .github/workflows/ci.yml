@@ -91,4 +91,4 @@ jobs:
           ruff format --check .
 
       - name: mypy
-        run: mypy --strict tests/planner tests/scripts scripts
+        run: mypy --strict tests/scripts scripts

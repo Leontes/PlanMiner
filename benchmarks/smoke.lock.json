@@ -1,0 +1,14 @@
+{
+  "pddldomains": "38a868974e6b4a70cc35bd706e104b739dea24f5",
+  "collections": {
+    "ipc-2000/blocks-strips-untyped": {
+      "problems": 6,
+      "digest": "cd9eee07e049fec64513afbfab93530c01cbeab74961716d0354b64fb946263d"
+    },
+    "ipc-2023-numeric/counters": {
+      "problems": 6,
+      "digest": "9d772aa1523f0ae91c605525d3200dd658f840c32ddb255765f97d8aa47c2386"
+    }
+  },
+  "excluded": {}
+}

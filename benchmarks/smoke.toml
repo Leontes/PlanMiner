@@ -1,0 +1,33 @@
+# Prueba mínima del banco de pruebas (los tests de la etiqueta planner): un dominio clásico y uno
+# numérico, pocos problemas y una sola variante. La explicación de cada clave, en default.toml.
+
+description = "Prueba mínima: blocks (paseos aleatorios) y counters (PyPlanner)"
+seed = 1
+problems = 6
+folds = 3
+
+[[select]]
+collections = ["ipc-2000/blocks-strips-untyped", "ipc-2023-numeric/counters"]
+
+[walk]
+bases = 2
+mode = "both"
+steps = "10..20"
+goals = "2..4"
+
+[generators]
+"ipc-2023-numeric/counters" = { counters = "2..4" }
+
+[planner]
+config = "gbfs-ff-pref"
+time_limit = 30
+memory_limit = 1024
+
+[planminer]
+configurations = ["original", "improved"]
+time_limit = 300
+memory_limit = 2048
+
+[[variants]]
+name = "complete"
+world = "open"

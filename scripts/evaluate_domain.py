@@ -61,6 +61,8 @@ def _summary_line(text: str, *markers: str) -> str:
 class Limits:
     time: int  # segundos
     memory: int  # MB
+    #: La configuración de búsqueda de PyPlanner; sin ella, la que elige para un núcleo.
+    config: str | None = None
 
 
 def evaluate_problem(
@@ -68,8 +70,9 @@ def evaluate_problem(
 ) -> Outcome:
     """Busca un plan con el dominio aprendido y lo valida con el de referencia."""
     plan = workdir / f"{problem.stem}.plan"
+    config = ["-c", limits.config] if limits.config else []
     solve = subprocess.run(
-        [sys.executable, "-m", "pyplanner", "solve", "-j", "1", "-t", str(limits.time)]
+        [sys.executable, "-m", "pyplanner", "solve", "-j", "1", *config, "-t", str(limits.time)]
         + ["-m", str(limits.memory), "-o", str(plan), str(learned), str(problem)],
         capture_output=True,
         text=True,

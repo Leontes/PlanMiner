@@ -2,7 +2,8 @@
 #
 # - unit: tests unitarios del código nuevo.
 # - oracle: comparaciones con Old/, función a función y con el pipeline completo.
-# - planner: los dominios aprendidos se validan planificando con PyPlanner y VAL.
+# - planner: los que necesitan PyPlanner, VAL y PDDLDomains: el arnés de validación de dominios,
+#   las trazas de prueba y el banco de pruebas mínimo (benchmarks/smoke.toml).
 # - inslv: los de vendor/inslv (se registran allí).
 
 include(GoogleTest)
