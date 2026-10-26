@@ -31,6 +31,24 @@ gtest_discover_tests(planminer_oracle_tests TEST_PREFIX "oracle." DISCOVERY_MODE
 # paralelo.
 set(PLANMINER_LEGACY_MEMORY_MB 2560 CACHE STRING "Límite de memoria (MB) de cada ejecución de Old/")
 
+# De principio a fin: el dominio de la configuración original nueva frente al que escribe el
+# original con las mismas trazas. Cada test lanza el original: de uno en uno.
+add_executable(planminer_oracle_domain pts.cpp test_legacy_domain.cpp)
+target_link_libraries(planminer_oracle_domain PRIVATE pddl plantraces planminer_test_main)
+target_compile_features(planminer_oracle_domain PRIVATE cxx_std_20)
+target_compile_definitions(
+  planminer_oracle_domain
+  PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces"
+          PLANMINER_ORACLE_WORK_DIR="${CMAKE_CURRENT_BINARY_DIR}/work"
+          PLANMINER_LEGACY="$<TARGET_FILE:PlanMinerLegacy>"
+          PLANMINER_LIMIT_MEMORY="$<TARGET_FILE:planminer_limit_memory>"
+          PLANMINER_LEGACY_MEMORY_MB=${PLANMINER_LEGACY_MEMORY_MB})
+add_dependencies(planminer_oracle_domain PlanMinerLegacy planminer_limit_memory)
+planminer_set_warnings(planminer_oracle_domain)
+
+gtest_discover_tests(planminer_oracle_domain TEST_PREFIX "oracle." DISCOVERY_MODE PRE_TEST
+                     NO_PRETTY_VALUES PROPERTIES LABELS oracle RESOURCE_LOCK legacy_memory)
+
 # El pipeline completo: el dominio que aprende el original con cada traza tiene que coincidir
 # con el guardado en golden/. Para regenerarlos:
 #   PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy

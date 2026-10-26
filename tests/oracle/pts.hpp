@@ -16,8 +16,11 @@ namespace oracle {
 /// es desconocido. Por eso, para que el original vea lo mismo, las trazas tienen que ser de
 /// mundo abierto.
 ///
+/// Con uppercase, los nombres (acciones, predicados, fluentes, objetos y tipos) van en mayúsculas,
+/// como en las trazas del original: su escritura del dominio lo supone.
+///
 /// Lanza std::invalid_argument si un objeto tiene varios tipos (either): el formato antiguo no
 /// los admite.
-std::string to_pts(const std::vector<plantraces::Trace>& traces);
+std::string to_pts(const std::vector<plantraces::Trace>& traces, bool uppercase = false);
 
 }  // namespace oracle
