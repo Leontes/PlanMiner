@@ -35,6 +35,16 @@ struct LegacyExamples {
   RuleList rules;
 };
 
+/// La precondición y el efecto de una acción, como pares (atributo, valor).
+struct LegacyFused {
+  std::vector<std::pair<std::string, std::string>> precondition;
+  std::vector<std::pair<std::string, std::string>> effect;
+};
+
+/// La fusión del original (fuseRules) de las reglas de una acción, con su cabecera: los pares
+/// (parámetro, tipo).
+LegacyFused legacy_fuse(RuleList rules, std::vector<std::pair<std::string, std::string>> header);
+
 /// Los dos conjuntos de ejemplos de cada acción (lógico y numérico) y sus reglas, con el pipeline
 /// del original (Old/src/bin/mainPlanMiner.cpp): las tablas de todas las acciones y, después, por
 /// acción, discretize e inslv() de cada conjunto. Sin atributos, el original no aprende: nullopt.

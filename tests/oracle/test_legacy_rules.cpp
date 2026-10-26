@@ -20,6 +20,7 @@
 #include <fstream>
 #include <list>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <variant>
@@ -31,71 +32,87 @@
 #include "legacy.hpp"
 #include "legacy_rules.hpp"
 #include "plantraces/actions.hpp"
+#include "plantraces/types.hpp"
 #include "pts.hpp"
 #include "rules/examples.hpp"
+#include "rules/fusion.hpp"
+#include "rules/legacy.hpp"
 
 namespace {
 
 namespace fs = std::filesystem;
 
 using oracle::Case;
-using oracle::legacy_label;
 using oracle::legacy_missing;
-using oracle::legacy_relation_label;
 using oracle::LegacyExamples;
 
-// La expresión del cambio como la escribe el original. Solo hace falta con constantes: en estas
-// trazas los cambios son de 1.
-std::string legacy_formula(const regression::Expression& expression,
-                           const std::vector<plantraces::LiftedAtom>& variables) {
-  if (expression.operation() == regression::Operation::constant &&
-      expression.value() == std::floor(expression.value())) {
-    return std::to_string(static_cast<long long>(expression.value())) + " ";
+// Los tipos de los argumentos de la primera aplicación de la acción: los de los nombres del
+// original.
+std::vector<std::string> argument_types(const plantraces::Transition& transition) {
+  std::vector<std::string> types;
+  for (const std::string& object : transition.action->arguments) {
+    types.push_back(transition.trace->objects.at(object).front());
   }
-  std::vector<std::string> names;
-  for (const plantraces::LiftedAtom& variable : variables) {
-    names.push_back(plantraces::to_string(variable));
-  }
-  return expression.to_string(names) + " ";
+  return types;
 }
 
-// El nombre que da el original a un atributo. En las relaciones con lo que baja un fluente, el
-// original pone la expresión de su cambio (o el fluente, si no la tiene).
-std::string legacy_name(const rules::Attribute& attribute, const rules::Examples& examples,
-                        const plantraces::Transition& transition) {
-  switch (attribute.kind) {
-    case rules::AttributeKind::atom:
-    case rules::AttributeKind::value:
-      return legacy_label(attribute.term, transition);
-    case rules::AttributeKind::relation: {
-      const datasets::Relation& relation = *attribute.relation;
-      if (relation.right.kind != datasets::OperandKind::fall) {
-        return legacy_relation_label(relation, transition);
-      }
-      const datasets::Attribute fluent{datasets::AttributeKind::fluent,
-                                       relation.right.variables.front()};
-      std::string right = legacy_label(fluent, transition);
-      for (const rules::Attribute& change : examples.attributes) {
-        if (change.kind == rules::AttributeKind::change && change.term == fluent) {
-          right = legacy_formula(*change.expression, change.variables);
-        }
-      }
-      const std::string label = legacy_relation_label(relation, transition);
-      return label.substr(0, label.find("  ") + 2) + right;
+oracle::RuleList as_rule_list(const std::vector<rules::LegacyRule>& rules) {
+  oracle::RuleList result;
+  for (const rules::LegacyRule& rule : rules) {
+    std::list<std::pair<std::string, std::string>> conditions;
+    for (const rules::Literal& literal : rule.conditions) {
+      conditions.emplace_back(literal.attribute, literal.value);
     }
-    case rules::AttributeKind::change:
-      return "DELTA - " + legacy_label(attribute.term, transition) + " " +
-             legacy_formula(*attribute.expression, attribute.variables);
+    result.emplace_back(rule.covered, conditions);
   }
-  return "";
+  return result;
+}
+
+// La cabecera de la acción como la da el original: los pares (parámetro, tipo).
+std::vector<std::pair<std::string, std::string>> legacy_header(
+    const std::vector<std::string>& types) {
+  std::vector<std::pair<std::string, std::string>> header;
+  for (std::size_t p = 0; p < types.size(); ++p) {
+    header.emplace_back("param_" + std::to_string(p), types[p]);
+  }
+  return header;
+}
+
+std::vector<std::pair<std::string, std::string>> as_pairs(
+    const std::vector<rules::Literal>& literals) {
+  std::vector<std::pair<std::string, std::string>> pairs;
+  for (const rules::Literal& literal : literals) {
+    pairs.emplace_back(literal.attribute, literal.value);
+  }
+  return pairs;
+}
+
+// Sin las comparaciones del instante con un número ("opGT - TIMESTAMP 1 ..."): el original saca
+// su lado izquierdo leyendo fuera de rango hasta encontrar un paréntesis, con lo que quede en
+// memoria de otros nombres. Las descarta al escribir el dominio.
+std::vector<std::pair<std::string, std::string>> defined(
+    std::vector<std::pair<std::string, std::string>> literals) {
+  std::erase_if(literals, [](const std::pair<std::string, std::string>& literal) {
+    std::istringstream in(literal.first);
+    std::string op, dash, left;
+    in >> op >> dash >> left;
+    return left == "TIMESTAMP";
+  });
+  return literals;
+}
+
+// Que la fusión nueva dé lo mismo que la del original.
+void expect_same_fusion(const rules::Fused& fused, const oracle::LegacyFused& legacy) {
+  EXPECT_EQ(defined(as_pairs(fused.precondition)), defined(legacy.precondition));
+  EXPECT_EQ(defined(as_pairs(fused.effect)), defined(legacy.effect));
 }
 
 // Los ejemplos y las reglas del lado nuevo, con los nombres del original.
 LegacyExamples as_legacy(const rules::Examples& examples, const std::vector<rules::Rule>& rules,
-                         const plantraces::Transition& transition) {
+                         const std::vector<std::string>& types) {
   LegacyExamples result;
   for (std::size_t a = 0; a < examples.attributes.size(); ++a) {
-    result.names.push_back(legacy_name(examples.attributes[a], examples, transition));
+    result.names.push_back(rules::legacy_name(examples.attributes[a], examples, types));
     std::vector<oracle::LegacyLabel> labels;
     for (const inslv::FuzzySet& set : examples.data.attributes[a].labels) {
       labels.push_back({set.label, set.a, set.b, set.c, set.d});
@@ -112,16 +129,7 @@ LegacyExamples as_legacy(const rules::Examples& examples, const std::vector<rule
   for (const std::size_t c : examples.data.classes) {
     result.classes.push_back(static_cast<double>(c));
   }
-  for (const rules::Rule& rule : rules) {
-    std::list<std::pair<std::string, std::string>> conditions;
-    for (const rules::Condition& condition : rule.conditions) {
-      const std::string value = std::holds_alternative<bool>(condition.value)
-                                    ? (std::get<bool>(condition.value) ? "True" : "False")
-                                    : std::to_string(std::get<int>(condition.value));
-      conditions.emplace_back(result.names[condition.attribute], value);
-    }
-    result.rules.emplace_back(rule.post ? rule.covered : -rule.covered, conditions);
-  }
+  result.rules = as_rule_list(rules::legacy_rules(rules, examples, types));
   return result;
 }
 
@@ -171,6 +179,7 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
 
   // El nuevo, en el mismo orden: por acción, el conjunto lógico y después el numérico.
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
+  const plantraces::TypeHierarchy hierarchy = plantraces::type_hierarchy(traces);
   const auto actions = plantraces::group_by_action(traces);
   ASSERT_EQ(actions.size(), expected.size());
   std::srand(1);
@@ -178,12 +187,13 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
     SCOPED_TRACE("acción " + name);
     ASSERT_TRUE(expected.contains(name));
     const datasets::Table table = datasets::build_table(vocabulary, transitions);
+    const std::vector<std::string> types = argument_types(transitions.front());
 
     const rules::Examples logic = rules::logic_examples(table);
     const std::vector<rules::Rule> logic_rules = rules::learn(logic);
     {
       SCOPED_TRACE("lógico");
-      expect_same(as_legacy(logic, logic_rules, transitions.front()), expected[name][0]);
+      expect_same(as_legacy(logic, logic_rules, types), expected[name][0]);
     }
 
     const std::vector<datasets::FluentChange> changes =
@@ -195,10 +205,71 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
     const std::vector<rules::Rule> numeric_rules = rules::learn(numeric);
     {
       SCOPED_TRACE("numérico");
-      expect_same(as_legacy(numeric, numeric_rules, transitions.front()), expected[name][1]);
+      expect_same(as_legacy(numeric, numeric_rules, types), expected[name][1]);
     }
+
+    // La fusión: la del original con sus reglas y la nueva con las nuevas.
+    SCOPED_TRACE("fusión");
+    oracle::RuleList legacy_input;
+    for (const std::optional<LegacyExamples>& examples : expected[name]) {
+      if (examples) {
+        legacy_input.insert(legacy_input.end(), examples->rules.begin(), examples->rules.end());
+      }
+    }
+    std::vector<rules::LegacyRule> input = rules::legacy_rules(logic_rules, logic, types);
+    const std::vector<rules::LegacyRule> numeric_input =
+        rules::legacy_rules(numeric_rules, numeric, types);
+    input.insert(input.end(), numeric_input.begin(), numeric_input.end());
+    const std::vector<std::string> header =
+        hierarchy.actions.contains(name) ? hierarchy.actions.at(name) : std::vector<std::string>{};
+    expect_same_fusion(rules::fuse_original(input, header),
+                       oracle::legacy_fuse(legacy_input, legacy_header(header)));
   }
 }
+
+// La fusión con las reglas que aprende la configuración original nueva: con trazas en las que el
+// original tarda demasiado (zenotravel) o lanza el A* sobre el ruido.
+class LegacyFusion : public testing::TestWithParam<Case> {};
+
+TEST_P(LegacyFusion, SameFusionAsTheOriginal) {
+  const std::vector<plantraces::Trace> traces = oracle::read_traces(GetParam());
+  ASSERT_FALSE(traces.empty());
+  const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
+  const plantraces::TypeHierarchy hierarchy = plantraces::type_hierarchy(traces);
+  // Pocas expansiones: con ruido, el A* original busca el cambio de cada constante alterada, y aquí
+  // solo hacen falta reglas con las que probar la fusión.
+  datasets::EffectOptions effects = datasets::EffectOptions::original();
+  effects.search.max_expansions = 2000;
+  std::srand(1);
+  for (const auto& [name, transitions] : plantraces::group_by_action(traces)) {
+    SCOPED_TRACE("acción " + name);
+    const datasets::Table table = datasets::build_table(vocabulary, transitions);
+    const std::vector<std::string> types = argument_types(transitions.front());
+
+    const rules::Examples logic = rules::logic_examples(table);
+    std::vector<rules::LegacyRule> input = rules::legacy_rules(rules::learn(logic), logic, types);
+    const rules::Examples numeric = rules::numeric_examples(
+        table, datasets::numeric_effects(table, effects),
+        datasets::numeric_relations(table, {}, datasets::RelationOptions::original()),
+        [] { return std::rand(); }, rules::ExampleOptions::original());
+    const std::vector<rules::LegacyRule> numeric_input =
+        rules::legacy_rules(rules::learn(numeric), numeric, types);
+    input.insert(input.end(), numeric_input.begin(), numeric_input.end());
+
+    const std::vector<std::string> header =
+        hierarchy.actions.contains(name) ? hierarchy.actions.at(name) : std::vector<std::string>{};
+    expect_same_fusion(rules::fuse_original(input, header),
+                       oracle::legacy_fuse(as_rule_list(input), legacy_header(header)));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(Traces, LegacyFusion,
+                         testing::Values(Case{"zenotravel", "complete"},
+                                         Case{"zenotravel", "missing30"},
+                                         Case{"zenotravel", "noise5"}, Case{"counters", "noise5"}),
+                         [](const testing::TestParamInfo<Case>& c) {
+                           return oracle::case_name(c.param);
+                         });
 
 INSTANTIATE_TEST_SUITE_P(Traces, LegacyRules,
                          testing::Values(Case{"blocks-strips-untyped", "complete"},

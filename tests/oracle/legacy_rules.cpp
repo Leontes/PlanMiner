@@ -50,4 +50,12 @@ std::map<std::string, std::array<std::optional<LegacyExamples>, 2>> legacy_rules
   return result;
 }
 
+LegacyFused legacy_fuse(RuleList rules, std::vector<std::pair<std::string, std::string>> header) {
+  // La fusión no usa los ejemplos ni sus nombres.
+  std::vector<std::vector<double>> dataset;
+  std::vector<std::list<std::pair<std::string, std::string>>> fused;
+  fuseRules(&rules, &fused, &dataset, {}, &header);
+  return {{fused[0].begin(), fused[0].end()}, {fused[1].begin(), fused[1].end()}};
+}
+
 }  // namespace oracle
