@@ -1,6 +1,7 @@
 #include "rules/fusion.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <iterator>
 #include <limits>
@@ -107,8 +108,9 @@ void accumulate(std::vector<Weighted>& all, const Literal& literal, int covered)
 }
 
 // Un atributo con dos valores: gana el primero si cubre más del 5 % de los ejemplos de los dos; si
-// no, el otro (en el estado de después, el primero también).
-std::vector<Weighted> select(const std::vector<Weighted>& all, bool post) {
+// no, el otro (en el estado de después, el primero también). Con majority, el que cubre más (con
+// un empate, ninguno).
+std::vector<Weighted> select(const std::vector<Weighted>& all, bool post, bool majority) {
   std::vector<Weighted> selected;
   std::vector<bool> seen(all.size(), false);
   for (std::size_t i = 0; i < all.size(); ++i) {
@@ -129,7 +131,13 @@ std::vector<Weighted> select(const std::vector<Weighted>& all, bool post) {
     }
     const double w1 = all[i].weight;
     const double w2 = all[*conflict].weight;
-    if (w1 / (w1 + w2) > 0.05) {
+    if (majority) {
+      if (w1 > w2) {
+        selected.push_back(all[i]);
+      } else if (w2 > w1) {
+        selected.push_back(all[*conflict]);
+      }
+    } else if (w1 / (w1 + w2) > 0.05) {
       selected.push_back(all[i]);
     } else if (w2 / (w1 + w2) > 0.05) {
       selected.push_back(post ? all[i] : all[*conflict]);
@@ -489,10 +497,35 @@ std::vector<Literal> remove_redundant(std::vector<Literal> rule) {
   return kept;
 }
 
-std::vector<Literal> precondition(const std::vector<Weighted>& pre) {
+// Las ordenaciones que admite una comparación cierta o falsa: 1, <; 2, =; 4, >.
+unsigned orderings(const std::string& op, bool truth) {
+  const unsigned bits = op == "opLT" ? 1U : op == "opEQ" ? 2U : 4U;
+  return truth ? bits : 7U & ~bits;
+}
+
+const char* comparison_of(unsigned orderings) {
+  switch (orderings) {
+    case 1:
+      return "opLT";
+    case 2:
+      return "opEQ";
+    case 4:
+      return "opGT";
+    case 3:
+      return "opLET";
+    case 6:
+      return "opGET";
+    default:
+      return nullptr;  // ninguna restricción, solo «distinto» o una contradicción
+  }
+}
+
+std::vector<Literal> precondition(const std::vector<Weighted>& pre, const FusionOptions& options) {
   std::vector<Literal> rule;
   Groups groups;
-  for (const Weighted& selected : select(pre, false)) {
+  // (lado izquierdo, lado derecho o número) -> ordenaciones admitidas
+  std::map<std::pair<std::string, std::string>, unsigned> combined;
+  for (const Weighted& selected : select(pre, false, options.majority)) {
     std::vector<std::string> tokens = split(selected.literal.attribute);
     const std::string& value = selected.literal.value;
     // Un valor discretizado pasa a ser una igualdad con su número.
@@ -522,6 +555,15 @@ std::vector<Literal> precondition(const std::vector<Weighted>& pre) {
           ++j;
         }
       }
+      if (options.combine_comparisons) {
+        // Los valores discretizados (que no son True ni False) se pierden, como en el original.
+        if (is_truth(value)) {
+          const auto [entry, inserted] =
+              combined.try_emplace({left, other == "NUMERO" ? tokens.back() : other}, 7U);
+          entry->second &= orderings(tokens[0], value == "True");
+        }
+        continue;
+      }
       groups[{left, other}].push_back(
           {tokens[0], other == "NUMERO" ? tokens.back() : other, value});
     } else if (is_truth(value)) {
@@ -540,14 +582,19 @@ std::vector<Literal> precondition(const std::vector<Weighted>& pre) {
       rule.push_back({entries[0][0] + " - " + key.first + " " + entries[0][1], "True"});
     }
   }
+  for (const auto& [key, allowed] : combined) {
+    if (const char* op = comparison_of(allowed)) {
+      rule.push_back({std::string{op} + " - " + key.first + " " + key.second, "True"});
+    }
+  }
   return remove_redundant(std::move(rule));
 }
 
 std::vector<Literal> effect(const std::vector<Weighted>& post,
-                            const std::vector<Literal>& precondition) {
+                            const std::vector<Literal>& precondition, bool majority) {
   std::vector<Literal> rule;
   Groups groups;
-  for (const Weighted& selected : select(post, true)) {
+  for (const Weighted& selected : select(post, true, majority)) {
     const std::vector<std::string> tokens = split(selected.literal.attribute);
     const std::string& value = selected.literal.value;
     if (is_truth(value)) {
@@ -622,9 +669,50 @@ std::vector<Literal> effect(const std::vector<Weighted>& post,
   return result;
 }
 
+// Si una condición se cumple en al menos min_support de los ejemplos de su estado en que se conoce.
+// Las que no se pueden comprobar (valores discretizados, cambios, atributos sin valores) se quedan.
+bool supported(const Literal& literal, bool post, const Evidence& evidence, double min_support) {
+  const auto column = evidence.columns.find(literal.attribute);
+  if (!is_truth(literal.value) || column == evidence.columns.end()) {
+    return true;
+  }
+  const double expected = literal.value == "True" ? 1.0 : 0.0;
+  const std::size_t n = evidence.transitions;
+  std::size_t known = 0;
+  std::size_t holds = 0;
+  for (std::size_t row = post ? n : 0; row < (post ? 2 * n : n); ++row) {
+    const double value = column->second[row];
+    if (!std::isnan(value)) {
+      ++known;
+      holds += value == expected ? 1U : 0U;
+    }
+  }
+  return static_cast<double>(holds) >= min_support * static_cast<double>(known);
+}
+
 }  // namespace
 
+FusionOptions FusionOptions::original() {
+  FusionOptions options;
+  options.validate = false;
+  options.majority = false;
+  options.combine_comparisons = false;
+  return options;
+}
+
 Fused fuse_original(std::vector<LegacyRule> rules, const std::vector<std::string>& header) {
+  return fuse(std::move(rules), header, {}, FusionOptions::original());
+}
+
+Fused fuse(std::vector<LegacyRule> rules, const std::vector<std::string>& header,
+           const Evidence& evidence, const FusionOptions& options) {
+  if (options.validate) {
+    for (LegacyRule& rule : rules) {
+      std::erase_if(rule.conditions, [&](const Literal& literal) {
+        return !supported(literal, rule.covered >= 0, evidence, options.min_support);
+      });
+    }
+  }
   substitute_header(rules, header);
   remove_repeated(rules);
 
@@ -641,8 +729,8 @@ Fused fuse_original(std::vector<LegacyRule> rules, const std::vector<std::string
   }
 
   Fused fused;
-  fused.precondition = precondition(pre);
-  fused.effect = effect(post, fused.precondition);
+  fused.precondition = precondition(pre, options);
+  fused.effect = effect(post, fused.precondition, options.majority);
   return fused;
 }
 

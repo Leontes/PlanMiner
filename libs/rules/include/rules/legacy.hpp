@@ -2,6 +2,8 @@
 // fusión de reglas del original trabaja sobre ellos, como cadenas.
 #pragma once
 
+#include <cstddef>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -49,6 +51,18 @@ std::string legacy_formula(const regression::Expression& expression,
 /// - un cambio: "DELTA - ( fuel ... ) <expresión> ".
 std::string legacy_name(const Attribute& attribute, const Examples& examples,
                         const std::vector<std::string>& types);
+
+/// Los valores de los atributos de los ejemplos de una acción, por su nombre del original: con
+/// ellos se comprueban las condiciones de las reglas.
+struct Evidence {
+  /// Las aplicaciones de la acción: las filas de antes y, detrás, las de después.
+  std::size_t transitions = 0;
+  std::map<std::string, std::vector<double>> columns;
+};
+
+/// Los valores de los ejemplos (lógicos y numéricos) de una acción.
+Evidence evidence(const std::vector<const Examples*>& examples,
+                  const std::vector<std::string>& types);
 
 /// Las reglas con los nombres del original: los ejemplos cubiertos con signo y las condiciones,
 /// con True, False o el número.

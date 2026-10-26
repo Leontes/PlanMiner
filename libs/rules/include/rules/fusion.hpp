@@ -38,4 +38,32 @@ struct Fused {
 /// asignación que repite un cambio, un token que falta cuenta como distinto.
 Fused fuse_original(std::vector<LegacyRule> rules, const std::vector<std::string>& header);
 
+/// Cómo se fusionan las reglas. Cada corrección del original es una opción, para poder medirla por
+/// separado: original() es la fusión del original y FusionOptions{}, la corregida.
+struct FusionOptions {
+  /// Cada condición de una regla (del estado de antes o del de después) se queda solo si se cumple
+  /// en al menos min_support de los ejemplos de su estado en que se conoce. Es la medida del
+  /// impacto que preveía el original (measureImpact y significative, que no llegó a usar): INSLV
+  /// describe cada estado con varias reglas, cada una de una parte de los ejemplos, y la fusión
+  /// las junta como si se cumplieran todas. Las condiciones sobre valores discretizados no se
+  /// comprueban.
+  bool validate = true;
+  double min_support = 0.95;
+  /// En un conflicto entre dos valores de un atributo gana el que cubre más ejemplos, antes y
+  /// después; con un empate, ninguno. Si no, como el original: el primero si cubre más del 5 %.
+  bool majority = true;
+  /// Las comparaciones de cada pareja (o de un fluente con un número), ciertas y falsas, se
+  /// combinan en una: <, <=, =, >= o >. Si se contradicen o solo dicen «distinto», ninguna. Si no,
+  /// como el original: solo cuentan las ciertas, de las relaciones queda la última y de los
+  /// números, un intervalo.
+  bool combine_comparisons = true;
+
+  static FusionOptions original();
+};
+
+/// La fusión con las correcciones de options. evidence son los valores de los ejemplos de la
+/// acción (solo hacen falta para validar).
+Fused fuse(std::vector<LegacyRule> rules, const std::vector<std::string>& header,
+           const Evidence& evidence, const FusionOptions& options = {});
+
 }  // namespace rules

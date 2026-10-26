@@ -1,5 +1,6 @@
 #include "rules/legacy.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 #include <variant>
@@ -106,6 +107,19 @@ std::string legacy_name(const Attribute& attribute, const Examples& examples,
     right = legacy_formula(relation.right.expression, relation.right.variables, types) + " ";
   }
   return std::string{op} + " - " + legacy_label(relation.left, types) + "  " + right;
+}
+
+Evidence evidence(const std::vector<const Examples*>& examples,
+                  const std::vector<std::string>& types) {
+  Evidence result;
+  for (const Examples* set : examples) {
+    result.transitions = static_cast<std::size_t>(
+        std::count(set->data.classes.begin(), set->data.classes.end(), std::size_t{0}));
+    for (std::size_t a = 0; a < set->attributes.size(); ++a) {
+      result.columns.emplace(legacy_name(set->attributes[a], *set, types), set->data.values[a]);
+    }
+  }
+  return result;
 }
 
 std::vector<LegacyRule> legacy_rules(const std::vector<Rule>& rules, const Examples& examples,

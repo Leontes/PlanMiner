@@ -61,3 +61,25 @@ foreach(configuration IN ITEMS improved original)
   set_tests_properties(planner.learned.blocksworld.${configuration}
                        PROPERTIES FIXTURES_REQUIRED learned_blocksworld_${configuration})
 endforeach()
+
+# Con la configuración mejorada, los dominios numéricos: zenotravel y counters aprendidos con sus
+# trazas completas, con problemas que el dominio de referencia resuelve en el límite de tiempo.
+foreach(spec IN ITEMS "zenotravel|p01 p02 p03 p04 p05 p06 p07 p09"
+                      "counters|p01 p02 p03 p04 p05")
+  string(REPLACE "|" ";" spec "${spec}")
+  list(GET spec 0 name)
+  list(GET spec 1 problems)
+  separate_arguments(problems)
+  set(catalog "${PROJECT_SOURCE_DIR}/vendor/PDDLDomains/dominios/ipc-2023-numeric/${name}")
+  set(learned "${CMAKE_CURRENT_BINARY_DIR}/${name}.improved.pddl")
+  file(GLOB traces "${PROJECT_SOURCE_DIR}/tests/data/traces/${name}/*.complete.json")
+  add_test(NAME planner.learn.${name}.improved COMMAND planminer -o "${learned}" ${traces})
+  set_tests_properties(planner.learn.${name}.improved
+                       PROPERTIES LABELS planner FIXTURES_SETUP learned_${name}_improved)
+  list(TRANSFORM problems PREPEND "${catalog}/")
+  list(TRANSFORM problems APPEND ".pddl")
+  planminer_add_domain_evaluation(learned.${name}.improved "${learned}" "${catalog}/domain.pddl"
+                                  ${problems})
+  set_tests_properties(planner.learned.${name}.improved
+                       PROPERTIES FIXTURES_REQUIRED learned_${name}_improved)
+endforeach()

@@ -136,6 +136,16 @@ Lo que conviene tener en cuenta al diseñar la interfaz del repositorio propio:
   `learn` ya devuelve las reglas completas (atributos y etiquetas), así que esto es cosa de quien
   las interpreta.
 
+## Con ruido faltan literales esenciales
+
+Con las trazas de prueba con un 5 % de ruido (átomos invertidos y valores alterados), las reglas de
+INSLV ya no contienen literales que están en todos los ejemplos limpios. En blocksworld, por
+ejemplo: pick-up sin `(ontable ?x)` en el estado de antes, put-down sin precondición, unstack sin el
+efecto `(holding ?x)`. Pasa igual con la fusión del original y con la corregida, y los dominios
+quedan sin solución en todos los problemas. No se ha analizado la causa (el umbral de
+consistencia de NSLV, los ejemplos contradictorios que crea el ruido...): es lo primero que mirar
+para que PlanMiner aguante el ruido.
+
 ## Casos de equivalencia
 
 Los 26 casos de `tests/cases/` son autosuficientes: la entrada exacta de `inslv()` en el

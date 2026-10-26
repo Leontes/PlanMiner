@@ -80,7 +80,8 @@ TEST(WriteOriginal, Format) {
             ")");
 }
 
-// La mejorada declara :numeric-fluents y escribe los efectos de la regresión, con su forma.
+// La mejorada declara :numeric-fluents, escribe las igualdades con = y los efectos de la regresión,
+// con su forma.
 TEST(Write, ImprovedNumericEffects) {
   pddl::LearnedDomain learned = domain();
   using regression::Expression;
@@ -99,9 +100,18 @@ TEST(Write, ImprovedNumericEffects) {
        {fuel, {"capacity", {0}}},
        0.0}};
 
+  learned.actions[0].fused.precondition = {
+      {"opEQ - ( fuel ?param_0 ~ ?truck ) ( capacity ?param_0 ~ ?truck ) ", "True"}};
+
   const std::string text = pddl::write("trucks", learned);
   EXPECT_NE(text.find("(:requirements :strips :typing :numeric-fluents)"), std::string::npos)
       << text;
+  // Las igualdades, con = (el original escribe ==, que no es PDDL).
+  EXPECT_NE(text.find("\t\t\t\t(= ( fuel ?param_0 ) ( capacity ?param_0 ) )\n"), std::string::npos)
+      << text;
+  EXPECT_NE(pddl::write("trucks", learned, pddl::Options::original())
+                .find("\t\t\t\t(== ( fuel ?param_0 ) ( capacity ?param_0 ) )\n"),
+            std::string::npos);
   EXPECT_NE(text.find("\t\t\t\t( decrease ( fuel ?param_0 ) ( * ( speed ?param_0 ) 2 )  )\n"),
             std::string::npos)
       << text;

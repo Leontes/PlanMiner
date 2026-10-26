@@ -35,7 +35,7 @@ struct LearnedDomain {
 
 /// Cómo se aprende y se escribe el dominio: las opciones de cada parte. original() es el PlanMiner
 /// original y Options{}, el mejorado: con las mejoras aprobadas de cada parte y, en lo que aún no
-/// se ha decidido (la fusión, los valores discretizados), como el original.
+/// se ha decidido (los valores discretizados que recibe INSLV), como el original.
 struct Options {
   datasets::EffectOptions effects;
   datasets::RelationOptions relations;
@@ -44,9 +44,12 @@ struct Options {
   /// convierte en asignaciones las condiciones sobre valores discretizados del estado de después,
   /// y contradirían a los de la regresión.
   rules::ExampleOptions examples;
+  rules::FusionOptions fusion;
   /// El dominio declara :numeric-fluents si tiene funciones. El original no lo declara, y algunos
   /// planificadores (PyPlanner) rechazan el dominio.
   bool numeric_fluents = true;
+  /// Las igualdades se escriben con =. El original escribe ==, que no es PDDL.
+  bool equality = true;
 
   static Options original();
 };
@@ -70,7 +73,8 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
 ///   con los tipos de sus argumentos (las secciones salen aunque queden vacías: basta con que haya
 ///   relaciones o el instante);
 /// - cada acción con sus parámetros y los tipos de la cabecera; en la precondición, los átomos
-///   ciertos (los falsos se pierden) y las comparaciones; en el efecto, los átomos, los cambios
+///   ciertos (los falsos se pierden) y las comparaciones (las igualdades, con == o, con
+///   options.equality, con =); en el efecto, los átomos, los cambios
 ///   (increase si su valor es positivo, decrease si no), las asignaciones y los efectos de la
 ///   regresión. Nada que mencione el instante.
 ///

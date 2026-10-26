@@ -106,7 +106,8 @@ void write_symbols(std::ostringstream& out, const LearnedDomain& domain, bool fu
   out << "\t)\n";
 }
 
-void write_precondition(std::ostringstream& out, const std::vector<rules::Literal>& precondition) {
+void write_precondition(std::ostringstream& out, const std::vector<rules::Literal>& precondition,
+                        bool equality) {
   out << "\t\t:precondition\n";
   out << (precondition.empty() ? "\t\t\t( )\n" : "\t\t\t(and\n");
   for (const rules::Literal& literal : precondition) {
@@ -115,8 +116,11 @@ void write_precondition(std::ostringstream& out, const std::vector<rules::Litera
       continue;
     }
     const std::string& op = tokens[0];
-    const std::map<std::string, std::string> symbols = {
-        {"opEQ", "== "}, {"opGET", ">= "}, {"opGT", "> "}, {"opLET", "<= "}, {"opLT", "< "}};
+    const std::map<std::string, std::string> symbols = {{"opEQ", equality ? "= " : "== "},
+                                                        {"opGET", ">= "},
+                                                        {"opGT", "> "},
+                                                        {"opLET", "<= "},
+                                                        {"opLT", "< "}};
     if (const auto symbol = symbols.find(op); symbol != symbols.end()) {
       out << "\t\t\t\t(" << symbol->second;
       for (std::size_t i = 2; i < tokens.size(); ++i) {
@@ -189,7 +193,9 @@ Options Options::original() {
   options.effects = datasets::EffectOptions::original();
   options.relations = datasets::RelationOptions::original();
   options.examples = rules::ExampleOptions::original();
+  options.fusion = rules::FusionOptions::original();
   options.numeric_fluents = false;
+  options.equality = false;
   return options;
 }
 
@@ -218,7 +224,9 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
         rules::legacy_rules(rules::learn(action.numeric), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());
 
-    action.fused = rules::fuse_original(rules, header_of(domain.hierarchy.actions, name));
+    action.fused = rules::fuse(
+        rules, header_of(domain.hierarchy.actions, name),
+        rules::evidence({&action.logic, &action.numeric}, action.argument_types), options.fusion);
     if (!options.examples.changes) {
       std::erase_if(action.fused.effect, [](const rules::Literal& literal) {
         const std::string op = token(split(literal.attribute), 0);
@@ -274,7 +282,7 @@ std::string write(const std::string& name, const LearnedDomain& domain, const Op
       out << (p > 0 ? " " : "") << "?param_" << p << " - " << lower(header[p]);
     }
     out << ")\n";
-    write_precondition(out, action.fused.precondition);
+    write_precondition(out, action.fused.precondition, options.equality);
     std::vector<rules::Literal> effect = action.fused.effect;
     for (const datasets::NumericEffect& numeric : action.effects) {
       if (std::optional<rules::Literal> written_effect = literal(numeric, action.argument_types)) {
