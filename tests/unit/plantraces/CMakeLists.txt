@@ -1,4 +1,4 @@
-add_executable(plantraces_tests test_actions.cpp test_trace.cpp test_trace_dataset.cpp)
+add_executable(plantraces_tests test_actions.cpp test_trace.cpp test_trace_dataset.cpp test_types.cpp)
 target_link_libraries(plantraces_tests PRIVATE plantraces nlohmann_json::nlohmann_json
                                                planminer_test_main)
 target_compile_definitions(plantraces_tests
