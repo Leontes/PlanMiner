@@ -6,8 +6,8 @@ PlanMiner aprende dominios de planificación PDDL a partir de trazas de planes, 
 están incompletas, y descubre las expresiones lógicas y aritméticas de las precondiciones y
 los efectos.
 
-> **En desarrollo.** PlanMiner se está reescribiendo en C++20. La línea de comandos todavía
-> no aprende dominios: por ahora solo informa de la versión.
+> **En desarrollo.** PlanMiner se está reescribiendo en C++20. Por ahora aprende con el
+> algoritmo del PlanMiner original; las mejoras se irán incorporando.
 
 ## Trazas
 
@@ -52,11 +52,7 @@ ctest --preset debug
 | `asan` | Debug con AddressSanitizer y UBSan; los tests solo pasan los unitarios |
 | `ci-gcc`, `ci-clang` | Release con los avisos como errores |
 
-Cada preset compila en `build/<preset>`. El ejecutable es `build/<preset>/bin/planminer`:
-
-```bash
-build/release/bin/planminer --version
-```
+Cada preset compila en `build/<preset>`, y el ejecutable queda en `build/<preset>/bin/planminer`.
 
 Los tests van por etiquetas de CTest (`ctest --preset debug -L <etiqueta>`):
 
@@ -74,13 +70,35 @@ scripts/build_val.sh      # tools/bin/Validate
 cmake --preset debug      # volver a configurar para que los detecte
 ```
 
+## Uso
+
+```bash
+planminer -o dominio.pddl trazas/*.json
+```
+
+PlanMiner lee las trazas de un mismo dominio y escribe el dominio aprendido en el fichero (o en
+la salida estándar, sin `-o`).
+
+| Opción | Para qué |
+|--------|----------|
+| `-o`, `--output <fichero>` | el fichero del dominio |
+| `-n`, `--name <nombre>` | el nombre del dominio; por defecto, el de las trazas (algunos planificadores exigen que coincida con el de los problemas) |
+| `-m`, `--memory-limit <MB>` | el límite de memoria; por defecto, el 80 % de la disponible |
+| `-h`, `--help`, `--version` | la ayuda y la versión |
+
+Termina con 0 si todo va bien, con 1 si no puede leer las trazas o escribir el dominio, y con 2
+si los argumentos no son válidos.
+
+Con dominios numéricos, el dominio aprendido declara las funciones pero no el requisito
+`:numeric-fluents`, como el PlanMiner original, y algunos planificadores lo rechazan.
+
 ## Memoria
 
 PlanMiner limita la memoria que usa, para no agotar la de la máquina (en WSL, agotarla
 congela WSL entero):
 
-- La línea de comandos se pone al empezar un límite del 80 % de la memoria disponible. Al
-  llegar a él, las búsquedas paran y lo indican en lugar de seguir reservando memoria.
+- La línea de comandos se pone al empezar un límite del 80 % de la memoria disponible, o el de
+  `-m`. Al llegar a él, las búsquedas paran y lo indican en lugar de seguir reservando memoria.
 - Cada ejecutable de tests se limita a 2048 MB (`PLANMINER_TEST_MEMORY_MB`; 0, sin límite).
   Con `ctest` en paralelo (4 trabajos), el peor caso es 8 GB.
 - Los tests lanzan PyPlanner siempre con límite de memoria (`-m`).

@@ -38,3 +38,18 @@ set_tests_properties(planner.traces_reproducible PROPERTIES LABELS planner TIMEO
 planminer_add_domain_evaluation(
   legacy.blocksworld "${PROJECT_SOURCE_DIR}/tests/oracle/golden/blocksworld.pddl"
   "${blocksworld}/domain.pddl" ${blocksworld_problems})
+
+# El dominio que aprende la línea de comandos (por ahora, con la configuración del original) con
+# las trazas completas de blocksworld, evaluado con problemas del catálogo que no están en las
+# trazas.
+set(blocks "${PROJECT_SOURCE_DIR}/vendor/PDDLDomains/dominios/ipc-2000/blocks-strips-untyped")
+file(GLOB blocks_traces
+     "${PROJECT_SOURCE_DIR}/tests/data/traces/blocks-strips-untyped/*.complete.json")
+add_test(NAME planner.learn.blocksworld
+         COMMAND planminer -o "${CMAKE_CURRENT_BINARY_DIR}/blocks.pddl" ${blocks_traces})
+set_tests_properties(planner.learn.blocksworld PROPERTIES LABELS planner FIXTURES_SETUP
+                                                          learned_blocksworld)
+planminer_add_domain_evaluation(
+  learned.blocksworld "${CMAKE_CURRENT_BINARY_DIR}/blocks.pddl" "${blocks}/domain.pddl"
+  "${blocks}/p09.pddl" "${blocks}/p10.pddl" "${blocks}/p11.pddl")
+set_tests_properties(planner.learned.blocksworld PROPERTIES FIXTURES_REQUIRED learned_blocksworld)
