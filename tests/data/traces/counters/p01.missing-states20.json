@@ -1,0 +1,85 @@
+{
+  "format": "pddldomains-trace",
+  "version": 1,
+  "generator": "pddldomains 0.1.0",
+  "collection": "ipc-2023-numeric/counters",
+  "domain": {
+    "name": "fn-counters",
+    "file": "ipc-2023-numeric/counters/domain.pddl",
+    "sha256": "9ff8d0d7f6e57ad0af7d5875202b0aa53b18d0cb28b79ef624ba0f3cde783ff3"
+  },
+  "problem": {
+    "name": "instance_4",
+    "file": "ipc-2023-numeric/counters/p01.pddl",
+    "id": "p01",
+    "sha256": "ff23f167bc2013f8f54f19ebe08755239b4c6c49871f278efaba693ba2845a20"
+  },
+  "plan": {
+    "file": "p01.plan",
+    "sha256": "47fe7e3e498f4b933890f40e73b8ee3551c330645376db4aa317af10f94e7bb9",
+    "length": 12,
+    "planner": "pyplanner 1.0.0",
+    "config": "gbfs-ff-pref",
+    "seed": null
+  },
+  "execution": {
+    "goal_reached": true,
+    "val": null
+  },
+  "degradation": {
+    "seed": 1,
+    "missing_percent": 0.0,
+    "missing_states_percent": 20.0,
+    "noise_percent": 0.0,
+    "numeric_noise_percent": 10.0,
+    "hidden_atoms": 0,
+    "hidden_values": 0,
+    "flipped_atoms": 0,
+    "perturbed_values": 0,
+    "missing_states": [
+      3,
+      4,
+      10
+    ]
+  },
+  "world": "open",
+  "universe": {
+    "kind": "dynamic",
+    "size": 0
+  },
+  "objects": {
+    "c0": "counter",
+    "c1": "counter",
+    "c2": "counter",
+    "c3": "counter"
+  },
+  "states": [
+    {"step": 0, "time": 0, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 6, "(value c1)": 4, "(value c2)": 2, "(value c3)": 0}, "unknown_values": []},
+    {"step": 1, "time": 1, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 5, "(value c1)": 4, "(value c2)": 2, "(value c3)": 0}, "unknown_values": []},
+    {"step": 2, "time": 2, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 4, "(value c1)": 4, "(value c2)": 2, "(value c3)": 0}, "unknown_values": []},
+    {"step": 3, "time": 3, "missing": true},
+    {"step": 4, "time": 4, "missing": true},
+    {"step": 5, "time": 5, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 3, "(value c1)": 4, "(value c2)": 2, "(value c3)": 2}, "unknown_values": []},
+    {"step": 6, "time": 6, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 3, "(value c1)": 4, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []},
+    {"step": 7, "time": 7, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 3, "(value c1)": 3, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []},
+    {"step": 8, "time": 8, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 2, "(value c1)": 3, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []},
+    {"step": 9, "time": 9, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []},
+    {"step": 10, "time": 10, "missing": true},
+    {"step": 11, "time": 11, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 1, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []},
+    {"step": 12, "time": 12, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 0, "(value c1)": 1, "(value c2)": 2, "(value c3)": 3}, "unknown_values": []}
+  ],
+  "actions": [
+    {"step": 1, "time": 1, "name": "decrement", "arguments": ["c0"]},
+    {"step": 2, "time": 2, "name": "decrement", "arguments": ["c0"]},
+    {"step": 3, "time": 3, "name": "decrement", "arguments": ["c0"]},
+    {"step": 4, "time": 4, "name": "increment", "arguments": ["c3"]},
+    {"step": 5, "time": 5, "name": "increment", "arguments": ["c3"]},
+    {"step": 6, "time": 6, "name": "increment", "arguments": ["c3"]},
+    {"step": 7, "time": 7, "name": "decrement", "arguments": ["c1"]},
+    {"step": 8, "time": 8, "name": "decrement", "arguments": ["c0"]},
+    {"step": 9, "time": 9, "name": "decrement", "arguments": ["c0"]},
+    {"step": 10, "time": 10, "name": "decrement", "arguments": ["c1"]},
+    {"step": 11, "time": 11, "name": "decrement", "arguments": ["c1"]},
+    {"step": 12, "time": 12, "name": "decrement", "arguments": ["c0"]}
+  ]
+}

@@ -340,7 +340,8 @@ INSTANTIATE_TEST_SUITE_P(Traces, LegacyTables,
                                          Case{"blocks-strips-untyped", "noise5"},
                                          Case{"zenotravel", "complete"},
                                          Case{"zenotravel", "missing30"},
-                                         Case{"zenotravel", "noise5"}),
+                                         Case{"zenotravel", "noise5"}, Case{"counters", "complete"},
+                                         Case{"counters", "missing30"}, Case{"counters", "noise5"}),
                          [](const testing::TestParamInfo<Case>& c) {
                            std::string name = c.param.collection + "_" + c.param.variant;
                            std::replace(name.begin(), name.end(), '-', '_');

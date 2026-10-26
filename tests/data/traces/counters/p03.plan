@@ -1,0 +1,7 @@
+(increment c3)
+(increment c2)
+(increment c3)
+(increment c1)
+(increment c2)
+(increment c3)
+; cost = 6 (unit cost)

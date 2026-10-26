@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 
@@ -43,10 +44,13 @@ std::vector<std::string> plan_actions(const fs::path& plan) {
 
 class TraceDataset : public testing::TestWithParam<fs::path> {
  protected:
-  Trace variant(const std::string& name) const {
+  fs::path path(const std::string& name) const {
     const fs::path& plan = GetParam();
-    return plantraces::read_trace(plan.parent_path() /
-                                  (plan.stem().string() + "." + name + ".json"));
+    return plan.parent_path() / (plan.stem().string() + "." + name + ".json");
+  }
+  Trace variant(const std::string& name) const { return plantraces::read_trace(path(name)); }
+  nlohmann::json json(const std::string& name) const {
+    return nlohmann::json::parse(std::ifstream(path(name)));
   }
 };
 
@@ -94,22 +98,30 @@ TEST_P(TraceDataset, ClosedAndOpenWorldAgree) {
 }
 
 TEST_P(TraceDataset, DegradedTracesHaveGaps) {
+  // Los huecos están en los átomos o en los valores (counters solo tiene fluentes).
   for (const plantraces::Observation& state : variant("missing30").states) {
-    EXPECT_FALSE(state.unknown_atoms.empty()) << "missing30, estado " << state.step;
+    EXPECT_FALSE(state.unknown_atoms.empty() && state.unknown_values.empty())
+        << "missing30, estado " << state.step;
   }
 
   const Trace missing_states = variant("missing-states20");
   EXPECT_TRUE(std::any_of(missing_states.states.begin(), missing_states.states.end(),
                           [](const plantraces::Observation& state) { return state.missing; }));
 
-  // El ruido invierte átomos: algún estado dice algo distinto que la traza completa.
+  // El ruido invierte átomos o altera valores: algún estado dice algo distinto que la traza
+  // completa. Salvo si no ha invertido ni alterado nada: el porcentaje se redondea en cada estado,
+  // y en uno con pocos valores (counters p01, con 5) el 5 % es 0. La traza lo anota.
   const Trace complete = variant("complete");
   const Trace noisy = variant("noise5");
   bool differs = false;
   for (std::size_t i = 0; i < complete.states.size(); ++i) {
-    differs = differs || complete.states[i].true_atoms != noisy.states[i].true_atoms;
+    differs = differs || complete.states[i].true_atoms != noisy.states[i].true_atoms ||
+              complete.states[i].values != noisy.states[i].values;
   }
-  EXPECT_TRUE(differs);
+  const nlohmann::json degradation = json("noise5").at("degradation");
+  const auto altered = degradation.at("flipped_atoms").get<std::size_t>() +
+                       degradation.at("perturbed_values").get<std::size_t>();
+  EXPECT_EQ(differs, altered > 0) << altered << " átomos invertidos y valores alterados";
 }
 
 INSTANTIATE_TEST_SUITE_P(Problems, TraceDataset, testing::ValuesIn(plans()),
