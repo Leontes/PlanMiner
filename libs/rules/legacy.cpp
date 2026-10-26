@@ -87,15 +87,23 @@ std::string legacy_name(const Attribute& attribute, const Examples& examples,
   } else if (relation.comparison == datasets::Comparison::greater) {
     op = "opGT";
   }
-  const datasets::Attribute fluent{datasets::AttributeKind::fluent,
-                                   relation.right.variables.front()};
-  std::string right = legacy_label(fluent, types);
+  std::string right;
   if (relation.right.kind == datasets::OperandKind::fall) {
+    const datasets::Attribute fluent{datasets::AttributeKind::fluent,
+                                     relation.right.variables.front()};
+    right = legacy_label(fluent, types);
     for (const Attribute& change : examples.attributes) {
       if (change.kind == AttributeKind::change && change.term == fluent) {
         right = change_formula(change, types);
       }
     }
+  } else if (relation.right.expression.operation() == regression::Operation::variable) {
+    right = legacy_label({datasets::AttributeKind::fluent,
+                          relation.right.variables.at(relation.right.expression.index())},
+                         types);
+  } else {
+    // La expresión de un efecto (o una constante), como el original escribe la del cambio.
+    right = legacy_formula(relation.right.expression, relation.right.variables, types) + " ";
   }
   return std::string{op} + " - " + legacy_label(relation.left, types) + "  " + right;
 }

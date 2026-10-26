@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <utility>
 
@@ -161,9 +162,38 @@ void write_effect(std::ostringstream& out, const std::vector<rules::Literal>& ef
   }
 }
 
+// Un efecto de la regresión como lo escribe el original: un cambio con su signo o una asignación.
+// Sin forma (solo el valor absoluto del cambio) no se sabe su sentido, y no se escribe.
+std::optional<rules::Literal> literal(const datasets::NumericEffect& effect,
+                                      const std::vector<std::string>& types) {
+  const std::string fluent =
+      rules::legacy_label({datasets::AttributeKind::fluent, effect.fluent}, types);
+  const std::string formula = rules::legacy_formula(effect.expression, effect.variables, types);
+  switch (effect.kind) {
+    case datasets::EffectKind::increase:
+      return rules::Literal{"DELTA - " + fluent + " " + formula + " ", "1"};
+    case datasets::EffectKind::decrease:
+      return rules::Literal{"DELTA - " + fluent + " " + formula + " ", "-1"};
+    case datasets::EffectKind::assign:
+      return rules::Literal{"opEQ " + fluent + " " + formula, formula};
+    case datasets::EffectKind::magnitude:
+      break;
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
-LearnedDomain learn_original(const std::vector<plantraces::Trace>& traces) {
+Options Options::original() {
+  Options options;
+  options.effects = datasets::EffectOptions::original();
+  options.relations = datasets::RelationOptions::original();
+  options.examples = rules::ExampleOptions::original();
+  options.numeric_fluents = false;
+  return options;
+}
+
+LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options& options) {
   LearnedDomain domain;
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
@@ -179,39 +209,55 @@ LearnedDomain learn_original(const std::vector<plantraces::Trace>& traces) {
     std::vector<rules::LegacyRule> rules =
         rules::legacy_rules(rules::learn(action.logic), action.logic, action.argument_types);
 
+    const std::vector<datasets::FluentChange> changes =
+        datasets::numeric_effects(table, options.effects);
     action.numeric = rules::numeric_examples(
-        table, datasets::numeric_effects(table, datasets::EffectOptions::original()),
-        datasets::numeric_relations(table, {}, datasets::RelationOptions::original()),
-        [] { return std::rand(); }, rules::ExampleOptions::original());
+        table, changes, datasets::numeric_relations(table, changes, options.relations),
+        [] { return std::rand(); }, options.examples);
     const std::vector<rules::LegacyRule> numeric =
         rules::legacy_rules(rules::learn(action.numeric), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());
 
     action.fused = rules::fuse_original(rules, header_of(domain.hierarchy.actions, name));
+    if (!options.examples.changes) {
+      std::erase_if(action.fused.effect, [](const rules::Literal& literal) {
+        const std::string op = token(split(literal.attribute), 0);
+        return op == "DELTA" || op == "opEQ";
+      });
+      for (const datasets::FluentChange& change : changes) {
+        if (change.effect) {
+          action.effects.push_back(*change.effect);
+        }
+      }
+    }
     domain.actions.push_back(std::move(action));
   }
   return domain;
 }
 
-std::string write_original(const std::string& name, const LearnedDomain& domain) {
-  std::ostringstream out;
-  out << "(define (domain " << lower(name) << ")\n";
-  out << "\t(:requirements :strips" << (domain.hierarchy.types.empty() ? "" : " :typing") << ")\n";
-  write_types(out, domain.hierarchy);
-
+std::string write(const std::string& name, const LearnedDomain& domain, const Options& options) {
   // Las secciones salen si hay atributos lógicos (átomos o relaciones) o numéricos (fluentes o el
   // instante), aunque luego no se escriba ninguno.
   bool logical = false;
   bool numerical = false;
+  bool functions = false;
   for (const LearnedAction& action : domain.actions) {
     for (const rules::Examples* examples : {&action.logic, &action.numeric}) {
       for (const rules::Attribute& attribute : examples->attributes) {
         logical = logical || attribute.kind == rules::AttributeKind::atom ||
                   attribute.kind == rules::AttributeKind::relation;
         numerical = numerical || attribute.kind == rules::AttributeKind::value;
+        functions = functions || (attribute.kind == rules::AttributeKind::value &&
+                                  attribute.term.kind == datasets::AttributeKind::fluent);
       }
     }
   }
+
+  std::ostringstream out;
+  out << "(define (domain " << lower(name) << ")\n";
+  out << "\t(:requirements :strips" << (domain.hierarchy.types.empty() ? "" : " :typing")
+      << (options.numeric_fluents && functions ? " :numeric-fluents" : "") << ")\n";
+  write_types(out, domain.hierarchy);
   std::vector<std::string> written;
   if (logical) {
     write_symbols(out, domain, false, written);
@@ -229,7 +275,13 @@ std::string write_original(const std::string& name, const LearnedDomain& domain)
     }
     out << ")\n";
     write_precondition(out, action.fused.precondition);
-    write_effect(out, action.fused.effect);
+    std::vector<rules::Literal> effect = action.fused.effect;
+    for (const datasets::NumericEffect& numeric : action.effects) {
+      if (std::optional<rules::Literal> written_effect = literal(numeric, action.argument_types)) {
+        effect.push_back(std::move(*written_effect));
+      }
+    }
+    write_effect(out, effect);
     out << "\t)\n";
   }
   out << ")";

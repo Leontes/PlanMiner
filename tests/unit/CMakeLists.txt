@@ -10,6 +10,7 @@ add_subdirectory(pddl)
 # La línea de comandos: el código de salida y lo que escribe (cli/RunCli.cmake).
 set(traces "${PROJECT_SOURCE_DIR}/tests/data/traces")
 file(GLOB blocksworld_traces "${traces}/blocks-strips-untyped/*.complete.json")
+file(GLOB counters_traces "${traces}/counters/*.complete.json")
 
 function(planminer_add_cli_test name exit)
   cmake_parse_arguments(PARSE_ARGV 2 cli "" "OUTPUT;ERROR;FILE;CONTENT" "ARGS")
@@ -45,6 +46,11 @@ planminer_add_cli_test(
 # El dominio, con el nombre de las trazas o el que se le dé, en la salida o en un fichero.
 planminer_add_cli_test(learns_blocksworld 0 ARGS ${blocksworld_traces}
                        OUTPUT "\\(define \\(domain blocks\\).*\\(:action stack")
+# Con --original, el dominio no declara :numeric-fluents aunque tenga funciones; la mejorada, sí.
+planminer_add_cli_test(learns_counters 0 ARGS ${counters_traces}
+                       OUTPUT "\\(:requirements :strips :typing :numeric-fluents\\)")
+planminer_add_cli_test(learns_counters_original 0 ARGS --original ${counters_traces}
+                       OUTPUT "\\(:requirements :strips :typing\\)")
 planminer_add_cli_test(
   writes_the_domain 0 ARGS -n Bloques -m 2048 -o "${CMAKE_CURRENT_BINARY_DIR}/bloques.pddl"
   ${blocksworld_traces} FILE "${CMAKE_CURRENT_BINARY_DIR}/bloques.pddl"

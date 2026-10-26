@@ -1,6 +1,6 @@
 // Oráculo de principio a fin: el dominio que aprende la configuración original nueva
-// (pddl::learn_original y pddl::write_original) frente al que escribe el PlanMiner original
-// (PlanMinerLegacy) con las mismas trazas.
+// (pddl::learn y pddl::write con pddl::Options::original()) frente al que escribe el PlanMiner
+// original (PlanMinerLegacy) con las mismas trazas.
 //
 // El original recibe las trazas en mayúsculas, como las suyas: su escritura del dominio busca las
 // cabeceras de los predicados con el nombre en mayúsculas. Los dos dominios se comparan en
@@ -57,7 +57,8 @@ TEST_P(LegacyDomain, SameDomainAsTheOriginal) {
   expected << std::ifstream(work / "oracle.pddl").rdbuf();
 
   std::srand(1);
-  const std::string learned = pddl::write_original("oracle", pddl::learn_original(traces));
+  const pddl::Options original = pddl::Options::original();
+  const std::string learned = pddl::write("oracle", pddl::learn(traces, original), original);
   std::ofstream(work / "new.pddl") << learned;
   EXPECT_EQ(lower(learned), lower(expected.str())) << "dominios en " << work;
 }

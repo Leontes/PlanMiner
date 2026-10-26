@@ -50,7 +50,7 @@ pddl::LearnedDomain domain() {
 // Los átomos falsos de la precondición y lo del instante se pierden; la cabecera, los tipos y las
 // secciones salen como en el original.
 TEST(WriteOriginal, Format) {
-  EXPECT_EQ(pddl::write_original("Trucks", domain()),
+  EXPECT_EQ(pddl::write("Trucks", domain(), pddl::Options::original()),
             "(define (domain trucks)\n"
             "\t(:requirements :strips :typing)\n"
             "\t(:types\n"
@@ -80,30 +80,81 @@ TEST(WriteOriginal, Format) {
             ")");
 }
 
-std::vector<plantraces::Trace> blocksworld() {
+// La mejorada declara :numeric-fluents y escribe los efectos de la regresión, con su forma.
+TEST(Write, ImprovedNumericEffects) {
+  pddl::LearnedDomain learned = domain();
+  using regression::Expression;
+  const plantraces::LiftedAtom fuel{"fuel", {0}};
+  learned.actions[0].fused.effect = {{"( at ?param_0 ~ ?truck ) ", "False"}};
+  learned.actions[0].effects = {
+      {fuel,
+       datasets::EffectKind::decrease,
+       Expression::binary(regression::Operation::multiply, Expression::variable(1),
+                          Expression::constant(2)),
+       {fuel, {"speed", {0}}},
+       0.0},
+      {fuel,
+       datasets::EffectKind::assign,
+       Expression::variable(1),
+       {fuel, {"capacity", {0}}},
+       0.0}};
+
+  const std::string text = pddl::write("trucks", learned);
+  EXPECT_NE(text.find("(:requirements :strips :typing :numeric-fluents)"), std::string::npos)
+      << text;
+  EXPECT_NE(text.find("\t\t\t\t( decrease ( fuel ?param_0 ) ( * ( speed ?param_0 ) 2 )  )\n"),
+            std::string::npos)
+      << text;
+  EXPECT_NE(text.find("\t\t\t\t( assign ( fuel ?param_0 ) ( capacity ?param_0 ) )\n"),
+            std::string::npos)
+      << text;
+}
+
+std::vector<plantraces::Trace> traces(const std::string& collection) {
   namespace fs = std::filesystem;
   std::vector<fs::path> files;
-  for (const auto& entry :
-       fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / "blocks-strips-untyped")) {
+  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / collection)) {
     if (entry.path().filename().string().ends_with(".complete.json")) {
       files.push_back(entry.path());
     }
   }
   std::sort(files.begin(), files.end());
-  std::vector<plantraces::Trace> traces;
+  std::vector<plantraces::Trace> result;
   for (const fs::path& file : files) {
-    traces.push_back(plantraces::read_trace(file));
+    result.push_back(plantraces::read_trace(file));
   }
-  return traces;
+  return result;
+}
+
+// Con la mejorada, los efectos numéricos de zenotravel salen de la regresión: los siete del
+// dominio de referencia (en zenotravel, (distance ?c2 ?c1) vale lo mismo que (distance ?c1 ?c2)).
+TEST(Learn, ImprovedZenotravelEffects) {
+  const std::string text = pddl::write("zenotravel", pddl::learn(traces("zenotravel")));
+  for (const std::string effect : {
+           "( increase ( onboard ?param_1 ) 1  )",
+           "( decrease ( onboard ?param_1 ) 1  )",
+           "( decrease ( fuel ?param_0 ) ( * ( distance ?param_1 ?param_2 ) ( slow-burn ?param_0 ) "
+           ")  )",
+           "( increase ( total-fuel-used ) ( * ( distance ?param_1 ?param_2 ) ( slow-burn ?param_0 "
+           ") )  )",
+           "( decrease ( fuel ?param_0 ) ( * ( distance ?param_2 ?param_1 ) ( fast-burn ?param_0 ) "
+           ")  )",
+           "( increase ( total-fuel-used ) ( * ( distance ?param_2 ?param_1 ) ( fast-burn ?param_0 "
+           ") )  )",
+           "( assign ( fuel ?param_0 ) ( capacity ?param_0 ) )",
+       }) {
+    EXPECT_NE(text.find(effect), std::string::npos) << effect << "\n" << text;
+  }
 }
 
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la
 // precondición fusionada también están los átomos falsos, que se pierden al escribirla.
 TEST(LearnOriginal, Blocksworld) {
   std::srand(1);
-  const pddl::LearnedDomain learned = pddl::learn_original(blocksworld());
+  const pddl::LearnedDomain learned =
+      pddl::learn(traces("blocks-strips-untyped"), pddl::Options::original());
   ASSERT_EQ(learned.actions.size(), 4U);
-  const std::string text = pddl::write_original("blocks", learned);
+  const std::string text = pddl::write("blocks", learned, pddl::Options::original());
   EXPECT_NE(text.find("\t(:action stack\n"
                       "\t\t:parameters (?param_0 - object ?param_1 - object)\n"
                       "\t\t:precondition\n"

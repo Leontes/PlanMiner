@@ -86,8 +86,14 @@ TEST(NumericExamples, ValuesRelationsAndChanges) {
   EXPECT_EQ(examples.attributes[4].kind, rules::AttributeKind::change);
 
   // Sin el instante.
-  EXPECT_EQ(names(rules::numeric_examples(t, changes, {relation}, first)),
+  rules::ExampleOptions options;
+  options.changes = true;
+  EXPECT_EQ(names(rules::numeric_examples(t, changes, {relation}, first, options)),
             (std::vector<std::string>{"value (x)", "value (y)", "(< (x) (y))", "change (x) 1"}));
+
+  // Sin los cambios: los efectos numéricos salen de la regresión.
+  EXPECT_EQ(names(rules::numeric_examples(t, changes, {relation}, first)),
+            (std::vector<std::string>{"value (x)", "value (y)", "(< (x) (y))"}));
 }
 
 // El cambio vale -1 en las filas de después si el valor no sube, también si no cambia, como en el
@@ -101,7 +107,9 @@ TEST(NumericExamples, TheChangeSign) {
        {}},
       {{"y", {}}, std::nullopt, {}}};
 
-  const rules::Examples examples = rules::numeric_examples(t, changes, {}, first);
+  rules::ExampleOptions options;
+  options.changes = true;
+  const rules::Examples examples = rules::numeric_examples(t, changes, {}, first, options);
   EXPECT_EQ(names(examples), (std::vector<std::string>{"value (x)", "value (y)", "change (x) 1"}));
   const std::vector<double>& change = examples.data.values[2];
   EXPECT_EQ(change[0], 0.0);

@@ -5,8 +5,9 @@
 PlanMiner learns PDDL planning domains from plan traces, even incomplete ones. It also
 discovers the logical and arithmetic expressions in preconditions and effects.
 
-> **In development.** PlanMiner is being rewritten in C++20. For now it learns with the
-> algorithm of the original PlanMiner; the improvements will be added step by step.
+> **In development.** PlanMiner is being rewritten in C++20, with improvements over the original
+> algorithm that are added step by step. The original algorithm is still available
+> (`--original`).
 
 ## Traces
 
@@ -82,13 +83,14 @@ standard output, without `-o`).
 | `-o`, `--output <file>` | the domain file |
 | `-n`, `--name <name>` | the domain name; by default, the traces' (some planners require it to match the problems') |
 | `-m`, `--memory-limit <MB>` | the memory limit; by default, 80 % of the available memory |
+| `--original` | learns with the algorithm of the original PlanMiner, without improvements |
 | `-h`, `--help`, `--version` | help and version |
 
 It exits with 0 on success, 1 if it cannot read the traces or write the domain, and 2 if the
 arguments are not valid.
 
-With numeric domains, the learned domain declares its functions but not the `:numeric-fluents`
-requirement, as the original PlanMiner did, and some planners reject it.
+With `--original` and a numeric domain, the learned domain declares its functions but not the
+`:numeric-fluents` requirement, as the original PlanMiner did, and some planners reject it.
 
 ## Memory
 

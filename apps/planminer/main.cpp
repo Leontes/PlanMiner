@@ -1,8 +1,8 @@
 // Línea de comandos de PlanMiner: aprende un dominio PDDL de trazas de planes.
 //
-// Por ahora aprende con la configuración del PlanMiner original (pddl::learn_original), la única
-// completa de principio a fin. Códigos de salida: 0 si todo va bien, 1 si no se pueden leer las
-// trazas o escribir el dominio, 2 si los argumentos no son válidos.
+// Aprende con la configuración mejorada (pddl::Options{}) o, con --original, con la del PlanMiner
+// original. Códigos de salida: 0 si todo va bien, 1 si no se pueden leer las trazas o escribir el
+// dominio, 2 si los argumentos no son válidos.
 //
 // Memoria: antes de aprender se pone un límite duro (RLIMIT_DATA), por defecto del 80 % de la
 // memoria disponible más un margen, como la línea de comandos de PyPlanner: en WSL, agotar la
@@ -42,6 +42,7 @@ constexpr std::string_view usage =
     "                           estándar)\n"
     "  -n, --name <nombre>      el nombre del dominio (por defecto, el de las trazas)\n"
     "  -m, --memory-limit <MB>  límite de memoria, en MB (por defecto, el 80 % de la disponible)\n"
+    "  --original               aprende con el algoritmo del PlanMiner original, sin mejoras\n"
     "  -h, --help               muestra esta ayuda y termina\n"
     "  --version                muestra la versión y termina\n";
 
@@ -50,6 +51,7 @@ struct Arguments {
   std::optional<std::filesystem::path> output;
   std::optional<std::string> name;
   std::optional<double> memory_mb;
+  bool original = false;
   bool help = false;
   bool version = false;
 };
@@ -80,6 +82,8 @@ Arguments parse(std::span<char*> args) {
       result.help = true;
     } else if (arg == "--version") {
       result.version = true;
+    } else if (arg == "--original") {
+      result.original = true;
     } else if (option == "-o" || option == "--output") {
       result.output = value(args, i, option);
     } else if (option == "-n" || option == "--name") {
@@ -155,7 +159,8 @@ int main(int argc, char* argv[]) {
 
     // El original usa el rand() global desde el estado inicial del programa.
     std::srand(1);
-    const std::string domain = pddl::write_original(name, pddl::learn_original(traces));
+    const pddl::Options options = arguments.original ? pddl::Options::original() : pddl::Options{};
+    const std::string domain = pddl::write(name, pddl::learn(traces, options), options);
 
     if (!arguments.output) {
       std::cout << domain << "\n";

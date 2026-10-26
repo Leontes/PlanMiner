@@ -82,6 +82,7 @@ std::string to_string(const Attribute& attribute) {
 
 ExampleOptions ExampleOptions::original() {
   ExampleOptions options;
+  options.changes = true;
   options.time = true;
   options.time_search = regression::Options::original();
   return options;
@@ -145,6 +146,9 @@ Examples numeric_examples(const datasets::Table& table,
         logical(), relation.column);
   }
 
+  if (!options.changes) {
+    return result;
+  }
   for (const std::size_t a : numeric) {
     const datasets::Attribute& term = table.attributes[a];
     const std::vector<double>& values = table.columns[a];

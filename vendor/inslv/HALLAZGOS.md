@@ -130,8 +130,9 @@ Lo que conviene tener en cuenta al diseñar la interfaz del repositorio propio:
   `ruleset::SplitAntecedent`). Solo cuenta los atributos de hasta dos etiquetas, con el nombre de
   la etiqueta o su centro truncado a entero. Así se pierden los atributos numéricos de más de
   dos etiquetas y el cambio de un fluente que sube y baja (`NA`, `POS` y `NEG`). En el original,
-  además, la fusión de reglas descartaba las condiciones sobre valores numéricos de dos
-  etiquetas: lo que aprende INSLV sobre los valores discretizados nunca llega al dominio.
+  además, la fusión de reglas descarta las condiciones sobre valores numéricos de dos etiquetas
+  en el estado de antes (no llegan a la precondición) y, en el de después, las convierte en
+  asignaciones con el centro de la etiqueta (`(assign (fuel ?a) 5)`).
   `learn` ya devuelve las reglas completas (atributos y etiquetas), así que esto es cosa de quien
   las interpreta.
 

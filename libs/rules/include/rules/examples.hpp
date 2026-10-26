@@ -54,8 +54,12 @@ struct Examples {
 
 /// Cómo se construyen los ejemplos. original() es el PlanMiner original.
 struct ExampleOptions {
-  /// El instante es un atributo numérico más (su valor y su cambio), como en el original. Las
-  /// relaciones con el instante dependen de las opciones de las relaciones.
+  /// Los ejemplos tienen el signo del cambio de cada fluente (y del instante) que cambia: es como
+  /// el original aprende el sentido de los efectos numéricos. Si no, los efectos numéricos salen
+  /// directamente de la regresión (numeric_effects), con su forma y su signo.
+  bool changes = false;
+  /// El instante es un atributo numérico más (su valor y, con changes, su cambio), como en el
+  /// original. Las relaciones con el instante dependen de las opciones de las relaciones.
   bool time = false;
   /// La búsqueda de la expresión del cambio del instante, si cuenta. Sin expresión, no hay
   /// atributo de su cambio.
@@ -70,8 +74,8 @@ Examples logic_examples(const datasets::Table& table);
 
 /// Los ejemplos numéricos de la acción, como los construye el original (to_table y discretize):
 /// los valores de los fluentes (y del instante) en el orden de la tabla, discretizados con random;
-/// las relaciones; y el signo del cambio de cada fluente (y del instante) que cambia y cuyo efecto
-/// tiene expresión, en el orden de la tabla.
+/// las relaciones; y, con options.changes, el signo del cambio de cada fluente (y del instante) que
+/// cambia y cuyo efecto tiene expresión, en el orden de la tabla.
 ///
 /// changes son los efectos numéricos de la acción (numeric_effects) y relations, sus relaciones
 /// (numeric_relations). El cambio vale 0 en las filas de antes y, en las de después, 1 si el valor

@@ -44,7 +44,8 @@ std::string legacy_formula(const regression::Expression& expression,
 ///
 /// - un átomo, un valor: el del átomo, el fluente o el instante;
 /// - una relación: "opEQ - ( a ... )  ( b ... )", "opLT - ..." u "opGT - ..."; con lo que baja un
-///   fluente, la expresión de su cambio (o el fluente, si no tiene);
+///   fluente, la expresión de su cambio (o el fluente, si no tiene); con una expresión, la
+///   expresión con el formato del original;
 /// - un cambio: "DELTA - ( fuel ... ) <expresión> ".
 std::string legacy_name(const Attribute& attribute, const Examples& examples,
                         const std::vector<std::string>& types);
