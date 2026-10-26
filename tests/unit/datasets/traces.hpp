@@ -1,5 +1,5 @@
-// Las tablas de las acciones de zenotravel (tests/data/traces/zenotravel), para los tests de lo
-// que se extrae de ellas.
+// Las tablas de las acciones de las trazas de prueba (tests/data/traces), para los tests de lo que
+// se extrae de ellas.
 #pragma once
 
 #include <algorithm>
@@ -14,10 +14,12 @@
 
 namespace datasets::test {
 
-inline std::vector<plantraces::Trace> zenotravel(const std::string& variant) {
+/// Las trazas de una variante de una colección ("zenotravel", "complete"), en orden.
+inline std::vector<plantraces::Trace> read_traces(const std::string& collection,
+                                                  const std::string& variant) {
   namespace fs = std::filesystem;
   std::vector<fs::path> files;
-  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / "zenotravel")) {
+  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / collection)) {
     if (entry.path().filename().string().ends_with("." + variant + ".json")) {
       files.push_back(entry.path());
     }
@@ -30,10 +32,11 @@ inline std::vector<plantraces::Trace> zenotravel(const std::string& variant) {
   return traces;
 }
 
-/// Las tablas de las acciones de una variante.
+/// Las tablas de las acciones de una variante de una colección.
 class Tables {
  public:
-  explicit Tables(const std::string& variant) : traces_(zenotravel(variant)) {
+  Tables(const std::string& collection, const std::string& variant)
+      : traces_(read_traces(collection, variant)) {
     const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces_);
     for (const auto& [name, transitions] : plantraces::group_by_action(traces_)) {
       tables_.emplace(name, build_table(vocabulary, transitions));

@@ -58,8 +58,8 @@ std::string to_string(const Relation& relation);
 struct RelationOptions {
   /// Cada fluente se compara con las expresiones de los efectos numéricos de la acción, incluida
   /// la del suyo, con los valores del estado de cada fila: (>= (fuel ?0) (* (distance ?1 ?2)
-  /// (slow-burn ?0))). Si no, como en el original, con lo que baja cada uno de los otros fluentes
-  /// que cambian.
+  /// (slow-burn ?0))), o con una constante, (>= (value ?0) 1). Si no, como en el original, con lo
+  /// que baja cada uno de los otros fluentes que cambian.
   bool effect_expressions = true;
   /// Se compara cada pareja en la que algún lado cambia, en cualquier orden, y cambiar es hacerlo
   /// en más de una proporción 1 - max_unchanged de las aplicaciones en que se conoce (el modelo
@@ -80,9 +80,9 @@ struct RelationOptions {
 /// acción (numeric_effects), de los que se toman las expresiones; el original no los usa.
 ///
 /// Cada fluente se compara (=, < y >) con otros fluentes y con las expresiones de los efectos,
-/// según las opciones; en ese orden, y cada uno en el orden de la tabla. Las expresiones
-/// constantes o de un solo fluente no se usan: no aportan nada a las comparaciones entre
-/// fluentes. Se descartan las relaciones que no se conocen en ninguna fila y las constantes.
+/// según las opciones; en ese orden, y cada uno en el orden de la tabla. Una expresión que es un
+/// solo fluente no se usa (ya se compara con los demás fluentes), y una que está en dos efectos se
+/// usa una vez. Se descartan las relaciones que no se conocen en ninguna fila y las constantes.
 ///
 /// Una diferencia buscada con el original: el instante no es un fluente, y no hay relaciones con
 /// él (el original las generaba y las descartaba al escribir el dominio).

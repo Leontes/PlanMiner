@@ -17,12 +17,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "datasets/effects.hpp"
-#include "zenotravel.hpp"
+#include "traces.hpp"
 
 namespace {
 
@@ -85,8 +86,8 @@ std::vector<Expected> reference() {
 class ZenotravelEffects : public testing::TestWithParam<std::string> {};
 
 TEST_P(ZenotravelEffects, FindsTheEffectsOfTheReferenceDomainAndNoOthers) {
-  const Tables tables(GetParam());
-  const Tables complete("complete");
+  const Tables tables("zenotravel", GetParam());
+  const Tables complete("zenotravel", "complete");
 
   const std::vector<Expected> expected_effects = reference();
   std::size_t found = 0;
@@ -125,7 +126,7 @@ INSTANTIATE_TEST_SUITE_P(Variants, ZenotravelEffects,
 // La formulación original no puede expresar refuel: fuel := capacity necesita el fuel de antes.
 // Con las variables del estado de antes, sí, aunque el resto sea como en el original.
 TEST(ZenotravelEffects, RefuelNeedsTheStateBefore) {
-  const Tables complete("complete");
+  const Tables complete("zenotravel", "complete");
   const datasets::Table& refuel = complete.at("refuel");
 
   datasets::EffectOptions original = datasets::EffectOptions::original();
@@ -142,6 +143,28 @@ TEST(ZenotravelEffects, RefuelNeedsTheStateBefore) {
   EXPECT_EQ(datasets::to_string(*with[0].effect),
             "(magnitude (fuel ?0) (- (capacity ?0) (fuel ?0)))");
 }
+
+// Los de counters (vendor/PDDLDomains/dominios/ipc-2023-numeric/counters/domain.pddl):
+// (increase (value ?c) 1) y (decrease (value ?c) 1), y ninguno más (max_int no cambia).
+class CountersEffects : public testing::TestWithParam<std::string> {};
+
+TEST_P(CountersEffects, FindsTheEffectsOfTheReferenceDomainAndNoOthers) {
+  const Tables tables("counters", GetParam());
+  const std::map<std::string, std::string> expected = {
+      {"increment", "(increase (value ?0) 1)"},
+      {"decrement", "(decrease (value ?0) 1)"},
+  };
+  ASSERT_EQ(tables.all().size(), expected.size());
+  for (const auto& [action, table] : tables.all()) {
+    const std::vector<datasets::FluentChange> changes = datasets::numeric_effects(table);
+    ASSERT_EQ(changes.size(), 1U) << action;
+    ASSERT_TRUE(changes[0].effect) << action;
+    EXPECT_EQ(datasets::to_string(*changes[0].effect), expected.at(action));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(Variants, CountersEffects,
+                         testing::Values("complete", "noise5", "missing30"));
 
 TEST(NumericEffect, Text) {
   const datasets::NumericEffect effect{

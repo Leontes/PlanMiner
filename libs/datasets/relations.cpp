@@ -172,8 +172,8 @@ std::vector<Relation> numeric_relations(const Table& table,
         continue;
       }
       const NumericEffect& effect = *change.effect;
-      const Operation operation = effect.expression.operation();
-      if (operation == Operation::constant || operation == Operation::variable) {
+      // Un fluente solo ya se compara con los demás fluentes.
+      if (effect.expression.operation() == Operation::variable) {
         continue;
       }
       Operand operand{OperandKind::expression, effect.expression, effect.variables};

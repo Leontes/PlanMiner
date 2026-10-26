@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "datasets/relations.hpp"
-#include "zenotravel.hpp"
+#include "traces.hpp"
 
 namespace {
 
@@ -140,6 +141,23 @@ TEST(NumericRelations, ComparesWithTheEffectExpressions) {
   EXPECT_NE(find(datasets::numeric_relations(t, changes, options), "(< (x) (* (y) (z)))"), nullptr);
 }
 
+// Las expresiones constantes también: (x) baja 1, y la precondición (>= (x) 1) es (< (x) 1) falsa
+// en los estados de antes.
+TEST(NumericRelations, ComparesWithConstantEffects) {
+  const datasets::Table t = table({{3, 1, 2, 0}, {9, 9, 9, 9}});
+  const LiftedAtom x{"x", {}};
+  const std::vector<datasets::FluentChange> changes = {
+      {x,
+       datasets::NumericEffect{
+           x, datasets::EffectKind::decrease, Expression::constant(1), {x, {"y", {}}}, 0.0},
+       {}}};
+
+  const std::vector<datasets::Relation> relations = datasets::numeric_relations(t, changes);
+  const datasets::Relation* less = find(relations, "(< (x) 1)");
+  ASSERT_NE(less, nullptr) << testing::PrintToString(texts(relations));
+  EXPECT_EQ(less->column, (std::vector<double>{0, 0, 0, 1}));
+}
+
 // Mejora: cada pareja en la que cambia algún lado, aunque el que cambia vaya detrás. Es refuel:
 // (y) := (x), y (x) va antes en la tabla.
 TEST(NumericRelations, PairsInAnyOrder) {
@@ -194,38 +212,50 @@ TEST(Relation, Text) {
   EXPECT_EQ(datasets::to_string(fluent), "(< (fuel ?0) (capacity ?0))");
 }
 
-// Las precondiciones numéricas del dominio de referencia de zenotravel
-// (vendor/PDDLDomains/dominios/ipc-2023-numeric/zenotravel/domain.pddl):
+// Las precondiciones numéricas de los dominios de referencia de las trazas de prueba
+// (vendor/PDDLDomains/dominios/ipc-2023-numeric/<colección>/domain.pddl):
 //
-//   fly-slow: (>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))
-//   fly-fast: (>= (fuel ?a) (* (distance ?c1 ?c2) (fast-burn ?a)))
-//             (<= (onboard ?a) (zoom-limit ?a))
-//   refuel:   (> (capacity ?a) (fuel ?a))
+//   zenotravel  fly-slow:  (>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))
+//               fly-fast:  (>= (fuel ?a) (* (distance ?c1 ?c2) (fast-burn ?a)))
+//                          (<= (onboard ?a) (zoom-limit ?a))
+//               refuel:    (> (capacity ?a) (fuel ?a))
+//   counters    increment: (<= (+ (value ?c) 1) (max_int))
+//               decrement: (>= (value ?c) 1)
 //
 // Una se puede expresar si hay una relación que compara las mismas dos magnitudes: sus valores
 // coinciden en las trazas completas (así vale (distance ?2 ?1) por (distance ?1 ?2)). La
 // comparación concreta la eligen después las reglas.
 //
-// (<= (onboard ?a) (zoom-limit ?a)) no se puede aprender con estas trazas: no se incumple ni se
-// alcanza en ningún estado, y es indistinguible de un invariante del dominio. No está.
+// Dos no se pueden aprender con estas trazas, porque no se incumplen ni se alcanzan en ningún
+// estado y son indistinguibles de un invariante del dominio: (<= (onboard ?a) (zoom-limit ?a)) y
+// la de increment (ningún contador llega a max_int). No están.
 struct Precondition {
+  std::string collection;
   std::string action;
   LiftedAtom fluent;
   datasets::Operand other;
 };
 
-std::vector<Precondition> reference() {
+std::vector<Precondition> reference(const std::string& collection) {
   const auto consumption = [](const char* burn) {
     return datasets::Operand{
         datasets::OperandKind::expression,
         Expression::binary(Operation::multiply, Expression::variable(0), Expression::variable(1)),
         {{"distance", {1, 2}}, {burn, {0}}}};
   };
-  return {
-      {"fly-slow", {"fuel", {0}}, consumption("slow-burn")},
-      {"fly-fast", {"fuel", {0}}, consumption("fast-burn")},
-      {"refuel", {"capacity", {0}}, datasets::fluent_operand({"fuel", {0}})},
+  const std::vector<Precondition> all = {
+      {"zenotravel", "fly-slow", {"fuel", {0}}, consumption("slow-burn")},
+      {"zenotravel", "fly-fast", {"fuel", {0}}, consumption("fast-burn")},
+      {"zenotravel", "refuel", {"capacity", {0}}, datasets::fluent_operand({"fuel", {0}})},
+      {"counters",
+       "decrement",
+       {"value", {0}},
+       {datasets::OperandKind::expression, Expression::constant(1), {}}},
   };
+  std::vector<Precondition> out;
+  std::copy_if(all.begin(), all.end(), std::back_inserter(out),
+               [&](const Precondition& p) { return p.collection == collection; });
+  return out;
 }
 
 bool same_values(const std::vector<double>& a, const std::vector<double>& b) {
@@ -238,11 +268,14 @@ bool same_values(const std::vector<double>& a, const std::vector<double>& b) {
   return true;
 }
 
-// Cuántas precondiciones de referencia se pueden expresar con las relaciones de cada acción.
-std::size_t expressed(const datasets::test::Tables& tables, const RelationOptions& options) {
-  const datasets::test::Tables complete("complete");
+// Cuántas precondiciones de referencia de la colección se pueden expresar con las relaciones de
+// cada acción en una variante.
+std::size_t expressed(const std::string& collection, const std::string& variant,
+                      const RelationOptions& options) {
+  const datasets::test::Tables tables(collection, variant);
+  const datasets::test::Tables complete(collection, "complete");
   std::size_t found = 0;
-  for (const Precondition& precondition : reference()) {
+  for (const Precondition& precondition : reference(collection)) {
     SCOPED_TRACE(precondition.action + " " + plantraces::to_string(precondition.fluent) + " " +
                  datasets::to_string(precondition.other));
     const datasets::Table& table = tables.at(precondition.action);
@@ -266,19 +299,34 @@ std::size_t expressed(const datasets::test::Tables& tables, const RelationOption
   return found;
 }
 
-class ZenotravelRelations : public testing::TestWithParam<std::string> {};
+struct Case {
+  std::string collection;
+  std::string variant;
+};
 
-TEST_P(ZenotravelRelations, ExpressTheReferencePreconditions) {
-  EXPECT_EQ(expressed(datasets::test::Tables(GetParam()), {}), reference().size());
+class ReferencePreconditions : public testing::TestWithParam<Case> {};
+
+TEST_P(ReferencePreconditions, AreExpressed) {
+  EXPECT_EQ(expressed(GetParam().collection, GetParam().variant, {}),
+            reference(GetParam().collection).size());
 }
 
-INSTANTIATE_TEST_SUITE_P(Variants, ZenotravelRelations,
-                         testing::Values("complete", "noise5", "missing30"));
+INSTANTIATE_TEST_SUITE_P(Traces, ReferencePreconditions,
+                         testing::Values(Case{"zenotravel", "complete"},
+                                         Case{"zenotravel", "noise5"},
+                                         Case{"zenotravel", "missing30"},
+                                         Case{"counters", "complete"}, Case{"counters", "noise5"},
+                                         Case{"counters", "missing30"}),
+                         [](const testing::TestParamInfo<Case>& c) {
+                           return c.param.collection + "_" + c.param.variant;
+                         });
 
-// El original no puede expresar ninguna: compara fuel con lo que bajan los otros fluentes y no con
-// lo que baja él, y en refuel capacity va antes que fuel en la tabla y no cambia.
-TEST(ZenotravelRelations, TheOriginalExpressesNone) {
-  EXPECT_EQ(expressed(datasets::test::Tables("complete"), RelationOptions::original()), 0U);
+// El original no puede expresar ninguna. En zenotravel compara fuel con lo que bajan los otros
+// fluentes y no con lo que baja él, y en refuel capacity va antes que fuel en la tabla y no cambia.
+// En counters no compara con constantes.
+TEST(ReferencePreconditions, TheOriginalExpressesNone) {
+  EXPECT_EQ(expressed("zenotravel", "complete", RelationOptions::original()), 0U);
+  EXPECT_EQ(expressed("counters", "complete", RelationOptions::original()), 0U);
 }
 
 }  // namespace
