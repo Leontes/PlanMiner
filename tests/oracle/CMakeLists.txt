@@ -4,7 +4,8 @@ set(PLANMINER_LEGACY_TRACES "${PROJECT_SOURCE_DIR}/Old/Test")
 
 # Función a función: los tests enlazan con las librerías de Old/ (planminer::legacy). A medida
 # que se porte cada parte, su test comparará la versión nueva con la original.
-add_executable(planminer_oracle_tests pts.cpp test_legacy_parser.cpp test_legacy_tables.cpp)
+add_executable(planminer_oracle_tests pts.cpp test_legacy_discretization.cpp test_legacy_parser.cpp
+                                      test_legacy_tables.cpp)
 target_link_libraries(planminer_oracle_tests PRIVATE planminer::legacy datasets plantraces
                                                      planminer_test_main)
 target_compile_features(planminer_oracle_tests PRIVATE cxx_std_20)
