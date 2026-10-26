@@ -59,8 +59,15 @@ const datasets::Relation* find(const std::vector<datasets::Relation>& relations,
   return nullptr;
 }
 
+// Las opciones del original sin el instante, que tiene su propio test.
+RelationOptions original_options() {
+  RelationOptions options = RelationOptions::original();
+  options.time = false;
+  return options;
+}
+
 std::vector<datasets::Relation> original(const datasets::Table& t) {
-  return datasets::numeric_relations(t, {}, RelationOptions::original());
+  return datasets::numeric_relations(t, {}, original_options());
 }
 
 TEST(OriginalRelations, Candidates) {
@@ -105,11 +112,25 @@ TEST(OriginalRelations, ConstantRelationsAreDropped) {
   EXPECT_TRUE(datasets::numeric_relations(t, {}).empty());
 }
 
-TEST(OriginalRelations, NoRelationsWithTheTime) {
-  // Solo cambia el instante.
-  const datasets::Table t = table({{1, 1, 1, 1}, {2, 2, 2, 2}, {3, 3, 3, 3}});
-  EXPECT_TRUE(original(t).empty());
-  EXPECT_TRUE(datasets::numeric_relations(t, {}).empty());
+// En el original, el instante es un atributo numérico más: va a la izquierda, con los fluentes
+// que van detrás de él (aquí ninguno) y con lo que baja cada fluente que cambia ((x): 1 y 2, contra
+// los instantes 0 y 1 antes y 2 y 3 después). En la mejorada no hay relaciones con el instante.
+TEST(OriginalRelations, TheTimeIsANumericAttribute) {
+  const datasets::Table t = table({{5, 3, 4, 1}, {4, 4, 4, 4}});
+  const std::vector<datasets::Relation> relations =
+      datasets::numeric_relations(t, {}, RelationOptions::original());
+  EXPECT_EQ(texts(relations), (std::vector<std::string>{
+                                  "(= (x) (y))",
+                                  "(< (x) (y))",
+                                  "(> (x) (y))",
+                                  "(< time (- (x) (x)'))",
+                                  "(> time (- (x) (x)'))",
+                              }));
+  EXPECT_EQ(relations[3].column, (std::vector<double>{1, 1, 0, 0}));
+
+  for (const std::string& text : texts(datasets::numeric_relations(t, {}))) {
+    EXPECT_EQ(text.find("time"), std::string::npos) << text;
+  }
 }
 
 // Mejora: cada fluente se compara con las expresiones de los efectos, también con la del suyo.
@@ -135,7 +156,7 @@ TEST(NumericRelations, ComparesWithTheEffectExpressions) {
   EXPECT_NE(find(relations, "(= (x) (* (y) (z)))"), nullptr);
 
   // El original solo compara con lo que bajan los otros fluentes, y no cambia ninguno.
-  RelationOptions options = RelationOptions::original();
+  RelationOptions options = original_options();
   EXPECT_EQ(find(datasets::numeric_relations(t, changes, options), "(< (x) (* (y) (z)))"), nullptr);
   options.effect_expressions = true;
   EXPECT_NE(find(datasets::numeric_relations(t, changes, options), "(< (x) (* (y) (z)))"), nullptr);
@@ -164,7 +185,7 @@ TEST(NumericRelations, PairsInAnyOrder) {
   const datasets::Table t = table({{9, 9, 9, 9}, {3, 5, 9, 9}, {0, 0, 0, 0}});
   EXPECT_EQ(texts(original(t)), std::vector<std::string>{});
 
-  RelationOptions options = RelationOptions::original();
+  RelationOptions options = original_options();
   options.changing_pairs = true;
   EXPECT_EQ(texts(datasets::numeric_relations(t, {}, options)),
             (std::vector<std::string>{"(= (x) (y))", "(> (x) (y))"}));
@@ -176,7 +197,7 @@ TEST(NumericRelations, NoiseDoesNotMakeConstantsChange) {
   const datasets::Table t = table({{1, 1, 1, 1, 1, 1, 1, 1.5}, {0, 1, 2, 3, 0, 1, 2, 3}});
   EXPECT_FALSE(original(t).empty());
 
-  RelationOptions options = RelationOptions::original();
+  RelationOptions options = original_options();
   options.changing_pairs = true;
   EXPECT_TRUE(datasets::numeric_relations(t, {}, options).empty());
 }
@@ -194,7 +215,7 @@ TEST(NumericRelations, ConstantsOverTheKnownValues) {
                                     "(> (x) (z))",
                                 }));
 
-  RelationOptions options = RelationOptions::original();
+  RelationOptions options = original_options();
   options.known_constants = true;
   EXPECT_TRUE(datasets::numeric_relations(t, {}, options).empty());
 }
@@ -202,13 +223,15 @@ TEST(NumericRelations, ConstantsOverTheKnownValues) {
 TEST(Relation, Text) {
   const datasets::Relation fall{
       datasets::Comparison::greater,
-      {"fuel", {0}},
+      {AttributeKind::fluent, {"fuel", {0}}},
       {datasets::OperandKind::fall, Expression::variable(0), {{"total-fuel-used", {}}}},
       {}};
   EXPECT_EQ(datasets::to_string(fall), "(> (fuel ?0) (- (total-fuel-used) (total-fuel-used)'))");
 
-  const datasets::Relation fluent{
-      datasets::Comparison::less, {"fuel", {0}}, datasets::fluent_operand({"capacity", {0}}), {}};
+  const datasets::Relation fluent{datasets::Comparison::less,
+                                  {AttributeKind::fluent, {"fuel", {0}}},
+                                  datasets::fluent_operand({"capacity", {0}}),
+                                  {}};
   EXPECT_EQ(datasets::to_string(fluent), "(< (fuel ?0) (capacity ?0))");
 }
 
@@ -288,8 +311,11 @@ std::size_t expressed(const std::string& collection, const std::string& variant,
         datasets::numeric_relations(table, datasets::numeric_effects(table), options);
     const bool any =
         std::any_of(relations.begin(), relations.end(), [&](const datasets::Relation& relation) {
+          if (relation.left.kind != AttributeKind::fluent) {
+            return false;
+          }
           const std::vector<double> left =
-              datasets::values(clean, datasets::fluent_operand(relation.left));
+              datasets::values(clean, datasets::fluent_operand(relation.left.term));
           const std::vector<double> right = datasets::values(clean, relation.right);
           return (same_values(left, fluent) && same_values(right, other)) ||
                  (same_values(left, other) && same_values(right, fluent));

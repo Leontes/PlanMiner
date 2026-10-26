@@ -65,8 +65,10 @@ std::optional<std::size_t> column_of(const Table& table, const plantraces::Lifte
   return std::nullopt;
 }
 
-// Un lado de una relación: el operando, su valor en cada fila y si cambia en la acción.
+// Un lado de una relación: el atributo (a la izquierda) o el operando (a la derecha), su valor en
+// cada fila y si cambia en la acción.
 struct Side {
+  Attribute attribute;
   Operand operand;
   std::vector<double> values;
   bool changes = false;
@@ -121,8 +123,10 @@ std::string to_string(const Relation& relation) {
       comparison = ">";
       break;
   }
-  return std::string{"("} + comparison + " " + plantraces::to_string(relation.left) + " " +
-         to_string(relation.right) + ")";
+  const std::string left = relation.left.kind == AttributeKind::time
+                               ? "time"
+                               : plantraces::to_string(relation.left.term);
+  return std::string{"("} + comparison + " " + left + " " + to_string(relation.right) + ")";
 }
 
 RelationOptions RelationOptions::original() {
@@ -130,6 +134,7 @@ RelationOptions RelationOptions::original() {
   options.effect_expressions = false;
   options.changing_pairs = false;
   options.known_constants = false;
+  options.time = true;
   return options;
 }
 
@@ -138,9 +143,8 @@ std::vector<Relation> numeric_relations(const Table& table,
                                         const RelationOptions& options) {
   const std::size_t n = table.transitions;
 
-  const auto side = [&](Operand operand) {
-    Side result{std::move(operand), {}, false};
-    result.values = values(table, result.operand);
+  const auto side = [&](Attribute attribute, Operand operand, std::vector<double> column) {
+    Side result{std::move(attribute), std::move(operand), std::move(column), false};
     if (options.changing_pairs) {
       result.changes =
           detail::count_unchanged(result.values, n).changes(true, options.max_unchanged);
@@ -156,10 +160,15 @@ std::vector<Relation> numeric_relations(const Table& table,
     return result;
   };
 
-  std::vector<Side> fluents;
-  for (const Attribute& attribute : table.attributes) {
+  // Los atributos numéricos: los fluentes y, según las opciones, el instante.
+  std::vector<Side> numeric;
+  for (std::size_t a = 0; a < table.attributes.size(); ++a) {
+    const Attribute& attribute = table.attributes[a];
     if (attribute.kind == AttributeKind::fluent) {
-      fluents.push_back(side(fluent_operand(attribute.term)));
+      numeric.push_back(side(attribute, fluent_operand(attribute.term), table.columns[a]));
+    } else if (attribute.kind == AttributeKind::time && options.time) {
+      numeric.push_back(side(attribute, {OperandKind::expression, Expression::variable(0), {}},
+                             table.columns[a]));
     }
   }
 
@@ -183,13 +192,16 @@ std::vector<Relation> numeric_relations(const Table& table,
         continue;
       }
       seen.push_back(std::move(text));
-      others.push_back(side(std::move(operand)));
+      std::vector<double> column = values(table, operand);
+      others.push_back(side({}, std::move(operand), std::move(column)));
     }
   } else {
-    for (const Side& fluent : fluents) {
-      if (fluent.changes) {
-        others.push_back(
-            side({OperandKind::fall, Expression::variable(0), fluent.operand.variables}));
+    // Lo que baja el instante no se compara con nada, como en el original.
+    for (const Side& fluent : numeric) {
+      if (fluent.changes && fluent.attribute.kind == AttributeKind::fluent) {
+        Operand operand{OperandKind::fall, Expression::variable(0), {fluent.attribute.term}};
+        std::vector<double> column = values(table, operand);
+        others.push_back(side({}, std::move(operand), std::move(column)));
       }
     }
   }
@@ -202,7 +214,7 @@ std::vector<Relation> numeric_relations(const Table& table,
   std::vector<Relation> relations;
   const auto compare = [&](const Side& left, const Side& right) {
     for (const Comparison comparison : comparisons) {
-      Relation relation{comparison, left.operand.variables.front(), right.operand,
+      Relation relation{comparison, left.attribute, right.operand,
                         std::vector<double>(table.rows(), unknown)};
       for (std::size_t row = 0; row < table.rows(); ++row) {
         if (!std::isnan(left.values[row]) && !std::isnan(right.values[row])) {
@@ -215,17 +227,19 @@ std::vector<Relation> numeric_relations(const Table& table,
     }
   };
 
-  for (std::size_t f = 0; f < fluents.size(); ++f) {
-    const Side& left = fluents[f];
-    for (std::size_t g = f + 1; g < fluents.size(); ++g) {
-      if (wanted(left, fluents[g])) {
-        compare(left, fluents[g]);
+  // El instante solo va a la izquierda, como en el original.
+  for (std::size_t f = 0; f < numeric.size(); ++f) {
+    const Side& left = numeric[f];
+    for (std::size_t g = f + 1; g < numeric.size(); ++g) {
+      if (numeric[g].attribute.kind == AttributeKind::fluent && wanted(left, numeric[g])) {
+        compare(left, numeric[g]);
       }
     }
     for (const Side& other : others) {
       // El original no compara un fluente con lo que baja él mismo.
       const bool itself = other.operand.kind == OperandKind::fall &&
-                          other.operand.variables.front() == left.operand.variables.front();
+                          left.attribute.kind == AttributeKind::fluent &&
+                          other.operand.variables.front() == left.attribute.term;
       if (!itself && wanted(left, other)) {
         compare(left, other);
       }

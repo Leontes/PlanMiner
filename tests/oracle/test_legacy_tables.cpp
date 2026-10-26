@@ -231,12 +231,11 @@ std::string legacy_relation_label(const datasets::Relation& relation,
   } else if (relation.comparison == datasets::Comparison::greater) {
     op = "opGT";
   }
-  const auto label = [&transition](const plantraces::LiftedAtom& term) {
-    return legacy_label({datasets::AttributeKind::fluent, term}, transition);
-  };
-  return std::string{op} + " - " + label(relation.left) + "  " +
+  const datasets::Attribute right{datasets::AttributeKind::fluent,
+                                  relation.right.variables.front()};
+  return std::string{op} + " - " + legacy_label(relation.left, transition) + "  " +
          (relation.right.kind == datasets::OperandKind::fall ? "DELTA " : "") +
-         label(relation.right.variables.front());
+         legacy_label(right, transition);
 }
 
 // Que las columnas nuevas, con el nombre que les da el original, sean las del original.
@@ -320,17 +319,9 @@ TEST_P(LegacyTables, SameRelationsAsTheOriginal) {
     }
 
     StatesLists& states = legacy_actions_[name];
-    const LegacyTable all =
-        legacy_relations(legacy_table(states), static_cast<unsigned int>(states.first.size()));
-    // Sin las relaciones con el instante (una diferencia buscada).
-    LegacyTable expected;
-    for (std::size_t r = 0; r < all.labels.size(); ++r) {
-      if (all.labels[r].first.find(" - TIMESTAMP  ") == std::string::npos) {
-        expected.labels.push_back(all.labels[r]);
-        expected.columns.push_back(all.columns[r]);
-      }
-    }
-    expect_same_columns(labels, columns, expected);
+    expect_same_columns(
+        labels, columns,
+        legacy_relations(legacy_table(states), static_cast<unsigned int>(states.first.size())));
   }
 }
 

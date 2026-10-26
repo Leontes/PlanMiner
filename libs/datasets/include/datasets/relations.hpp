@@ -41,16 +41,18 @@ std::string to_string(const Operand& operand);
 /// El valor del operando en cada fila de la tabla (NaN, desconocido).
 std::vector<double> values(const Table& table, const Operand& operand);
 
-/// Una relación (left comparison right) y su valor en cada fila de la tabla.
+/// Una relación (left comparison right) y su valor en cada fila de la tabla. left es un fluente o
+/// el instante.
 struct Relation {
   Comparison comparison = Comparison::equal;
-  plantraces::LiftedAtom left;
+  Attribute left;
   Operand right;
   /// column[fila]: 1 si se cumple, 0 si no; NaN, desconocida (falta alguno de los valores).
   std::vector<double> column;
 };
 
-/// "(< (fuel ?0) (capacity ?0))" o "(> (fuel ?0) (* (distance ?1 ?2) (slow-burn ?0)))".
+/// "(< (fuel ?0) (capacity ?0))", "(> (fuel ?0) (* (distance ?1 ?2) (slow-burn ?0)))" o, con el
+/// instante, "(> time (- (fuel ?0) (fuel ?0)'))".
 std::string to_string(const Relation& relation);
 
 /// Qué relaciones se generan. Cada mejora sobre el original es una opción, para poder medirla por
@@ -72,6 +74,11 @@ struct RelationOptions {
   /// como en el original, las que valen lo mismo que la primera fila, aunque sea desconocida: si lo
   /// es, la relación se queda.
   bool known_constants = true;
+  /// El instante es un atributo numérico más, como en el original: se compara (siempre a la
+  /// izquierda) con los fluentes que van detrás de él y con lo que baja cada fluente que cambia.
+  /// Si no, no hay relaciones con el instante, que no es un fluente. El original las descartaba al
+  /// escribir el dominio, pero cuentan para lo que aprende INSLV.
+  bool time = false;
 
   static RelationOptions original();
 };
@@ -84,8 +91,6 @@ struct RelationOptions {
 /// solo fluente no se usa (ya se compara con los demás fluentes), y una que está en dos efectos se
 /// usa una vez. Se descartan las relaciones que no se conocen en ninguna fila y las constantes.
 ///
-/// Una diferencia buscada con el original: el instante no es un fluente, y no hay relaciones con
-/// él (el original las generaba y las descartaba al escribir el dominio).
 std::vector<Relation> numeric_relations(const Table& table,
                                         const std::vector<FluentChange>& changes,
                                         const RelationOptions& options = {});
