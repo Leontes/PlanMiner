@@ -79,6 +79,11 @@ cmake -S . -B build && cmake --build build && ctest --test-dir build
 
 ## Limitaciones conocidas
 
-- Usa `srand` y `rand`, y desvía `std::cout`: no se puede llamar a la vez desde varios hilos.
+Los detalles, con sus causas y lo que conviene hacer al portarlo, están en
+[HALLAZGOS.md](HALLAZGOS.md).
+
+- Usa `srand` y `rand`, y desvía `std::cout`: no se puede llamar a la vez desde varios hilos, y
+  reinicia el generador aleatorio del programa que lo llama.
 - Algunos errores internos terminan el programa con `exit(1)`.
-- Pierde menos de 1 KB de memoria por llamada (copias de `example_set` y `multipoblacion`).
+- Pierde unos 800 bytes de memoria por llamada (`multipoblacion`, `poblacionreal` y
+  `example_set`).
