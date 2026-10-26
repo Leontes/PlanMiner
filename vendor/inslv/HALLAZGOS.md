@@ -85,6 +85,27 @@ son coherentes (tamaños, variables sin etiquetas, clases fuera de rango), pero 
 comprobado si eso evita todos los `exit(1)`; los demás errores internos siguen terminando el
 programa.
 
+### Lectura fuera de rango con un conjunto de reglas vacío
+
+En `Aprender` (`RuleCreator.cpp`, línea 9875), tras cada vuelta del genético:
+
+```cpp
+current_patron = Patron1Regla(R_mix[par], V, R_mix[par].N_rule()-1);
+```
+
+Si `R_mix[par]` no tiene reglas, `pos` es -1 y `Patron1Regla` lee `Get_Code_Rule(-1)`: copia un
+`genetcode` de memoria que no es suya y el programa termina con una violación de segmento (en
+`genetcode::operator=`, `genetcode.cpp`, línea 94). Falta comprobar `N_rule() > 0` antes de la
+llamada.
+
+Lo encontró PlanMiner (2026-10-26) al aprender barman (`ipc-2011/barman-sequential-satisficing`)
+con 6 trazas completas de paseos aleatorios de PDDLDomains (`generate random-walk -p mode=both
+-n 6 -s 1`; `trace --world open`), con la configuración mejorada. La pila:
+`pddl::learn` → `rules::learn` → `inslv::learn` → `Aprender` → `Patron1Regla(…, pos=-1)`.
+También con counters (`ipc-2023-numeric/counters`, 4 trazas completas de problemas del
+generador `counters -p counters=2..4 -s 1`, p01–p04, planes de PyPlanner), configuración
+mejorada: es frecuente con pocos ejemplos.
+
 ### Tildes perdidas
 
 104 líneas de comentarios tienen el carácter de reemplazo (U+FFFD) donde había una tilde
