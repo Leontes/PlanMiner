@@ -100,7 +100,8 @@ requisito `:numeric-fluents`, como el PlanMiner original, y algunos planificador
 Python 3.12 o posterior):
 
 ```bash
-scripts/compare_domains.py dominio.pddl referencia.pddl [--details] [--json]
+scripts/compare_domains.py dominio.pddl referencia.pddl [--tolerant [--symmetric NOMBRE]...] \
+    [--details] [--json]
 ```
 
 Cada elemento de las precondiciones y los efectos de las acciones (un átomo, su negación, una
@@ -111,13 +112,20 @@ comparación numérica o un efecto numérico) cuenta como:
 - falso negativo si solo está en el de referencia (falta).
 
 Sumando todas las acciones, da la precisión, el recall y el F-score de las precondiciones, de
-los efectos y de todo junto. `--details` lista los elementos que sobran y los que faltan en cada
-acción, y `--json` escribe el resultado en JSON.
+los efectos y de todo junto. `--details` lista los elementos que sobran, los que faltan y los
+medios aciertos de cada acción, y `--json` escribe el resultado en JSON.
 
 Las acciones se emparejan por su nombre, y sus parámetros por su posición; los tipos no se
 comparan. Antes de comparar, los elementos se normalizan (mayúsculas, formato de los números,
 `>` como `<` con los lados cambiados, el orden de los operandos de `=`, `+` y `*`), pero no se
 reconocen otras equivalencias: `(< a b)` y `(<= a b)` son elementos distintos.
+
+Con `--tolerant`, un elemento que sobra y otro que falta casi iguales cuentan como medio acierto
+(medio verdadero positivo, medio falso positivo y medio falso negativo) en lugar de como un
+falso positivo y un falso negativo. Son casi iguales si solo se distinguen en `<` frente a `<=`,
+o en el orden de los argumentos de un símbolo simétrico: una función o un predicado de dos
+argumentos cuyo valor no depende de su orden, como la distancia entre dos ciudades, que se
+indica con `--symmetric` (una vez por símbolo).
 
 Termina con 0 si ha podido comparar los dominios y con 2 si los argumentos o los dominios no son
 válidos.

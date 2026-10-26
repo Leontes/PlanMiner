@@ -98,7 +98,8 @@ With `--original` and a numeric domain, the learned domain declares its function
 Python 3.12 or later):
 
 ```bash
-scripts/compare_domains.py domain.pddl reference.pddl [--details] [--json]
+scripts/compare_domains.py domain.pddl reference.pddl [--tolerant [--symmetric NAME]...] \
+    [--details] [--json]
 ```
 
 Each element of the preconditions and effects of the actions (an atom, its negation, a numeric
@@ -109,13 +110,20 @@ comparison or a numeric effect) counts as:
 - a false negative if it is only in the reference one (it is missing).
 
 Adding up all the actions, it reports the precision, recall and F-score of the preconditions,
-of the effects and of both. `--details` lists the extra and missing elements of each action,
-and `--json` writes the result as JSON.
+of the effects and of both. `--details` lists the extra and missing elements and the half hits
+of each action, and `--json` writes the result as JSON.
 
 Actions are matched by name, and their parameters by position; types are not compared. Before
 comparing, elements are normalized (case, number format, `>` as `<` with the sides swapped,
 the order of the operands of `=`, `+` and `*`), but no other equivalence is recognized:
 `(< a b)` and `(<= a b)` are different elements.
+
+With `--tolerant`, an extra element and a missing one that are almost equal count as half a
+hit (half a true positive, half a false positive and half a false negative) instead of a false
+positive and a false negative. They are almost equal if they only differ in `<` versus `<=`, or
+in the order of the arguments of a symmetric symbol: a function or predicate of two arguments
+whose value does not depend on their order, such as the distance between two cities, given
+with `--symmetric` (once per symbol).
 
 It exits with 0 if the domains could be compared and 2 if the arguments or the domains are not
 valid.

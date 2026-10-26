@@ -23,9 +23,17 @@ lados cambiados, y == como =; y los operandos de =, + y * en orden. No se recono
 equivalencias: (distance ?1 ?2) y (distance ?2 ?1) son distintos aunque los datos no los
 distingan.
 
+Con --tolerant, un elemento que sobra y otro que falta casi iguales cuentan como medio acierto:
+medio VP, medio FP y medio FN, en lugar de un FP y un FN (los elementos del aprendido y los del
+de referencia siguen siendo los mismos). Son casi iguales si solo se distinguen en < frente a <=
+o en el orden de los argumentos de un símbolo simétrico (--symmetric): una función o un
+predicado de dos argumentos cuyo valor no depende de su orden, como la distancia entre dos
+ciudades.
+
 Uso::
 
-    compare_domains.py aprendido.pddl referencia.pddl [--details] [--json]
+    compare_domains.py aprendido.pddl referencia.pddl [--tolerant [--symmetric NOMBRE]...]
+        [--details] [--json]
 
 Códigos de salida: 0 si se han podido comparar, 2 si los argumentos o los dominios no son
 válidos.
@@ -44,6 +52,7 @@ type SExpr = str | list["SExpr"]
 COMPARISONS = {"=", "==", "<", "<=", ">", ">="}
 NUMERIC_EFFECTS = {"increase", "decrease", "assign", "scale-up", "scale-down"}
 COMMUTATIVE = {"+", "*"}
+NUMBER = re.compile(r"[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?")
 
 
 class DomainError(Exception):
@@ -87,15 +96,17 @@ def _conjuncts(expression: SExpr) -> list[SExpr]:
 
 
 def _number(token: str) -> str | None:
-    try:
-        value = float(token)
-    except ValueError:
+    if not NUMBER.fullmatch(token):
         return None
+    value = float(token)
     return str(int(value)) if value.is_integer() else repr(value)
 
 
-def _canonical(expression: SExpr, parameters: dict[str, str]) -> str:
-    """La forma canónica de un elemento o de una expresión."""
+def _canonical(
+    expression: SExpr, parameters: dict[str, str], symmetric: frozenset[str] = frozenset()
+) -> str:
+    """La forma canónica de un elemento o de una expresión; con los argumentos de los símbolos
+    de symmetric en orden."""
     if isinstance(expression, str):
         if expression in parameters:
             return parameters[expression]
@@ -105,8 +116,8 @@ def _canonical(expression: SExpr, parameters: dict[str, str]) -> str:
         return "()"
     head = expression[0]
     if not isinstance(head, str):
-        return "(" + " ".join(_canonical(item, parameters) for item in expression) + ")"
-    arguments = [_canonical(item, parameters) for item in expression[1:]]
+        return "(" + " ".join(_canonical(item, parameters, symmetric) for item in expression) + ")"
+    arguments = [_canonical(item, parameters, symmetric) for item in expression[1:]]
     if head in COMPARISONS and len(arguments) == 2:
         left, right = arguments
         if head in {">", ">="}:
@@ -114,7 +125,7 @@ def _canonical(expression: SExpr, parameters: dict[str, str]) -> str:
         elif head in {"=", "=="}:
             head, (left, right) = "=", sorted((left, right))
         return f"({head} {left} {right})"
-    if head in COMMUTATIVE and len(arguments) == 2:
+    if (head in COMMUTATIVE or head in symmetric) and len(arguments) == 2:
         arguments = sorted(arguments)
     return "(" + " ".join([head, *arguments]) + ")"
 
@@ -164,9 +175,11 @@ def actions(text: str) -> dict[str, Action]:
 
 @dataclass
 class Counts:
-    true_positives: int = 0
-    false_positives: int = 0
-    false_negatives: int = 0
+    """Los elementos de cada clase; con el modo tolerante, un medio acierto suma 0.5 a cada una."""
+
+    true_positives: float = 0
+    false_positives: float = 0
+    false_negatives: float = 0
 
     def add(self, other: "Counts") -> None:
         self.true_positives += other.true_positives
@@ -195,8 +208,26 @@ class Counts:
         return 2 * precision * recall / (precision + recall)
 
 
-def _counts(learned: frozenset[str], reference: frozenset[str]) -> Counts:
-    return Counts(len(learned & reference), len(learned - reference), len(reference - learned))
+def _near(element: str, symmetric: frozenset[str]) -> str:
+    """El elemento sin lo que lo distingue de uno casi igual: <= como < y los argumentos de los
+    símbolos simétricos en orden."""
+    key = _canonical(parse(element)[0], {}, symmetric)
+    return "(< " + key.removeprefix("(<= ") if key.startswith("(<= ") else key
+
+
+def _near_misses(
+    extra: frozenset[str], missing: frozenset[str], symmetric: frozenset[str]
+) -> list[tuple[str, str]]:
+    """Las parejas de un elemento que sobra y otro que falta casi iguales, cada uno en una sola."""
+    candidates: dict[str, list[str]] = {}
+    for element in sorted(missing):
+        candidates.setdefault(_near(element, symmetric), []).append(element)
+    pairs = []
+    for element in sorted(extra):
+        same = candidates.get(_near(element, symmetric))
+        if same:
+            pairs.append((element, same.pop(0)))
+    return pairs
 
 
 @dataclass
@@ -207,6 +238,8 @@ class ActionComparison:
     #: Los elementos que sobran (FP) y los que faltan (FN), por parte.
     extra: dict[str, list[str]] = field(default_factory=dict)
     missing: dict[str, list[str]] = field(default_factory=dict)
+    #: Los medios aciertos, por parte: el elemento del aprendido y el del de referencia.
+    near: dict[str, list[tuple[str, str]]] = field(default_factory=dict)
 
 
 @dataclass
@@ -217,8 +250,14 @@ class Comparison:
     total: Counts
 
 
-def compare(learned: dict[str, Action], reference: dict[str, Action]) -> Comparison:
-    """La comparación de las acciones del aprendido con las del de referencia."""
+def compare(
+    learned: dict[str, Action],
+    reference: dict[str, Action],
+    tolerant: bool = False,
+    symmetric: frozenset[str] = frozenset(),
+) -> Comparison:
+    """La comparación de las acciones del aprendido con las del de referencia; con tolerant, los
+    elementos casi iguales son medio acierto (symmetric son los símbolos simétricos)."""
     empty = frozenset[str]()
     result = Comparison([], Counts(), Counts(), Counts())
     for name in sorted(learned.keys() | reference.keys()):
@@ -231,12 +270,20 @@ def compare(learned: dict[str, Action], reference: dict[str, Action]) -> Compari
             ),
             "effect": (mine.effect if mine else empty, theirs.effect if theirs else empty),
         }
-        comparison = ActionComparison(
-            name, _counts(*parts["precondition"]), _counts(*parts["effect"])
-        )
+        counts: dict[str, Counts] = {}
+        extra: dict[str, list[str]] = {}
+        missing: dict[str, list[str]] = {}
+        near: dict[str, list[tuple[str, str]]] = {}
         for part, (ours, expected) in parts.items():
-            comparison.extra[part] = sorted(ours - expected)
-            comparison.missing[part] = sorted(expected - ours)
+            over, under = ours - expected, expected - ours
+            near[part] = _near_misses(over, under, symmetric) if tolerant else []
+            half = len(near[part]) / 2
+            counts[part] = Counts(len(ours & expected) + half, len(over) - half, len(under) - half)
+            extra[part] = sorted(over - {element for element, _ in near[part]})
+            missing[part] = sorted(under - {element for _, element in near[part]})
+        comparison = ActionComparison(
+            name, counts["precondition"], counts["effect"], extra, missing, near
+        )
         result.actions.append(comparison)
         result.precondition.add(comparison.precondition)
         result.effect.add(comparison.effect)
@@ -245,11 +292,16 @@ def compare(learned: dict[str, Action], reference: dict[str, Action]) -> Compari
     return result
 
 
-def _metrics(counts: Counts) -> dict[str, float | int]:
+def _amount(value: float) -> float:
+    """Un número de elementos, entero si lo es (con el modo tolerante puede acabar en .5)."""
+    return int(value) if float(value).is_integer() else value
+
+
+def _metrics(counts: Counts) -> dict[str, float]:
     return {
-        "vp": counts.true_positives,
-        "fp": counts.false_positives,
-        "fn": counts.false_negatives,
+        "vp": _amount(counts.true_positives),
+        "fp": _amount(counts.false_positives),
+        "fn": _amount(counts.false_negatives),
         "precision": counts.precision,
         "recall": counts.recall,
         "f_score": counts.f_score,
@@ -262,14 +314,18 @@ def report(comparison: Comparison, details: bool) -> str:
     for action in comparison.actions:
         pre, eff = action.precondition, action.effect
         lines.append(
-            f"{action.name:<20} {pre.true_positives:>16} {pre.false_positives:>3}"
-            f" {pre.false_negatives:>3} {eff.true_positives:>10} {eff.false_positives:>3}"
-            f" {eff.false_negatives:>3}"
+            f"{action.name:<20} {_amount(pre.true_positives):>16}"
+            f" {_amount(pre.false_positives):>3} {_amount(pre.false_negatives):>3}"
+            f" {_amount(eff.true_positives):>10} {_amount(eff.false_positives):>3}"
+            f" {_amount(eff.false_negatives):>3}"
         )
         if details:
             for part, label in (("precondition", "la precondición"), ("effect", "el efecto")):
                 lines.extend(f"    sobra en {label}: {e}" for e in action.extra[part])
                 lines.extend(f"    falta en {label}: {e}" for e in action.missing[part])
+                lines.extend(
+                    f"    medio acierto en {label}: {e} en vez de {r}" for e, r in action.near[part]
+                )
     lines.append("")
     lines.append(f"{'':<16} {'VP':>4} {'FP':>4} {'FN':>4} {'precisión':>10} {'recall':>8} {'F':>6}")
     for label, counts in (
@@ -278,8 +334,9 @@ def report(comparison: Comparison, details: bool) -> str:
         ("total", comparison.total),
     ):
         lines.append(
-            f"{label:<16} {counts.true_positives:>4} {counts.false_positives:>4}"
-            f" {counts.false_negatives:>4} {counts.precision:>10.3f} {counts.recall:>8.3f}"
+            f"{label:<16} {_amount(counts.true_positives):>4}"
+            f" {_amount(counts.false_positives):>4} {_amount(counts.false_negatives):>4}"
+            f" {counts.precision:>10.3f} {counts.recall:>8.3f}"
             f" {counts.f_score:>6.3f}"
         )
     return "\n".join(lines)
@@ -295,6 +352,7 @@ def to_json(comparison: Comparison) -> str:
                     "effect": _metrics(action.effect),
                     "extra": action.extra,
                     "missing": action.missing,
+                    "near": action.near,
                 }
                 for action in comparison.actions
             ],
@@ -315,10 +373,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("learned", type=Path, help="dominio aprendido")
     parser.add_argument("reference", type=Path, help="dominio de referencia")
     parser.add_argument(
-        "--details", action="store_true", help="lista los elementos que sobran y los que faltan"
+        "--tolerant",
+        action="store_true",
+        help="cuenta como medio acierto un elemento que sobra y otro que falta casi iguales (< "
+        "frente a <=, o los argumentos de un símbolo simétrico en otro orden)",
+    )
+    parser.add_argument(
+        "--symmetric",
+        action="append",
+        default=[],
+        metavar="NOMBRE",
+        help="una función o un predicado simétrico, para --tolerant (se puede repetir)",
+    )
+    parser.add_argument(
+        "--details",
+        action="store_true",
+        help="lista los elementos que sobran, los que faltan y los medios aciertos",
     )
     parser.add_argument("--json", action="store_true", help="escribe el resultado en JSON")
     args = parser.parse_args(argv)
+    if args.symmetric and not args.tolerant:
+        parser.error("--symmetric solo sirve con --tolerant")
     domains: list[dict[str, Action]] = []
     for path in (args.learned, args.reference):
         try:
@@ -326,7 +401,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, DomainError) as error:
             print(f"error: {path}: {error}", file=sys.stderr)
             return 2
-    comparison = compare(*domains)
+    learned, reference = domains
+    symmetric = frozenset(name.lower() for name in args.symmetric)
+    comparison = compare(learned, reference, args.tolerant, symmetric)
     print(to_json(comparison) if args.json else report(comparison, args.details))
     return 0
 

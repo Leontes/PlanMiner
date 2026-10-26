@@ -87,6 +87,60 @@ class Canonical(unittest.TestCase):
         reference = "(define (domain d) (:action a :parameters (?x ?y) :precondition (p ?x ?y)))"
         self.assertEqual(cd.compare(actions(learned), actions(reference)).total, cd.Counts(0, 1, 1))
 
+    def test_names_are_not_numbers(self) -> None:
+        learned = "(define (domain d) (:action a :parameters (?x) :precondition (p ?x inf)))"
+        reference = "(define (domain d) (:action a :parameters (?x) :precondition (p ?x infinity)))"
+        self.assertEqual(cd.compare(actions(learned), actions(reference)).total, cd.Counts(0, 1, 1))
+
+
+# Casi iguales: < en vez de <=, y los argumentos de p y distance al revés.
+NEAR_REFERENCE = """(define (domain d) (:action a :parameters (?a ?b ?c)
+                      :precondition (and (>= (fuel ?a) 1) (p ?b ?c))
+                      :effect (decrease (fuel ?a) (* (distance ?b ?c) (burn ?a)))))"""
+NEAR_LEARNED = """(define (domain d) (:action a :parameters (?a ?b ?c)
+                    :precondition (and (> (fuel ?a) 1) (p ?c ?b))
+                    :effect (decrease (fuel ?a) (* (burn ?a) (distance ?c ?b)))))"""
+
+
+class Tolerant(unittest.TestCase):
+    def compare(self, *symmetric: str, tolerant: bool = True) -> cd.Comparison:
+        return cd.compare(
+            actions(NEAR_LEARNED), actions(NEAR_REFERENCE), tolerant, frozenset(symmetric)
+        )
+
+    def test_exact_by_default(self) -> None:
+        comparison = self.compare("distance", "p", tolerant=False)
+        self.assertEqual(comparison.precondition, cd.Counts(0, 2, 2))
+        self.assertEqual(comparison.effect, cd.Counts(0, 1, 1))
+
+    def test_strict_comparison_is_half_a_hit(self) -> None:
+        comparison = self.compare()
+        self.assertEqual(comparison.precondition, cd.Counts(0.5, 1.5, 1.5))
+        self.assertEqual(comparison.effect, cd.Counts(0, 1, 1))
+        self.assertEqual(
+            comparison.actions[0].near["precondition"], [("(< 1 (fuel ?0))", "(<= 1 (fuel ?0))")]
+        )
+        self.assertEqual(comparison.actions[0].extra["precondition"], ["(p ?2 ?1)"])
+        self.assertEqual(comparison.actions[0].missing["precondition"], ["(p ?1 ?2)"])
+
+    def test_arguments_of_symmetric_symbols(self) -> None:
+        comparison = self.compare("distance")
+        self.assertEqual(comparison.precondition, cd.Counts(0.5, 1.5, 1.5))
+        self.assertEqual(comparison.effect, cd.Counts(0.5, 0.5, 0.5))
+        comparison = self.compare("distance", "p")
+        self.assertEqual(comparison.precondition, cd.Counts(1, 1, 1))
+        self.assertEqual(comparison.total, cd.Counts(1.5, 1.5, 1.5))
+        self.assertAlmostEqual(comparison.total.f_score, 0.5)
+
+    def test_each_element_in_one_pair(self) -> None:
+        reference = """(define (domain d) (:action a :parameters (?x ?y)
+                         :precondition (and (<= (d ?x ?y) 1) (<= 2 (f ?x)))))"""
+        learned = """(define (domain d) (:action a :parameters (?x ?y)
+                       :precondition (and (< (d ?x ?y) 1) (<= (d ?y ?x) 1) (<= 2 (f ?x))
+                                          (< 2 (f ?x)))))"""
+        comparison = cd.compare(actions(learned), actions(reference), True, frozenset({"d"}))
+        self.assertEqual(comparison.precondition, cd.Counts(1.5, 2.5, 0.5))
+
 
 class Metrics(unittest.TestCase):
     def test_extra_and_missing_elements(self) -> None:
@@ -154,6 +208,28 @@ class CommandLine(unittest.TestCase):
             code, text = self.run_main(str(learned), str(reference), "--json")
             self.assertEqual(code, 0)
             self.assertEqual(json.loads(text)["total"]["f_score"], 1.0)
+
+    def test_tolerant(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            learned = Path(directory) / "aprendido.pddl"
+            reference = Path(directory) / "referencia.pddl"
+            learned.write_text(NEAR_LEARNED)
+            reference.write_text(NEAR_REFERENCE)
+            arguments = [str(learned), str(reference), "--tolerant", "--symmetric", "DISTANCE"]
+
+            code, text = self.run_main(*arguments, "--details")
+            self.assertEqual(code, 0)
+            self.assertRegex(text, r"efectos\s+0\.5\s+0\.5\s+0\.5\s+0\.500")
+            self.assertIn("medio acierto en la precondición: (< 1 (fuel ?0))", text)
+
+            code, text = self.run_main(*arguments, "--json")
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(text)["effect"]["vp"], 0.5)
+
+    def test_symmetric_needs_tolerant(self) -> None:
+        with self.assertRaises(SystemExit) as raised:
+            self.run_main("a.pddl", "b.pddl", "--symmetric", "distance")
+        self.assertEqual(raised.exception.code, 2)
 
     def test_missing_file(self) -> None:
         code, _ = self.run_main("no-existe.pddl", "tampoco.pddl")
