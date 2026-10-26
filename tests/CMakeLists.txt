@@ -14,6 +14,7 @@ include(GoogleTest)
 add_subdirectory(support)
 
 add_subdirectory(unit)
+add_subdirectory(scripts)
 
 if(PLANMINER_BUILD_LEGACY)
   include(Legacy)

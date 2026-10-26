@@ -59,7 +59,7 @@ Los tests van por etiquetas de CTest (`ctest --preset debug -L <etiqueta>`):
 
 | Etiqueta | Qué comprueba |
 |----------|---------------|
-| `unit` | las librerías y la línea de comandos |
+| `unit` | las librerías, la línea de comandos y los scripts |
 | `planner` | los dominios aprendidos: PyPlanner planifica con ellos y VAL valida los planes con el dominio de referencia |
 | `inslv` | la librería de aprendizaje de reglas difusas (`vendor/inslv`) |
 
@@ -93,6 +93,34 @@ si los argumentos no son válidos.
 
 Con `--original` y un dominio numérico, el dominio aprendido declara las funciones pero no el
 requisito `:numeric-fluents`, como el PlanMiner original, y algunos planificadores lo rechazan.
+
+## Evaluación
+
+`scripts/compare_domains.py` compara un dominio aprendido con el de referencia (solo necesita
+Python 3.12 o posterior):
+
+```bash
+scripts/compare_domains.py dominio.pddl referencia.pddl [--details] [--json]
+```
+
+Cada elemento de las precondiciones y los efectos de las acciones (un átomo, su negación, una
+comparación numérica o un efecto numérico) cuenta como:
+
+- verdadero positivo si está en los dos dominios;
+- falso positivo si solo está en el aprendido (sobra);
+- falso negativo si solo está en el de referencia (falta).
+
+Sumando todas las acciones, da la precisión, el recall y el F-score de las precondiciones, de
+los efectos y de todo junto. `--details` lista los elementos que sobran y los que faltan en cada
+acción, y `--json` escribe el resultado en JSON.
+
+Las acciones se emparejan por su nombre, y sus parámetros por su posición; los tipos no se
+comparan. Antes de comparar, los elementos se normalizan (mayúsculas, formato de los números,
+`>` como `<` con los lados cambiados, el orden de los operandos de `=`, `+` y `*`), pero no se
+reconocen otras equivalencias: `(< a b)` y `(<= a b)` son elementos distintos.
+
+Termina con 0 si ha podido comparar los dominios y con 2 si los argumentos o los dominios no son
+válidos.
 
 ## Memoria
 

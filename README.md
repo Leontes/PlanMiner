@@ -57,7 +57,7 @@ Tests are grouped by CTest label (`ctest --preset debug -L <label>`):
 
 | Label | What it checks |
 |-------|----------------|
-| `unit` | the libraries and the command line |
+| `unit` | the libraries, the command line and the scripts |
 | `planner` | learned domains: PyPlanner plans with them and VAL validates the plans against the reference domain |
 | `inslv` | the fuzzy rule learning library (`vendor/inslv`) |
 
@@ -91,6 +91,34 @@ arguments are not valid.
 
 With `--original` and a numeric domain, the learned domain declares its functions but not the
 `:numeric-fluents` requirement, as the original PlanMiner did, and some planners reject it.
+
+## Evaluation
+
+`scripts/compare_domains.py` compares a learned domain with the reference one (it only needs
+Python 3.12 or later):
+
+```bash
+scripts/compare_domains.py domain.pddl reference.pddl [--details] [--json]
+```
+
+Each element of the preconditions and effects of the actions (an atom, its negation, a numeric
+comparison or a numeric effect) counts as:
+
+- a true positive if it is in both domains;
+- a false positive if it is only in the learned one (it is extra);
+- a false negative if it is only in the reference one (it is missing).
+
+Adding up all the actions, it reports the precision, recall and F-score of the preconditions,
+of the effects and of both. `--details` lists the extra and missing elements of each action,
+and `--json` writes the result as JSON.
+
+Actions are matched by name, and their parameters by position; types are not compared. Before
+comparing, elements are normalized (case, number format, `>` as `<` with the sides swapped,
+the order of the operands of `=`, `+` and `*`), but no other equivalence is recognized:
+`(< a b)` and `(<= a b)` are different elements.
+
+It exits with 0 if the domains could be compared and 2 if the arguments or the domains are not
+valid.
 
 ## Memory
 
