@@ -26,6 +26,7 @@
 #include "PtLib.hpp"
 #include "datasets/relations.hpp"
 #include "datasets/table.hpp"
+#include "legacy.hpp"
 #include "plantraces/actions.hpp"
 #include "pts.hpp"
 
@@ -40,27 +41,11 @@ namespace {
 
 namespace fs = std::filesystem;
 
-constexpr double legacy_missing = -999999999.0;
-
-struct Case {
-  std::string collection;
-  std::string variant;
-};
-
-std::vector<plantraces::Trace> read_traces(const Case& c) {
-  std::vector<fs::path> files;
-  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / c.collection)) {
-    if (entry.path().filename().string().ends_with("." + c.variant + ".json")) {
-      files.push_back(entry.path());
-    }
-  }
-  std::sort(files.begin(), files.end());
-  std::vector<plantraces::Trace> traces;
-  for (const fs::path& file : files) {
-    traces.push_back(plantraces::read_trace(file));
-  }
-  return traces;
-}
+using oracle::Case;
+using oracle::legacy_label;
+using oracle::legacy_missing;
+using oracle::legacy_relation_label;
+using oracle::read_traces;
 
 struct LegacyTable {
   std::vector<std::vector<double>> columns;
@@ -79,22 +64,6 @@ LegacyTable legacy_table(StatesLists& states) {
     state->to_table(&table.columns, &table.labels, rows, &index);
   }
   return table;
-}
-
-// El nombre que da el original al atributo: ( on ?param_0 ~ tipo ?param_1 ~ tipo ). Los tipos
-// son los de los argumentos de la primera aplicación de la acción.
-std::string legacy_label(const datasets::Attribute& attribute,
-                         const plantraces::Transition& transition) {
-  if (attribute.kind == datasets::AttributeKind::time) {
-    return "TIMESTAMP";
-  }
-  std::string label = "( " + attribute.term.name + " ";
-  for (const std::size_t parameter : attribute.term.parameters) {
-    const std::string& object = transition.action->arguments[parameter];
-    label += "?param_" + std::to_string(parameter) + " ~ " +
-             transition.trace->objects.at(object).front() + " ";
-  }
-  return label + ")";
 }
 
 // El final de to_table en Old/src/PlanTraces/Utils.cpp: las relaciones numéricas. Es el código
@@ -222,22 +191,6 @@ LegacyTable legacy_relations(const LegacyTable& all, unsigned int preStates) {
   return out;
 }
 
-// El nombre que da el original a una relación: "opLT - ( fuel ... )  ( capacity ... )".
-std::string legacy_relation_label(const datasets::Relation& relation,
-                                  const plantraces::Transition& transition) {
-  const char* op = "opEQ";
-  if (relation.comparison == datasets::Comparison::less) {
-    op = "opLT";
-  } else if (relation.comparison == datasets::Comparison::greater) {
-    op = "opGT";
-  }
-  const datasets::Attribute right{datasets::AttributeKind::fluent,
-                                  relation.right.variables.front()};
-  return std::string{op} + " - " + legacy_label(relation.left, transition) + "  " +
-         (relation.right.kind == datasets::OperandKind::fall ? "DELTA " : "") +
-         legacy_label(right, transition);
-}
-
 // Que las columnas nuevas, con el nombre que les da el original, sean las del original.
 void expect_same_columns(const std::vector<std::string>& labels,
                          const std::vector<std::vector<double>>& columns,
@@ -334,9 +287,7 @@ INSTANTIATE_TEST_SUITE_P(Traces, LegacyTables,
                                          Case{"zenotravel", "noise5"}, Case{"counters", "complete"},
                                          Case{"counters", "missing30"}, Case{"counters", "noise5"}),
                          [](const testing::TestParamInfo<Case>& c) {
-                           std::string name = c.param.collection + "_" + c.param.variant;
-                           std::replace(name.begin(), name.end(), '-', '_');
-                           return name;
+                           return oracle::case_name(c.param);
                          });
 
 }  // namespace

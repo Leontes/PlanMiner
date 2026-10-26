@@ -4,6 +4,7 @@ add_subdirectory(resources)
 add_subdirectory(plantraces)
 add_subdirectory(regression)
 add_subdirectory(datasets)
+add_subdirectory(rules)
 
 # La línea de comandos.
 add_test(NAME unit.cli.version COMMAND planminer --version)

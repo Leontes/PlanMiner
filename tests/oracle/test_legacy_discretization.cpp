@@ -18,34 +18,15 @@
 #include "DataSLib.hpp"
 #include "datasets/discretization.hpp"
 #include "datasets/table.hpp"
+#include "legacy.hpp"
 #include "plantraces/actions.hpp"
 #include "plantraces/trace.hpp"
 
 namespace {
 
-namespace fs = std::filesystem;
-
-constexpr double legacy_missing = -999999999.0;
-
-struct Case {
-  std::string collection;
-  std::string variant;
-};
-
-std::vector<plantraces::Trace> read_traces(const Case& c) {
-  std::vector<fs::path> files;
-  for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / c.collection)) {
-    if (entry.path().filename().string().ends_with("." + c.variant + ".json")) {
-      files.push_back(entry.path());
-    }
-  }
-  std::sort(files.begin(), files.end());
-  std::vector<plantraces::Trace> traces;
-  for (const fs::path& file : files) {
-    traces.push_back(plantraces::read_trace(file));
-  }
-  return traces;
-}
+using oracle::Case;
+using oracle::legacy_missing;
+using oracle::read_traces;
 
 // La partición que da el original a una columna.
 std::vector<datasets::FuzzySet> legacy_discretize(const std::vector<double>& column) {
@@ -103,7 +84,7 @@ INSTANTIATE_TEST_SUITE_P(Traces, LegacyDiscretization,
                                          Case{"zenotravel", "noise5"}, Case{"counters", "complete"},
                                          Case{"counters", "missing30"}, Case{"counters", "noise5"}),
                          [](const testing::TestParamInfo<Case>& c) {
-                           return c.param.collection + "_" + c.param.variant;
+                           return oracle::case_name(c.param);
                          });
 
 }  // namespace

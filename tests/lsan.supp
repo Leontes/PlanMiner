@@ -1,0 +1,5 @@
+# Supresiones de LeakSanitizer para el preset asan.
+#
+# INSLV (vendor/inslv) tiene fugas de memoria del código original de NSLV. Queda fuera de la
+# reescritura, así que no se corrigen aquí: solo se ignoran las que se reservan dentro de INSLV.
+leak:inslv::
