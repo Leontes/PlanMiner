@@ -149,10 +149,16 @@ ajuste:
 
 - **Dominios.** Las colecciones que la selección pide a PDDLDomains. Se dejan fuera las que
   tienen un dominio por problema, porque PlanMiner aprende uno solo.
-- **Problemas.** 30 por dominio, cada uno con su plan. En los clásicos son paseos aleatorios (el
-  generador `random-walk` de PDDLDomains) desde los 3 problemas más pequeños de la colección, y
+- **Problemas.** 90 por dominio, cada uno con su plan. En los clásicos son paseos aleatorios (el
+  generador `random-walk` de PDDLDomains) desde los 6 problemas más pequeños de la colección, y
   el paseo es el plan. En los numéricos, el generador de la colección da los problemas y
   PyPlanner los planes; se descartan los problemas que no resuelve.
+- **Cobertura.** De los paseos se generan 3 candidatos por problema y se eligen los que cubren
+  el dominio: cada acción aplicada y cada efecto cambiando el estado en al menos 6 problemas, o
+  en todos los candidatos que lo muestran, si son menos. Lo que no muestra ningún problema (una
+  acción que no se puede aplicar en ningún problema de la colección) no cuenta en las métricas,
+  porque no se puede aprender; el informe lo indica, junto con lo que falte en el entrenamiento
+  de alguna partición.
 - **Trazas.** Una por plan y variante: completa, con el 30 % de los átomos y valores
   desconocidos (`missing30`) y con un 5 % de ruido (`noise5`).
 - **Validación cruzada.** Los problemas de cada dominio se reparten en 3 particiones. Con cada

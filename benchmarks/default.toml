@@ -8,7 +8,7 @@
 
 description = "Dominios STRIPS y numéricos (PDDL 2.1 sin tiempo) de PDDLDomains"
 seed = 1
-problems = 30
+problems = 90
 folds = 3
 
 # Las colecciones, con los filtros de los [[select]] de los datasets de PDDLDomains:
@@ -25,12 +25,18 @@ exclude-types = [
 ]
 
 # Los problemas de las colecciones clásicas: paseos aleatorios (random-walk de PDDLDomains) desde
-# los `bases` problemas más pequeños de la colección. El paseo es el plan.
+# los `bases` problemas más pequeños de la colección. El paseo es el plan. Se generan
+# `candidates` candidatos por problema y se eligen los que cubren el dominio: cada acción
+# aplicada y cada efecto cambiando el estado en al menos `coverage` problemas (o en todos los
+# candidatos que lo muestran, si son menos). Lo que no muestra ningún problema no cuenta en las
+# métricas.
 [walk]
-bases = 3
+bases = 6
 mode = "both"
 steps = "10..40"
 goals = "2..6"
+candidates = 3
+coverage = 6
 
 # Los de las numéricas: el generador de la colección en PDDLDomains, con sus parámetros por
 # defecto y los que se den aquí ("<colección>" = { parámetro = valor }). Los planes, de

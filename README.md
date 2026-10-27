@@ -147,10 +147,16 @@ each setting:
 
 - **Domains.** The collections that the selection asks PDDLDomains for. Those with a domain per
   problem are left out, because PlanMiner learns a single domain.
-- **Problems.** 30 per domain, each with its plan. In classical domains, they are random walks
-  (the `random-walk` generator of PDDLDomains) from the 3 smallest problems of the collection,
+- **Problems.** 90 per domain, each with its plan. In classical domains, they are random walks
+  (the `random-walk` generator of PDDLDomains) from the 6 smallest problems of the collection,
   and the walk is the plan. In numeric domains, the collection's generator gives the problems
   and PyPlanner the plans; the problems it does not solve are discarded.
+- **Coverage.** The walks give 3 candidates per problem, and the chosen ones cover the domain:
+  every action applied and every effect changing the state in at least 6 problems, or in all
+  the candidates that show it, if there are fewer. What no problem shows (an action that cannot
+  be applied in any problem of the collection) does not count in the metrics, because it cannot
+  be learned; the report lists it, along with anything missing from the training data of a
+  fold.
 - **Traces.** One per plan and variant: complete, with 30 % of the atoms and values unknown
   (`missing30`) and with 5 % noise (`noise5`).
 - **Cross-validation.** The problems of each domain are split into 3 folds. For each fold,

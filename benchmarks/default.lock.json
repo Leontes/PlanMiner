@@ -2,64 +2,64 @@
   "pddldomains": "38a868974e6b4a70cc35bd706e104b739dea24f5",
   "collections": {
     "ipc-1998/gripper-round-1-strips": {
-      "problems": 30,
-      "digest": "459a71facf1565fbebf140b5fb13f2a6d3f1b2a840385dde5310b0b4f001a8e3"
+      "problems": 90,
+      "digest": "a2a7443033fe1826cdaf9a4c38bb19434d84f3e3f5eafc33318b387f8a0288c9"
     },
     "ipc-2000/blocks-strips-untyped": {
-      "problems": 30,
-      "digest": "d95e2da09f22ed6de568b61bf5106b8756c0705aeb4e9cae28e3b0f01f5e9fbd"
+      "problems": 90,
+      "digest": "93d18ff87357a8fd3858c065116c192e64e4be47972ca41027bbf45effea41ce"
     },
     "ipc-2011/barman-sequential-satisficing": {
-      "problems": 30,
-      "digest": "13adc5954ca47832efdf9c5f49d48d4211d4e68b854025e82457872c168e7d79"
+      "problems": 90,
+      "digest": "9d6b656c97f531ba0077da745277b8db8c227d80c02a57aa247b8d4cc475a7e2"
     },
     "ipc-2011/elevator-sequential-satisficing": {
-      "problems": 30,
-      "digest": "2d06b5ce842152d98460c75a44097a43e6f90c77b278bdd1b55119019efdf82c"
+      "problems": 90,
+      "digest": "12ac330670d2fdd04fbb3d114dc0a2994c9228ad8bab852d9b097423e791e52b"
     },
     "ipc-2011/floor-tile-sequential-satisficing": {
-      "problems": 30,
-      "digest": "18a9a1d78e42f9c6eeea94a6519de7f452bd51823c029ebd962edb35477469e7"
+      "problems": 90,
+      "digest": "d42102fabbd02e71773fda0be38e4cccde79efc3b69d1da3f518c3d601bc299f"
     },
     "ipc-2011/no-mystery-sequential-satisficing": {
-      "problems": 30,
-      "digest": "7efc25741bc16d197ac52deddac5534e76e5969a0ab1346f247bf882b65ff182"
+      "problems": 90,
+      "digest": "a7d63d5054bfe7a6f95121ece718aec15732f7f89ad8a86b8d11e8078fa5beaa"
     },
     "ipc-2011/parking-sequential-satisficing": {
-      "problems": 30,
-      "digest": "d584537d249634cb5b42cdbfe27d9626bcbdd82dfb482d311c852d0dd5f2a081"
+      "problems": 90,
+      "digest": "da60bee376a11de0d50407a8bb6dfe8a2d7bde3fe39b7a41ba3b4bdf76aeb23f"
     },
     "ipc-2011/peg-solitaire-sequential-satisficing": {
-      "problems": 30,
-      "digest": "c604ba2070cb362e9e41b7147a2f3ce3b844d11017bc9e7abf05e0806d226856"
+      "problems": 90,
+      "digest": "2a82e9f7d98b17a3d6502d61767f93e447f126d9a2a7092f201547d0687cb30c"
     },
     "ipc-2011/scanalyzer-3d-sequential-satisficing": {
-      "problems": 30,
-      "digest": "d4a663004900af8a908bdcb2c399b0fe41fd8cca9c078939a99830a64698777e"
+      "problems": 90,
+      "digest": "3e3e36e8fde5092fcc98ccfa999ff67ed098945b55e1f0c42f6bfa5de9f672f5"
     },
     "ipc-2011/sokoban-sequential-satisficing": {
-      "problems": 30,
-      "digest": "0aab804e3469fa1bbd3ed367bf5580fc7afa2ab2b40776c848da9405e67beb68"
+      "problems": 90,
+      "digest": "6d7049ba7152009a5ec94b1d31f58de9878b244ba9567e7c59b8bbf1b52e959d"
     },
     "ipc-2011/transport-sequential-satisficing": {
-      "problems": 30,
-      "digest": "53a63d325a3203759eac7517aaece09fc09ac1dc8bde6e6f12b02bc98e7ead57"
+      "problems": 90,
+      "digest": "6ef0640cab43e967a62734566c576b4aa50732556577d116a6b9cdf2e8a57ea3"
     },
     "ipc-2011/visit-all-sequential-satisficing": {
-      "problems": 30,
-      "digest": "3eb8897988da646adf190f86fe0db5d05f4c5cb8f7a59171824cad55830b6f5b"
+      "problems": 90,
+      "digest": "65f74f20e6b1010f988fec90ea85591d13fff7b12618b21c55a0595f4cdf9cb5"
     },
     "ipc-2011/woodworking-sequential-satisficing": {
-      "problems": 30,
-      "digest": "aded2287792ea7849a7b257cdb0a7fb7286a6950ddef6a5db3f7792cea1f237f"
+      "problems": 90,
+      "digest": "07408aed60e34b4151d41546b2f326771e046e36336b98c75ddfa24f0ae79cde"
     },
     "ipc-2023-numeric/counters": {
-      "problems": 30,
-      "digest": "0f6070b3e5bac4522296aefd4095ad83368e9a1bc5cf8479a0c1c0d9e7555e34"
+      "problems": 90,
+      "digest": "9cc0690f3cf3483d427abf4d14d2f090e01b51b7bf5ed5676c275ffbf4d8a611"
     },
     "ipc-2023-numeric/zenotravel": {
-      "problems": 30,
-      "digest": "47e072278981b5a89d2bec4dc274ff144e54fca6cc58a9389542f5d0bcaad012"
+      "problems": 90,
+      "digest": "713421c26f68da2d6e6f721676fd80a8c7917566bc6b8e877690111b16c45957"
     }
   },
   "excluded": {

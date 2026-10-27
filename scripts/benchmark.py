@@ -5,9 +5,11 @@ Un banco se define en un TOML (los del repositorio están en benchmarks/; defaul
 cada clave). Tiene tres pasos, cada uno con su orden:
 
 - ``generate``: elige las colecciones del catálogo de PDDLDomains (vendor/PDDLDomains) y, de cada
-  una, genera los problemas con su plan (paseos aleatorios en las clásicas; el generador de la
-  colección y PyPlanner en las numéricas), comprueba con PyPlanner y VAL qué problemas resuelve
-  el dominio de referencia y escribe una traza de cada plan por variante. Las huellas de lo
+  una, genera los problemas con su plan (paseos aleatorios en las clásicas, elegidos para que
+  cubran el dominio; el generador de la colección y PyPlanner en las numéricas), mide la
+  cobertura (qué acciones y efectos muestran los planes), comprueba con PyPlanner y VAL qué
+  problemas resuelve el dominio de referencia y escribe una traza de cada plan por variante.
+  Lo que no muestra ningún plan no cuenta en las métricas. Las huellas de lo
   generado se comparan con las de <banco>.lock.json, junto a la definición: si no coinciden, la
   generación no es la misma (otra versión de PDDLDomains o de PyPlanner).
 - ``run``: la validación cruzada. Los problemas de cada colección se reparten en k particiones;
@@ -174,9 +176,14 @@ def parse_definition(text: str, path: Path) -> Definition:
     for select in selects:
         _check_keys(select, SELECT_OPTIONS, f"{path}: [[select]]")
 
-    walk = {"bases": 1, "mode": "goal", "steps": "10..40", "goals": "2..6"} | data.get("walk", {})
-    _check_keys(walk, {"bases", "mode", "steps", "goals"}, f"{path}: [walk]")
+    walk = {"bases": 1, "mode": "goal", "steps": "10..40", "goals": "2..6"}
+    walk |= {"candidates": 1, "coverage": 0} | data.get("walk", {})
+    _check_keys(
+        walk, {"bases", "mode", "steps", "goals", "candidates", "coverage"}, f"{path}: [walk]"
+    )
     _integer(walk, "bases", f"{path}: [walk]", 1)
+    _integer(walk, "candidates", f"{path}: [walk]", 1)
+    _integer(walk, "coverage", f"{path}: [walk]", 0)
 
     planner = data.get("planner", {})
     _check_keys(planner, {"config", "time_limit", "memory_limit"}, f"{path}: [planner]")
@@ -419,6 +426,126 @@ def symmetric_symbols(domain: str, problems: Iterable[str]) -> list[str]:
     return sorted((symmetric or set()) & evidence)
 
 
+# --- La cobertura ----------------------------------------------------------------------------
+
+
+def _literal(element: str) -> tuple[bool, list[str]] | None:
+    """Un efecto en forma canónica (la de compare_domains): si es un borrado y los términos de su
+    átomo; None si no es un literal (numérico, condicional...)."""
+    parsed = cd.parse(element)[0]
+    negative = isinstance(parsed, list) and parsed[:1] == ["not"] and len(parsed) == 2
+    atom = parsed[1] if negative and isinstance(parsed, list) else parsed
+    if not isinstance(atom, list) or not atom or atom[0] in cd.NUMERIC_EFFECTS:
+        return None
+    if not all(isinstance(term, str) for term in atom):
+        return None
+    return negative, [str(term) for term in atom]
+
+
+def coverage_items(domain: str) -> list[str]:
+    """Lo que tienen que mostrar los datos para que se pueda aprender el dominio: cada acción
+    aplicada («acción») y cada uno de sus efectos lógicos cambiando el estado («acción efecto»)."""
+    items = []
+    for name, action in sorted(cd.actions(domain).items()):
+        items.append(name)
+        items += [f"{name} {element}" for element in sorted(action.effect) if _literal(element)]
+    return items
+
+
+def _initial_atoms(problem: str) -> set[str]:
+    atoms = set()
+    for item in _definition_items(problem):
+        if isinstance(item, list) and item[:1] == [":init"]:
+            for fact in item[1:]:
+                if isinstance(fact, list) and fact and all(isinstance(t, str) for t in fact):
+                    atoms.add("(" + " ".join(str(term) for term in fact) + ")")
+    return atoms
+
+
+def observed_items(domain: str, problem: str, plan: str) -> set[str]:
+    """Lo de coverage_items que muestra el plan aplicado desde el estado inicial del problema.
+    Basta con aplicar los efectos lógicos: el plan es válido."""
+    literals = {
+        name: [(element, _literal(element)) for element in sorted(action.effect)]
+        for name, action in cd.actions(domain).items()
+    }
+    state = _initial_atoms(problem)
+    observed: set[str] = set()
+    for step in cd.parse(plan):
+        if not isinstance(step, list) or not step or not all(isinstance(t, str) for t in step):
+            continue
+        name, arguments = str(step[0]), [str(term) for term in step[1:]]
+        observed.add(name)
+        changes: list[tuple[str, bool, str]] = []
+        for element, literal in literals[name]:
+            if literal is not None:
+                negative, atom = literal
+                terms = [arguments[int(t[1:])] if t.startswith("?") else t for t in atom]
+                changes.append((element, negative, "(" + " ".join(terms) + ")"))
+        after = state - {fact for _, negative, fact in changes if negative}
+        after |= {fact for _, negative, fact in changes if not negative}
+        for element, _, fact in changes:
+            if (fact in state) != (fact in after):
+                observed.add(f"{name} {element}")
+        state = after
+    return observed
+
+
+def choose_problems(observed: dict[str, set[str]], count: int, minimum: int) -> list[str]:
+    """count de los candidatos (en su orden) con los que cada cosa se vea en al menos minimum
+    problemas, o en todos los candidatos que la muestran si no hay tantos: primero, uno a uno, el
+    que más añade a lo que falta; luego, los primeros que queden."""
+    need = {item: 0 for items in observed.values() for item in items}
+    for items in observed.values():
+        for item in items:
+            need[item] = min(minimum, need[item] + 1)
+    chosen: list[str] = []
+    remaining = list(observed)
+    while remaining and len(chosen) < count:
+        gains = [sum(1 for item in observed[name] if need[item] > 0) for name in remaining]
+        best = remaining[gains.index(max(gains))] if max(gains) > 0 else remaining[0]
+        for item in observed[best]:
+            need[item] = max(0, need[item] - 1)
+        chosen.append(best)
+        remaining.remove(best)
+    return chosen
+
+
+def coverage(
+    items: Sequence[str],
+    observed: dict[str, set[str]],
+    splits: Sequence[Sequence[str]],
+    minimum: int,
+) -> dict[str, Any]:
+    """La cobertura de los problemas: lo que no muestra ninguno (no cuenta en las métricas), lo
+    que muestran menos de minimum y lo que falta en el entrenamiento de cada partición."""
+    shown = {item: sum(item in found for found in observed.values()) for item in items}
+    gaps = []
+    for test in splits:
+        training = set().union(*(observed[name] for name in observed if name not in test))
+        gaps.append([item for item in items if shown[item] and item not in training])
+    return {
+        "items": len(items),
+        "missing": [item for item in items if not shown[item]],
+        "scarce": {item: count for item, count in shown.items() if 0 < count < minimum},
+        "gaps": gaps,
+    }
+
+
+def restrict(reference: dict[str, cd.Action], missing: Iterable[str]) -> dict[str, cd.Action]:
+    """El dominio de referencia sin lo que no muestran los datos (de coverage)."""
+    missing = set(missing)
+    return {
+        name: cd.Action(
+            name,
+            action.precondition,
+            frozenset(e for e in action.effect if f"{name} {e}" not in missing),
+        )
+        for name, action in reference.items()
+        if name not in missing
+    }
+
+
 # --- La generación ---------------------------------------------------------------------------
 
 
@@ -437,20 +564,30 @@ def _generate(
 
 
 def _walk(collection: Collection, definition: Definition, directory: Path) -> dict[str, str]:
-    """Los problemas de una colección clásica, por paseos aleatorios: su base."""
+    """Los problemas de una colección clásica, por paseos aleatorios: su base. De candidates
+    candidatos por problema se eligen los que cubren el dominio (choose_problems)."""
     walk = definition.walk
     parameters = {key: walk[key] for key in ("mode", "steps", "goals")}
     parameters = {"collection": collection.id, **parameters, "base": ",".join(collection.bases)}
-    per_base = math.ceil(definition.problems / len(collection.bases))
-    problems: dict[str, str] = {}
-    for entry in _generate("random-walk", parameters, per_base, definition.seed, directory):
-        name = Path(entry["file"]).stem
-        if len(problems) < definition.problems:
-            problems[name] = str(entry["params"]["base"])
-        else:
+    candidates = definition.problems * walk["candidates"]
+    per_base = math.ceil(candidates / len(collection.bases))
+    generated = _generate("random-walk", parameters, per_base, definition.seed, directory)
+    bases = {Path(entry["file"]).stem: str(entry["params"]["base"]) for entry in generated}
+    domain = (directory / "domain.pddl").read_text()
+    observed = {
+        name: observed_items(
+            domain,
+            (directory / f"{name}.pddl").read_text(),
+            (directory / f"{name}.plan").read_text(),
+        )
+        for name in list(bases)[:candidates]
+    }
+    chosen = set(choose_problems(observed, definition.problems, walk["coverage"]))
+    for name in bases:
+        if name not in chosen:
             for suffix in (".pddl", ".plan"):
                 (directory / f"{name}{suffix}").unlink(missing_ok=True)
-    return problems
+    return {name: bases[name] for name in sorted(chosen)}
 
 
 def _numeric(
@@ -555,6 +692,12 @@ def generate_collection(
 
     domain = (directory / "domain.pddl").read_text()
     texts = [(directory / f"{name}.pddl").read_text() for name in problems]
+    observed = {
+        name: observed_items(domain, text, (directory / f"{name}.plan").read_text())
+        for name, text in zip(problems, texts, strict=True)
+    }
+    splits = folds(problems, definition.folds, f"{definition.seed}:{collection.id}")
+    minimum = max(definition.walk["coverage"], 1)
     files = {"domain.pddl": sha256(directory / "domain.pddl")}
     for name in problems:
         for suffix in (".pddl", ".plan"):
@@ -564,6 +707,7 @@ def generate_collection(
     entry |= {
         "problems": problems,
         "symmetric": symmetric_symbols(domain, texts),
+        "coverage": coverage(coverage_items(domain), observed, splits, minimum),
         "files": files,
         "digest": digest(files),
     }
@@ -813,7 +957,10 @@ def run_task(
     assert tools.planminer is not None
     learning = learn(tools.planminer, task.configuration, traces, learned, definition.planminer)
 
-    reference = cd.actions((data / "domain.pddl").read_text())
+    # Lo que no muestra ningún problema no se puede aprender: no cuenta.
+    reference = restrict(
+        cd.actions((data / "domain.pddl").read_text()), entry["coverage"]["missing"]
+    )
     actions: dict[str, cd.Action] = {}
     if learning["status"] == "ok":
         try:
@@ -956,6 +1103,39 @@ def _cell(measure: dict[str, float]) -> str:
     return f"{measure['mean']:.3f} ({measure['std']:.3f})"
 
 
+def coverage_lines(manifest: dict[str, Any], minimum: int) -> list[str]:
+    """La sección del informe sobre la cobertura de los datos (coverage)."""
+    lines = [
+        "",
+        "## Cobertura",
+        "",
+        "Acciones aplicadas y efectos que cambian el estado en los planes de los problemas. Lo que "
+        "no se ve en ninguno no cuenta en P, R y F; lo que falta en el entrenamiento de una "
+        "partición, sí.",
+        "",
+    ]
+    rows = []
+    for identifier, entry in sorted(manifest["collections"].items()):
+        found = entry["coverage"]
+        shown = found["items"] - len(found["missing"])
+        notes = []
+        if found["missing"]:
+            notes.append("sin datos: " + ", ".join(f"`{item}`" for item in found["missing"]))
+        if found["scarce"]:
+            notes.append(
+                f"en menos de {minimum} problemas: "
+                + ", ".join(f"`{item}` ({count})" for item, count in found["scarce"].items())
+            )
+        for index, gaps in enumerate(found["gaps"], 1):
+            if gaps:
+                notes.append(
+                    f"falta en el entrenamiento de la partición {index}: "
+                    + ", ".join(f"`{item}`" for item in gaps)
+                )
+        rows.append(f"| {identifier} | {shown}/{found['items']} | {'; '.join(notes)} |")
+    return lines + ["| Colección | Se ve | Notas |", "|---|---|---|", *rows]
+
+
 def report(definition: Definition, output: Path) -> int:
     manifest = load_manifest(output, definition)
     results = [
@@ -1046,6 +1226,7 @@ def report(definition: Definition, output: Path) -> int:
                     f"{validity_text(summary['outcomes'])} |"
                 )
 
+    lines += coverage_lines(manifest, max(definition.walk["coverage"], 1))
     if manifest["excluded"] or manifest["failed"]:
         lines += ["", "## Fuera del banco", ""]
         for identifier, reason in sorted(manifest["excluded"].items()):

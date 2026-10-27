@@ -14,6 +14,8 @@ bases = 2
 mode = "both"
 steps = "10..20"
 goals = "2..4"
+candidates = 3
+coverage = 2
 
 [generators]
 "ipc-2023-numeric/counters" = { counters = "2..4" }
