@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <optional>
 #include <utility>
 
@@ -182,15 +183,18 @@ std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces)
   return result;
 }
 
-std::vector<Relation> numeric_relations(const Table& table,
-                                        const std::vector<FluentChange>& changes,
-                                        const RelationOptions& options,
-                                        const std::set<std::string>& accumulators) {
+namespace {
+
+// Las relaciones de numeric_relations y, con constants, también las que valen lo mismo en todas
+// las filas en que se conocen.
+std::vector<Relation> relations_of(const Table& table, const std::vector<FluentChange>& changes,
+                                   const RelationOptions& options, const DomainFluents& domain,
+                                   bool constants) {
   const std::size_t n = table.transitions;
   // Lo que no se compara: (total-cost) y los acumuladores, según las opciones.
   const auto excluded = [&](const plantraces::LiftedAtom& fluent) {
     return (options.action_costs && is_total_cost(fluent)) ||
-           (options.accumulators && accumulators.contains(fluent.name));
+           (options.accumulators && domain.accumulators.contains(fluent.name));
   };
 
   const auto side = [&](Attribute attribute, Operand operand, std::vector<double> column) {
@@ -206,6 +210,10 @@ std::vector<Relation> numeric_relations(const Table& table,
         result.changes =
             result.changes || (!std::isnan(before) && !std::isnan(after) && before != after);
       }
+    }
+    if (result.attribute.kind == AttributeKind::fluent &&
+        domain.changing.contains(result.attribute.term.name)) {
+      result.changes = true;
     }
     return result;
   };
@@ -277,7 +285,11 @@ std::vector<Relation> numeric_relations(const Table& table,
           relation.column[row] = holds(comparison, left.values[row], right.values[row]) ? 1.0 : 0.0;
         }
       }
-      if (options.known_constants ? varies(relation.column) : varies_from_first(relation.column)) {
+      const bool known = std::any_of(relation.column.begin(), relation.column.end(),
+                                     [](double value) { return !std::isnan(value); });
+      if (constants ? known
+                    : (options.known_constants ? varies(relation.column)
+                                               : varies_from_first(relation.column))) {
         relations.push_back(std::move(relation));
       }
     }
@@ -302,6 +314,121 @@ std::vector<Relation> numeric_relations(const Table& table,
     }
   }
   return relations;
+}
+
+}  // namespace
+
+std::vector<Relation> numeric_relations(const Table& table,
+                                        const std::vector<FluentChange>& changes,
+                                        const RelationOptions& options,
+                                        const DomainFluents& domain) {
+  return relations_of(table, changes, options, domain, false);
+}
+
+std::vector<Relation> candidate_relations(const Table& table,
+                                          const std::vector<FluentChange>& changes,
+                                          const RelationOptions& options,
+                                          const DomainFluents& domain) {
+  return relations_of(table, changes, options, domain, true);
+}
+
+namespace {
+
+// Los índices de las variables que usa la expresión.
+void used_variables(const Expression& expression, std::set<std::size_t>& used) {
+  if (expression.operation() == Operation::variable) {
+    used.insert(expression.index());
+  } else if (!expression.is_leaf()) {
+    used_variables(expression.left(), used);
+    used_variables(expression.right(), used);
+  }
+}
+
+plantraces::GroundAtom ground(const plantraces::LiftedAtom& atom,
+                              const std::map<std::size_t, std::string>& binding) {
+  plantraces::GroundAtom result{atom.name, {}};
+  for (const std::size_t parameter : atom.parameters) {
+    result.arguments.push_back(binding.at(parameter));
+  }
+  return result;
+}
+
+}  // namespace
+
+bool invariant(const Relation& relation, bool value, const std::vector<plantraces::Trace>& traces,
+               const std::vector<std::string>& types) {
+  if (relation.left.kind != AttributeKind::fluent ||
+      relation.right.kind != OperandKind::expression) {
+    return true;
+  }
+  std::set<std::size_t> used;
+  used_variables(relation.right.expression, used);
+  std::set<std::size_t> parameters(relation.left.term.parameters.begin(),
+                                   relation.left.term.parameters.end());
+  for (const std::size_t v : used) {
+    const std::vector<std::size_t>& more = relation.right.variables[v].parameters;
+    parameters.insert(more.begin(), more.end());
+  }
+  const std::vector<std::size_t> order(parameters.begin(), parameters.end());
+
+  for (const plantraces::Trace& trace : traces) {
+    // Los objetos de cada parámetro: los del tipo del parámetro.
+    std::vector<std::vector<std::string>> objects(order.size());
+    for (std::size_t k = 0; k < order.size(); ++k) {
+      for (const auto& [object, declared] : trace.objects) {
+        if (std::find(declared.begin(), declared.end(), types.at(order[k])) != declared.end()) {
+          objects[k].push_back(object);
+        }
+      }
+      if (objects[k].empty()) {
+        break;
+      }
+    }
+    if (std::any_of(objects.begin(), objects.end(),
+                    [](const std::vector<std::string>& found) { return found.empty(); })) {
+      continue;
+    }
+    // Cada asignación de objetos a los parámetros, como un cuentakilómetros.
+    std::vector<std::size_t> choice(order.size(), 0);
+    while (true) {
+      std::map<std::size_t, std::string> binding;
+      for (std::size_t k = 0; k < order.size(); ++k) {
+        binding[order[k]] = objects[k][choice[k]];
+      }
+      const plantraces::GroundAtom left = ground(relation.left.term, binding);
+      std::vector<std::pair<std::size_t, plantraces::GroundAtom>> variables;
+      for (const std::size_t v : used) {
+        variables.emplace_back(v, ground(relation.right.variables[v], binding));
+      }
+      for (const plantraces::Observation& state : trace.states) {
+        const std::optional<double> l = state.value(left);
+        if (!l) {
+          continue;
+        }
+        std::vector<std::vector<double>> values(relation.right.variables.size(),
+                                                std::vector<double>{unknown});
+        bool known = true;
+        for (const auto& [v, term] : variables) {
+          const std::optional<double> x = state.value(term);
+          known = known && x.has_value();
+          values[v][0] = x.value_or(unknown);
+        }
+        const double r = known ? relation.right.expression.evaluate(values, 1).front() : unknown;
+        if (!std::isnan(r) && holds(relation.comparison, *l, r) != value) {
+          return false;
+        }
+      }
+      std::size_t k = order.size();
+      while (k > 0 && ++choice[k - 1] == objects[k - 1].size()) {
+        choice[k - 1] = 0;
+        --k;
+      }
+      if (k == 0) {
+        break;
+      }
+    }
+  }
+  return true;
 }
 
 }  // namespace datasets

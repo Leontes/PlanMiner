@@ -10,7 +10,9 @@
 #include <utility>
 #include <vector>
 
+#include "plantraces/trace.hpp"
 #include "rules/examples.hpp"
+#include "rules/legacy.hpp"
 
 namespace {
 
@@ -133,6 +135,53 @@ TEST(Learn, InterpretsTheRules) {
     EXPECT_EQ(rule.covered, 4);
     EXPECT_EQ(rule.conditions, (std::vector<rules::Condition>{{0, !rule.post}}));
   }
+}
+
+// La regla de las cotas: (<= (onboard ?0) (zoom ?0)) se cumple en los dos estados de antes, se
+// alcanza en uno y no se cumple en todos los estados de la traza (p1 lleva 2 con zoom 1). (<=
+// (onboard ?0) (cap ?0)) deja siempre holgura, y (>= (zoom ?0) 0) es un invariante.
+TEST(ContrastRule, ReachedBoundsThatAreNotInvariants) {
+  const std::vector<plantraces::Trace> traces = {plantraces::parse_trace(R"json({
+    "format": "pddldomains-trace", "version": 1, "domain": {"name": "d"},
+    "problem": {"name": "p"}, "world": "closed", "objects": {"p1": "plane", "p2": "plane"},
+    "states": [
+      {"step": 0, "time": 0, "true": [], "unknown": [],
+       "values": {"(onboard p1)": 0, "(zoom p1)": 1, "(cap p1)": 9}, "unknown_values": []},
+      {"step": 1, "time": 1, "true": [], "unknown": [],
+       "values": {"(onboard p1)": 2, "(zoom p1)": 1, "(cap p1)": 9}, "unknown_values": []}
+    ],
+    "actions": [{"step": 1, "time": 1, "name": "board", "arguments": ["p1"]}]
+  })json")};
+  const datasets::Attribute onboard{datasets::AttributeKind::fluent, {"onboard", {0}}};
+  const datasets::Attribute zoom{datasets::AttributeKind::fluent, {"zoom", {0}}};
+  // Dos aplicaciones: onboard 0 y 1 antes (zoom 1, cap 9), igual después.
+  const auto relation = [](datasets::Comparison comparison, const datasets::Attribute& left,
+                           datasets::Operand right, std::vector<double> column) {
+    return datasets::Relation{comparison, left, std::move(right), std::move(column)};
+  };
+  using datasets::Comparison;
+  const datasets::Operand zoom_operand = datasets::fluent_operand(zoom.term);
+  const datasets::Operand cap = datasets::fluent_operand({"cap", {0}});
+  const datasets::Operand zero{
+      datasets::OperandKind::expression, regression::Expression::constant(0), {}};
+  const std::vector<datasets::Relation> candidates = {
+      relation(Comparison::equal, onboard, zoom_operand, {0, 1, 0, 1}),
+      relation(Comparison::less, onboard, zoom_operand, {1, 0, 1, 0}),
+      relation(Comparison::greater, onboard, zoom_operand, {0, 0, 0, 0}),
+      relation(Comparison::equal, onboard, cap, {0, 0, 0, 0}),
+      relation(Comparison::less, onboard, cap, {1, 1, 1, 1}),
+      relation(Comparison::greater, onboard, cap, {0, 0, 0, 0}),
+      relation(Comparison::equal, zoom, zero, {0, 0, 0, 0}),
+      relation(Comparison::less, zoom, zero, {0, 0, 0, 0}),
+      relation(Comparison::greater, zoom, zero, {1, 1, 1, 1}),
+  };
+  const rules::LegacyRule rule = rules::contrast_rule(candidates, {}, {"plane"}, traces, 1.0);
+  EXPECT_EQ(rule.covered, -2);
+  datasets::Relation greater = candidates[2];
+  greater.column.clear();
+  const std::string name = rules::legacy_name(
+      {rules::AttributeKind::relation, onboard, greater, std::nullopt, {}}, {}, {"plane"});
+  EXPECT_EQ(rule.conditions, (std::vector<rules::Literal>{{name, "False"}}));
 }
 
 TEST(Learn, NoAttributesNoRules) {

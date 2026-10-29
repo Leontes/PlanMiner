@@ -265,10 +265,10 @@ TEST(NumericRelations, AccumulatorsAreNotCompared) {
     });
   };
   EXPECT_TRUE(mentions_y(datasets::numeric_relations(t, {})));
-  EXPECT_FALSE(mentions_y(datasets::numeric_relations(t, {}, {}, {"y"})));
+  EXPECT_FALSE(mentions_y(datasets::numeric_relations(t, {}, {}, {{"y"}, {}})));
   RelationOptions options;
   options.accumulators = false;
-  EXPECT_TRUE(mentions_y(datasets::numeric_relations(t, {}, options, {"y"})));
+  EXPECT_TRUE(mentions_y(datasets::numeric_relations(t, {}, options, {{"y"}, {}})));
 }
 
 // Una expresión de un efecto solo se descarta si usa un acumulador: las variables del efecto son
@@ -291,10 +291,59 @@ TEST(NumericRelations, OnlyTheExpressionsThatUseAnAccumulatorAreDropped) {
             0.0},
         {}};
   };
-  EXPECT_NE(find(datasets::numeric_relations(t, {effect(2)}, {}, {"y"}), "(< (x) (* (z) 2))"),
+  EXPECT_NE(find(datasets::numeric_relations(t, {effect(2)}, {}, {{"y"}, {}}), "(< (x) (* (z) 2))"),
             nullptr);
-  EXPECT_EQ(find(datasets::numeric_relations(t, {effect(1)}, {}, {"y"}), "(< (x) (* (y) 2))"),
+  EXPECT_EQ(find(datasets::numeric_relations(t, {effect(1)}, {}, {{"y"}, {}}), "(< (x) (* (y) 2))"),
             nullptr);
+}
+
+// Mejora: un fluente que cambia en otra acción del dominio también se compara. Aquí (x) y (y) no
+// cambian (fly-fast: onboard y zoom-limit), pero (x) cambia en otra acción (board).
+TEST(NumericRelations, FluentsThatChangeInTheDomain) {
+  const datasets::Table t = table({{1, 3, 1, 3}, {2, 3, 2, 3}});
+  EXPECT_TRUE(datasets::numeric_relations(t, {}).empty());
+  EXPECT_EQ(texts(datasets::numeric_relations(t, {}, {}, {{}, {"x"}})),
+            (std::vector<std::string>{"(= (x) (y))", "(< (x) (y))"}));
+  // Las candidatas incluyen las constantes: (> (x) (y)) es falsa en todas las filas.
+  EXPECT_EQ(texts(datasets::candidate_relations(t, {}, {}, {{}, {"x"}})),
+            (std::vector<std::string>{"(= (x) (y))", "(< (x) (y))", "(> (x) (y))"}));
+}
+
+// Dos aviones: p1 lleva más pasajeros que su zoom-limit en el segundo estado; p2, nunca.
+std::vector<plantraces::Trace> planes() {
+  return {plantraces::parse_trace(R"json({
+    "format": "pddldomains-trace", "version": 1, "domain": {"name": "d"},
+    "problem": {"name": "p"}, "world": "closed", "objects": {"p1": "plane", "p2": "plane"},
+    "states": [
+      {"step": 0, "time": 0, "true": [], "unknown": [],
+       "values": {"(onboard p1)": 0, "(zoom p1)": 1, "(onboard p2)": 0, "(zoom p2)": 4},
+       "unknown_values": []},
+      {"step": 1, "time": 1, "true": [], "unknown": [],
+       "values": {"(onboard p1)": 2, "(zoom p1)": 1, "(onboard p2)": 1, "(zoom p2)": 4},
+       "unknown_values": []}
+    ],
+    "actions": [{"step": 1, "time": 1, "name": "board", "arguments": ["p1"]}]
+  })json")};
+}
+
+// Una relación es un invariante si vale lo mismo en todos los estados, con todos los objetos de
+// los tipos de sus parámetros. (> (onboard ?0) (zoom ?0)) es cierta con p1 en el segundo estado.
+TEST(Invariant, InEveryStateWithEveryObject) {
+  const LiftedAtom onboard{"onboard", {0}};
+  const datasets::Relation greater{datasets::Comparison::greater,
+                                   {AttributeKind::fluent, onboard},
+                                   datasets::fluent_operand({"zoom", {0}}),
+                                   {}};
+  EXPECT_FALSE(datasets::invariant(greater, false, planes(), {"plane"}));
+  // (>= (onboard ?0) 0): (< (onboard ?0) 0) es siempre falsa.
+  const datasets::Relation negative{
+      datasets::Comparison::less,
+      {AttributeKind::fluent, onboard},
+      {datasets::OperandKind::expression, Expression::constant(0), {}},
+      {}};
+  EXPECT_TRUE(datasets::invariant(negative, false, planes(), {"plane"}));
+  // Sin objetos del tipo, no hay nada que lo contradiga.
+  EXPECT_TRUE(datasets::invariant(greater, false, planes(), {"truck"}));
 }
 
 // Mejora: las constantes se descartan mirando solo los valores conocidos. El original compara con

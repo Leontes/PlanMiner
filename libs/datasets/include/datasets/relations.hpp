@@ -93,6 +93,17 @@ struct RelationOptions {
   static RelationOptions original();
 };
 
+/// Lo que se sabe de los fluentes en todo el dominio, para las relaciones de cada acción. Por su
+/// nombre.
+struct DomainFluents {
+  /// Los acumuladores de las trazas (accumulators).
+  std::set<std::string> accumulators;
+  /// Los fluentes que cambian en alguna acción (los de numeric_effects de cada una): cuentan como
+  /// si cambiaran también en esta, y en fly-fast se compara onboard, que cambia en board y en
+  /// debark, con zoom-limit.
+  std::set<std::string> changing;
+};
+
 /// Los acumuladores de las trazas: los fluentes cuyos valores no bajan nunca de un estado al
 /// siguiente (entre valores conocidos, en ninguna traza y de ningún objeto) y suben alguna vez,
 /// por su nombre. Son los que suman lo que cuesta el plan, como total-cost o total-fuel-used.
@@ -105,10 +116,27 @@ std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces)
 /// según las opciones; en ese orden, y cada uno en el orden de la tabla. Una expresión que es un
 /// solo fluente no se usa (ya se compara con los demás fluentes), y una que está en dos efectos se
 /// usa una vez. Se descartan las relaciones que no se conocen en ninguna fila y las constantes.
-/// accumulators son los acumuladores de las trazas (accumulators), por su nombre.
+/// domain es lo que se sabe de los fluentes en todo el dominio.
 std::vector<Relation> numeric_relations(const Table& table,
                                         const std::vector<FluentChange>& changes,
                                         const RelationOptions& options = {},
-                                        const std::set<std::string>& accumulators = {});
+                                        const DomainFluents& domain = {});
+
+/// Las relaciones de numeric_relations y también las que valen lo mismo en todas las filas en que
+/// se conocen: las candidatas a precondiciones que no distinguen el estado de antes del de después
+/// (rules::contrast_rule), como (> (onboard ?0) (zoom-limit ?0)), falsa en todas las filas de
+/// fly-fast.
+std::vector<Relation> candidate_relations(const Table& table,
+                                          const std::vector<FluentChange>& changes,
+                                          const RelationOptions& options = {},
+                                          const DomainFluents& domain = {});
+
+/// Si la relación vale value en todos los estados de las trazas, con cualquier objeto de los tipos
+/// de sus parámetros (types[p], el del parámetro p de la acción), en que se conocen sus valores: es
+/// un invariante, y que se cumpla antes de la acción no dice nada de ella. Una relación sin
+/// expresión a la derecha (con lo que baja un fluente) o con el instante no se puede comprobar en
+/// otros estados y cuenta como invariante.
+bool invariant(const Relation& relation, bool value, const std::vector<plantraces::Trace>& traces,
+               const std::vector<std::string>& types);
 
 }  // namespace datasets

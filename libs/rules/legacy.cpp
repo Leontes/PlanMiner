@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <map>
 #include <sstream>
+#include <utility>
 #include <variant>
 
 namespace rules {
@@ -140,6 +143,66 @@ std::vector<LegacyRule> legacy_rules(const std::vector<Rule>& rules, const Examp
     result.push_back(std::move(legacy));
   }
   return result;
+}
+
+LegacyRule contrast_rule(const std::vector<datasets::Relation>& candidates, const Examples& numeric,
+                         const std::vector<std::string>& types,
+                         const std::vector<plantraces::Trace>& traces, double min_support) {
+  // Las tres comparaciones de cada pareja (lado izquierdo y derecho).
+  std::map<std::pair<std::string, std::string>,
+           std::map<datasets::Comparison, const datasets::Relation*>>
+      pairs;
+  for (const datasets::Relation& relation : candidates) {
+    const std::string left = relation.left.kind == datasets::AttributeKind::time
+                                 ? "time"
+                                 : plantraces::to_string(relation.left.term);
+    pairs[{left, datasets::to_string(relation.right)}][relation.comparison] = &relation;
+  }
+
+  LegacyRule rule;
+  for (const auto& [key, comparisons] : pairs) {
+    const auto equal = comparisons.find(datasets::Comparison::equal);
+    if (equal == comparisons.end()) {
+      continue;
+    }
+    const std::vector<double>& equality = equal->second->column;
+    // Las filas de antes son la primera mitad.
+    const std::size_t n = equality.size() / 2;
+    rule.covered = -static_cast<int>(n);
+    const bool reached =
+        std::any_of(equality.begin(), equality.begin() + static_cast<std::ptrdiff_t>(n),
+                    [](double value) { return value == 1.0; });
+    if (!reached) {
+      continue;
+    }
+    // <= es (> ...) falsa y >= es (< ...) falsa.
+    for (const datasets::Comparison strict :
+         {datasets::Comparison::greater, datasets::Comparison::less}) {
+      const auto found = comparisons.find(strict);
+      if (found == comparisons.end()) {
+        continue;
+      }
+      const datasets::Relation& relation = *found->second;
+      std::size_t known = 0;
+      std::size_t violated = 0;
+      for (std::size_t row = 0; row < n; ++row) {
+        if (!std::isnan(relation.column[row])) {
+          ++known;
+          violated += relation.column[row] == 1.0 ? 1U : 0U;
+        }
+      }
+      if (known > 0 &&
+          static_cast<double>(known - violated) >= min_support * static_cast<double>(known) &&
+          !datasets::invariant(relation, false, traces, types)) {
+        datasets::Relation description = relation;
+        description.column.clear();
+        const Attribute attribute{
+            AttributeKind::relation, relation.left, std::move(description), std::nullopt, {}};
+        rule.conditions.push_back({legacy_name(attribute, numeric, types), "False"});
+      }
+    }
+  }
+  return rule;
 }
 
 }  // namespace rules

@@ -199,6 +199,7 @@ Options Options::original() {
   options.equality = false;
   options.aliasing = false;
   options.exact_without_noise = false;
+  options.contrast = false;
   return options;
 }
 
@@ -206,35 +207,58 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   LearnedDomain domain;
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
-  const std::set<std::string> accumulators = datasets::accumulators(traces);
+  const std::map<std::string, std::vector<plantraces::Transition>> actions =
+      plantraces::group_by_action(traces);
+
+  // Primero las tablas y los efectos numéricos de todas las acciones: las relaciones de cada una
+  // dependen de qué fluentes cambian en el dominio. Ni la tabla ni la regresión usan rand().
+  std::map<std::string, datasets::Table> tables;
+  std::map<std::string, std::vector<datasets::FluentChange>> effects;
+  datasets::DomainFluents fluents{datasets::accumulators(traces), {}};
+  for (const auto& [name, transitions] : actions) {
+    datasets::Table table = datasets::build_table(vocabulary, transitions);
+    if (options.aliasing) {
+      datasets::hide_aliased_atoms(table, transitions);
+    }
+    effects[name] = datasets::numeric_effects(table, options.effects);
+    for (const datasets::FluentChange& change : effects[name]) {
+      fluents.changing.insert(change.fluent.name);
+    }
+    tables.emplace(name, std::move(table));
+  }
+
+  const bool noiseless = plantraces::frame_changes(traces) == 0.0;
   rules::FusionOptions fusion = options.fusion;
-  if (options.exact_without_noise && plantraces::frame_changes(traces) == 0.0) {
+  if (options.exact_without_noise && noiseless) {
     fusion.min_support = 1.0;
   }
-  for (const auto& [name, transitions] : plantraces::group_by_action(traces)) {
+  for (const auto& [name, transitions] : actions) {
     LearnedAction action;
     action.name = name;
     for (const std::string& object : transitions.front().action->arguments) {
       action.argument_types.push_back(transitions.front().trace->objects.at(object).front());
     }
-    datasets::Table table = datasets::build_table(vocabulary, transitions);
-    if (options.aliasing) {
-      datasets::hide_aliased_atoms(table, transitions);
-    }
-
+    const datasets::Table& table = tables.at(name);
     action.logic = rules::logic_examples(table);
     std::vector<rules::LegacyRule> rules =
         rules::legacy_rules(rules::learn(action.logic), action.logic, action.argument_types);
 
-    const std::vector<datasets::FluentChange> changes =
-        datasets::numeric_effects(table, options.effects);
+    const std::vector<datasets::FluentChange>& changes = effects.at(name);
     action.numeric = rules::numeric_examples(
         table, changes,
-        datasets::numeric_relations(table, changes, options.relations, accumulators),
+        datasets::numeric_relations(table, changes, options.relations, {fluents.accumulators, {}}),
         [] { return std::rand(); }, options.examples);
     const std::vector<rules::LegacyRule> numeric =
         rules::legacy_rules(rules::learn(action.numeric), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());
+    if (options.contrast && noiseless) {
+      rules::LegacyRule contrast = rules::contrast_rule(
+          datasets::candidate_relations(table, changes, options.relations, fluents), action.numeric,
+          action.argument_types, traces, fusion.min_support);
+      if (!contrast.conditions.empty()) {
+        rules.push_back(std::move(contrast));
+      }
+    }
 
     action.fused = rules::fuse(
         rules, header_of(domain.hierarchy.actions, name),
