@@ -77,6 +77,40 @@ TEST(BuildTable, OneRowPerStateAndOneColumnPerKnownAtom) {
   EXPECT_EQ(at(table, "time", 1), 1);
 }
 
+// move ?from ?to: de a a b y después de b a b. En la segunda, (at-robby b) se expresa con ?0, y el
+// borrado de (at-robby ?0) y la adición de (at-robby ?1) se anulan.
+TEST(HideAliasedAtoms, TheAtomsOfTheSharedParameters) {
+  const std::vector<plantraces::Trace> traces = {plantraces::parse_trace(R"json({
+    "format": "pddldomains-trace", "version": 1, "domain": {"name": "gripper"},
+    "problem": {"name": "p"}, "world": "closed",
+    "objects": {"a": "room", "b": "room", "r": "ball"},
+    "states": [
+      {"step": 0, "time": 0, "true": ["(at-robby a)", "(at r a)"], "unknown": [], "values": {},
+       "unknown_values": []},
+      {"step": 1, "time": 1, "true": ["(at-robby b)", "(at r a)"], "unknown": [], "values": {},
+       "unknown_values": []},
+      {"step": 2, "time": 2, "true": ["(at-robby b)", "(at r a)"], "unknown": [], "values": {},
+       "unknown_values": []}
+    ],
+    "actions": [
+      {"step": 1, "time": 1, "name": "move", "arguments": ["a", "b"]},
+      {"step": 2, "time": 2, "name": "move", "arguments": ["b", "b"]}
+    ]
+  })json")};
+  const auto actions = plantraces::group_by_action(traces);
+  datasets::Table table = datasets::build_table(plantraces::vocabulary(traces), actions.at("move"));
+  // Las filas: antes de cada aplicación (0, 1) y después (2, 3).
+  EXPECT_EQ(at(table, "(at-robby ?0)", 3), 1);
+
+  datasets::hide_aliased_atoms(table, actions.at("move"));
+  EXPECT_EQ(at(table, "(at-robby ?0)", 3), -1);
+  EXPECT_EQ(at(table, "(at-robby ?0)", 1), -1);  // también antes
+  EXPECT_EQ(at(table, "(at-robby ?0)", 0), 1);   // la aplicación sin parámetros repetidos, no
+  EXPECT_EQ(at(table, "(at-robby ?0)", 2), 0);
+  EXPECT_EQ(at(table, "(at-robby ?1)", 2), 1);
+  EXPECT_EQ(at(table, "time", 3), 2);
+}
+
 TEST(BuildTable, AMissingStateOnlyKnowsItsTime) {
   const std::vector<plantraces::Trace> traces = blocks();
   const auto actions = plantraces::group_by_action(traces);

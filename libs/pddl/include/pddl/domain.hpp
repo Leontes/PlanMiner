@@ -37,6 +37,11 @@ struct LearnedDomain {
 /// original y Options{}, el mejorado: con las mejoras aprobadas de cada parte y, en lo que aún no
 /// se ha decidido (los valores discretizados que recibe INSLV), como el original.
 struct Options {
+  /// En las aplicaciones en que un objeto ocupa varios parámetros (move ?from ?to con ?from =
+  /// ?to), los átomos sobre esos parámetros son desconocidos (datasets::hide_aliased_atoms): un
+  /// borrado y una adición del mismo átomo se anulan, así que el efecto no se ve. Si no, como en
+  /// el original, esas aplicaciones contradicen el borrado.
+  bool aliasing = true;
   datasets::EffectOptions effects;
   datasets::RelationOptions relations;
   /// Sin los atributos de cambio (examples.changes), los efectos numéricos salen de la regresión,

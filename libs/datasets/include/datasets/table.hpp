@@ -55,4 +55,12 @@ struct Table {
 Table build_table(const plantraces::Vocabulary& vocabulary,
                   const std::vector<plantraces::Transition>& transitions);
 
+/// En las aplicaciones en que un objeto ocupa varios parámetros (move ?from ?to con ?from = ?to),
+/// los átomos sobre esos parámetros pasan a ser desconocidos, antes y después. El átomo se expresa
+/// con el primero de ellos (plantraces::expressible), y un borrado y una adición del mismo átomo se
+/// anulan: el efecto no se ve, y la fila de después contradiría al borrado de las demás. Se oculta
+/// también la de antes para no desequilibrar las dos clases: un átomo conocido solo antes
+/// parecería borrarse. transitions son las de la tabla.
+void hide_aliased_atoms(Table& table, const std::vector<plantraces::Transition>& transitions);
+
 }  // namespace datasets

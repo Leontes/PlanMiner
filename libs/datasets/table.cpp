@@ -1,5 +1,6 @@
 #include "datasets/table.hpp"
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <optional>
@@ -76,6 +77,23 @@ Table build_table(const plantraces::Vocabulary& vocabulary,
     }
   }
   return builder.take();
+}
+
+void hide_aliased_atoms(Table& table, const std::vector<plantraces::Transition>& transitions) {
+  for (std::size_t i = 0; i < transitions.size(); ++i) {
+    const std::vector<std::string>& arguments = transitions[i].action->arguments;
+    const auto shared = [&arguments](std::size_t parameter) {
+      return std::count(arguments.begin(), arguments.end(), arguments[parameter]) > 1;
+    };
+    for (std::size_t a = 0; a < table.attributes.size(); ++a) {
+      const std::vector<std::size_t>& parameters = table.attributes[a].term.parameters;
+      if (table.attributes[a].kind == AttributeKind::atom &&
+          std::any_of(parameters.begin(), parameters.end(), shared)) {
+        table.columns[a][i] = unknown;
+        table.columns[a][table.transitions + i] = unknown;
+      }
+    }
+  }
 }
 
 }  // namespace datasets

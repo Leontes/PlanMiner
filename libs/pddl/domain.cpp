@@ -196,6 +196,7 @@ Options Options::original() {
   options.fusion = rules::FusionOptions::original();
   options.numeric_fluents = false;
   options.equality = false;
+  options.aliasing = false;
   return options;
 }
 
@@ -209,7 +210,10 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     for (const std::string& object : transitions.front().action->arguments) {
       action.argument_types.push_back(transitions.front().trace->objects.at(object).front());
     }
-    const datasets::Table table = datasets::build_table(vocabulary, transitions);
+    datasets::Table table = datasets::build_table(vocabulary, transitions);
+    if (options.aliasing) {
+      datasets::hide_aliased_atoms(table, transitions);
+    }
 
     action.logic = rules::logic_examples(table);
     std::vector<rules::LegacyRule> rules =
