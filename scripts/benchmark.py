@@ -34,6 +34,7 @@ Uso::
     benchmark.py generate [banco] [--output DIR] [--jobs N] [--collections PATRÓN...]
         [--update-lock]
     benchmark.py run [banco] [--output DIR] [--jobs N] [--collections PATRÓN...] [--force]
+        [--configurations NOMBRE...]
     benchmark.py report [banco] [--output DIR]
 
 Códigos de salida: 0 si todo va bien; 1 si las huellas no coinciden con el .lock.json; 2 si los
@@ -1022,7 +1023,13 @@ def run(
     jobs: int,
     patterns: Sequence[str],
     force: bool,
+    configurations: Sequence[str] = (),
 ) -> int:
+    unknown = set(configurations) - set(definition.planminer.configurations)
+    if unknown:
+        raise BenchmarkError(
+            f"configuraciones que no son de la definición: {', '.join(sorted(unknown))}"
+        )
     check_memory(
         jobs, max(definition.planminer.memory_limit + 256, definition.planner.memory_limit + 512)
     )
@@ -1036,6 +1043,7 @@ def run(
         for fold in range(definition.folds)
         for variant in definition.variants
         for configuration in definition.planminer.configurations
+        if not configurations or configuration in configurations
     ]
     if force:
         for task in tasks:
@@ -1305,6 +1313,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.choices["run"].add_argument(
         "--force", action="store_true", help="repite los aprendizajes que ya tienen resultado"
     )
+    commands.choices["run"].add_argument(
+        "--configurations",
+        nargs="+",
+        default=[],
+        metavar="NOMBRE",
+        help="solo estas configuraciones de PlanMiner (por defecto, las de la definición)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -1320,7 +1335,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                 definition, output, tools, args.jobs, args.collections, args.update_lock
             )
         tools = Tools(args.validate, args.planminer)
-        return run(definition, output, tools, args.jobs, args.collections, args.force)
+        return run(
+            definition,
+            output,
+            tools,
+            args.jobs,
+            args.collections,
+            args.force,
+            args.configurations,
+        )
     except BenchmarkError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

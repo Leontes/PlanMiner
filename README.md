@@ -184,6 +184,7 @@ Other options:
 |--------|-----|
 | `--jobs N` | parallel jobs (3 by default); they must fit in 80 % of the available memory |
 | `--collections PATTERN...` | only these collections (`'ipc-2011/*'`) |
+| `--configurations NAME...` | with `run`, only these PlanMiner configurations (`original`, `improved`) |
 | `--output DIR` | the output directory (by default, `build/benchmark/<benchmark>`) |
 | `--planminer FILE`, `--validate FILE` | the PlanMiner and VAL executables |
 

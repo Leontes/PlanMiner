@@ -186,6 +186,7 @@ Otras opciones:
 |--------|----------|
 | `--jobs N` | trabajos en paralelo (3 por defecto); tienen que caber en el 80 % de la memoria disponible |
 | `--collections PATRÓN...` | solo estas colecciones (`'ipc-2011/*'`) |
+| `--configurations NOMBRE...` | con `run`, solo estas configuraciones de PlanMiner (`original`, `improved`) |
 | `--output DIR` | el directorio de salida (por defecto, `build/benchmark/<banco>`) |
 | `--planminer FICHERO`, `--validate FICHERO` | los ejecutables de PlanMiner y de VAL |
 
