@@ -5,11 +5,13 @@
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "datasets/relations.hpp"
+#include "plantraces/trace.hpp"
 #include "traces.hpp"
 
 namespace {
@@ -200,6 +202,99 @@ TEST(NumericRelations, NoiseDoesNotMakeConstantsChange) {
   RelationOptions options = original_options();
   options.changing_pairs = true;
   EXPECT_TRUE(datasets::numeric_relations(t, {}, options).empty());
+}
+
+// Mejora: (total-cost) no se compara con nada. Crece a lo largo de la traza, y sus relaciones son
+// coincidencias: aquí, (> (x) (total-cost)) en todas las filas menos la última.
+TEST(NumericRelations, TheTotalCostIsNotCompared) {
+  datasets::Table t = table({{5, 3, 4, 2}, {0, 1, 1, 2}});
+  t.attributes[1].term.name = "total-cost";
+  const LiftedAtom cost{"total-cost", {}};
+  const std::vector<datasets::FluentChange> changes = {
+      {cost,
+       datasets::NumericEffect{
+           cost, datasets::EffectKind::increase, Expression::constant(1), {cost}, 0.0},
+       {}}};
+  const auto mentions_cost = [](const std::vector<datasets::Relation>& relations) {
+    const std::vector<std::string> all = texts(relations);
+    return std::any_of(all.begin(), all.end(), [](const std::string& text) {
+      return text.find("total-cost") != std::string::npos;
+    });
+  };
+
+  RelationOptions options;
+  options.action_costs = false;
+  EXPECT_TRUE(mentions_cost(datasets::numeric_relations(t, changes, options)));
+  EXPECT_FALSE(mentions_cost(datasets::numeric_relations(t, changes)));
+  EXPECT_TRUE(mentions_cost(datasets::numeric_relations(t, changes, original_options())));
+}
+
+// Los acumuladores: (used) no baja nunca y sube; (fuel p) baja y sube; (cap p) no cambia. Un valor
+// desconocido no cuenta.
+TEST(Accumulators, NeverDecreaseAndIncreaseSometime) {
+  const std::vector<plantraces::Trace> traces = {plantraces::parse_trace(R"json({
+    "format": "pddldomains-trace", "version": 1, "domain": {"name": "d"},
+    "problem": {"name": "p"}, "world": "closed", "objects": {"p": "plane"},
+    "states": [
+      {"step": 0, "time": 0, "true": [], "unknown": [],
+       "values": {"(used)": 0, "(fuel p)": 5, "(cap p)": 9}, "unknown_values": []},
+      {"step": 1, "time": 1, "true": [], "unknown": [],
+       "values": {"(used)": 3, "(fuel p)": 2, "(cap p)": 9}, "unknown_values": []},
+      {"step": 2, "time": 2, "true": [], "unknown": [],
+       "values": {"(fuel p)": 9, "(cap p)": 9}, "unknown_values": ["(used)"]},
+      {"step": 3, "time": 3, "true": [], "unknown": [],
+       "values": {"(used)": 1, "(fuel p)": 9, "(cap p)": 9}, "unknown_values": []}
+    ],
+    "actions": [
+      {"step": 1, "time": 1, "name": "fly", "arguments": ["p"]},
+      {"step": 2, "time": 2, "name": "refuel", "arguments": ["p"]},
+      {"step": 3, "time": 3, "name": "wait", "arguments": ["p"]}
+    ]
+  })json")};
+  EXPECT_EQ(datasets::accumulators(traces), (std::set<std::string>{"used"}));
+}
+
+// Mejora: los acumuladores no se comparan con nada. (y) crece a lo largo de la traza, y (< (x) (y))
+// solo se cumple a partir de un momento.
+TEST(NumericRelations, AccumulatorsAreNotCompared) {
+  const datasets::Table t = table({{2, 2, 1, 1}, {1, 5, 3, 6}});
+  const auto mentions_y = [](const std::vector<datasets::Relation>& relations) {
+    const std::vector<std::string> all = texts(relations);
+    return std::any_of(all.begin(), all.end(), [](const std::string& text) {
+      return text.find("(y)") != std::string::npos;
+    });
+  };
+  EXPECT_TRUE(mentions_y(datasets::numeric_relations(t, {})));
+  EXPECT_FALSE(mentions_y(datasets::numeric_relations(t, {}, {}, {"y"})));
+  RelationOptions options;
+  options.accumulators = false;
+  EXPECT_TRUE(mentions_y(datasets::numeric_relations(t, {}, options, {"y"})));
+}
+
+// Una expresión de un efecto solo se descarta si usa un acumulador: las variables del efecto son
+// todos los fluentes de la regresión. En zenotravel, la de fuel, (* (distance ?1 ?2) (fast-burn
+// ?0)), no usa total-fuel-used aunque esté entre sus variables.
+TEST(NumericRelations, OnlyTheExpressionsThatUseAnAccumulatorAreDropped) {
+  const datasets::Table t = table({{5, 2, 2, 0}, {3, 1, 3, 1}, {1, 2, 1, 2}});
+  const LiftedAtom x{"x", {}};
+  const LiftedAtom y{"y", {}};
+  const LiftedAtom z{"z", {}};
+  const auto effect = [&](std::size_t variable) {
+    return datasets::FluentChange{
+        x,
+        datasets::NumericEffect{
+            x,
+            datasets::EffectKind::decrease,
+            Expression::binary(Operation::multiply, Expression::variable(variable),
+                               Expression::constant(2)),
+            {x, y, z},
+            0.0},
+        {}};
+  };
+  EXPECT_NE(find(datasets::numeric_relations(t, {effect(2)}, {}, {"y"}), "(< (x) (* (z) 2))"),
+            nullptr);
+  EXPECT_EQ(find(datasets::numeric_relations(t, {effect(1)}, {}, {"y"}), "(< (x) (* (y) 2))"),
+            nullptr);
 }
 
 // Mejora: las constantes se descartan mirando solo los valores conocidos. El original compara con

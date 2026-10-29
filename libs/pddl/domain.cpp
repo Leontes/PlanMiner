@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <map>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -204,6 +205,7 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   LearnedDomain domain;
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
+  const std::set<std::string> accumulators = datasets::accumulators(traces);
   for (const auto& [name, transitions] : plantraces::group_by_action(traces)) {
     LearnedAction action;
     action.name = name;
@@ -222,7 +224,8 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     const std::vector<datasets::FluentChange> changes =
         datasets::numeric_effects(table, options.effects);
     action.numeric = rules::numeric_examples(
-        table, changes, datasets::numeric_relations(table, changes, options.relations),
+        table, changes,
+        datasets::numeric_relations(table, changes, options.relations, accumulators),
         [] { return std::rand(); }, options.examples);
     const std::vector<rules::LegacyRule> numeric =
         rules::legacy_rules(rules::learn(action.numeric), action.numeric, action.argument_types);

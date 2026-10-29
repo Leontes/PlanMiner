@@ -2,6 +2,7 @@
 // como atributos lógicos, de los que salen las precondiciones numéricas.
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -79,9 +80,23 @@ struct RelationOptions {
   /// Si no, no hay relaciones con el instante, que no es un fluente. El original las descartaba al
   /// escribir el dominio, pero cuentan para lo que aprende INSLV.
   bool time = false;
+  /// (total-cost) no se compara con nada. Con :action-costs es el coste del plan, que solo puede
+  /// aparecer en los efectos y en la métrica; como crece a lo largo de la traza, sus relaciones
+  /// son coincidencias, como (> (total-cost) 1), que hacen inaplicable la acción al principio.
+  bool action_costs = true;
+  /// Los acumuladores (accumulators) no se comparan con nada. Suman lo que cuesta el plan, como
+  /// (total-fuel-used) en zenotravel, y crecen a lo largo de la traza: sus relaciones son
+  /// coincidencias que dependen de cuándo se aplica la acción. Una acción aplicada siempre después
+  /// de volar aprende (< (onboard ?0) (total-fuel-used)), y no se puede aplicar al principio.
+  bool accumulators = true;
 
   static RelationOptions original();
 };
+
+/// Los acumuladores de las trazas: los fluentes cuyos valores no bajan nunca de un estado al
+/// siguiente (entre valores conocidos, en ninguna traza y de ningún objeto) y suben alguna vez,
+/// por su nombre. Son los que suman lo que cuesta el plan, como total-cost o total-fuel-used.
+std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces);
 
 /// Las relaciones numéricas de la acción de la tabla. changes son los efectos numéricos de la
 /// acción (numeric_effects), de los que se toman las expresiones; el original no los usa.
@@ -90,9 +105,10 @@ struct RelationOptions {
 /// según las opciones; en ese orden, y cada uno en el orden de la tabla. Una expresión que es un
 /// solo fluente no se usa (ya se compara con los demás fluentes), y una que está en dos efectos se
 /// usa una vez. Se descartan las relaciones que no se conocen en ninguna fila y las constantes.
-///
+/// accumulators son los acumuladores de las trazas (accumulators), por su nombre.
 std::vector<Relation> numeric_relations(const Table& table,
                                         const std::vector<FluentChange>& changes,
-                                        const RelationOptions& options = {});
+                                        const RelationOptions& options = {},
+                                        const std::set<std::string>& accumulators = {});
 
 }  // namespace datasets

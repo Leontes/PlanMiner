@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <utility>
@@ -29,6 +30,26 @@ bool holds(Comparison comparison, double left, double right) {
       return left > right;
   }
   return false;
+}
+
+// (total-cost), el coste del plan con :action-costs.
+bool is_total_cost(const plantraces::LiftedAtom& fluent) {
+  return fluent.name == "total-cost" && fluent.parameters.empty();
+}
+
+// Si la expresión usa alguna variable cuyo fluente cumple predicate.
+template <typename Predicate>
+bool uses(const Expression& expression, const std::vector<plantraces::LiftedAtom>& variables,
+          const Predicate& predicate) {
+  switch (expression.operation()) {
+    case Operation::constant:
+      return false;
+    case Operation::variable:
+      return predicate(variables[expression.index()]);
+    default:
+      return uses(expression.left(), variables, predicate) ||
+             uses(expression.right(), variables, predicate);
+  }
 }
 
 // Si la relación vale distinto en alguna de las filas en que se conoce.
@@ -135,13 +156,42 @@ RelationOptions RelationOptions::original() {
   options.changing_pairs = false;
   options.known_constants = false;
   options.time = true;
+  options.action_costs = false;
+  options.accumulators = false;
   return options;
+}
+
+std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces) {
+  std::set<std::string> increase;
+  std::set<std::string> decrease;
+  for (const plantraces::Trace& trace : traces) {
+    for (std::size_t i = 0; i + 1 < trace.states.size(); ++i) {
+      for (const auto& [term, after] : trace.states[i + 1].values) {
+        const std::optional<double> before = trace.states[i].value(term);
+        if (before && after > *before) {
+          increase.insert(term.name);
+        } else if (before && after < *before) {
+          decrease.insert(term.name);
+        }
+      }
+    }
+  }
+  std::set<std::string> result;
+  std::set_difference(increase.begin(), increase.end(), decrease.begin(), decrease.end(),
+                      std::inserter(result, result.end()));
+  return result;
 }
 
 std::vector<Relation> numeric_relations(const Table& table,
                                         const std::vector<FluentChange>& changes,
-                                        const RelationOptions& options) {
+                                        const RelationOptions& options,
+                                        const std::set<std::string>& accumulators) {
   const std::size_t n = table.transitions;
+  // Lo que no se compara: (total-cost) y los acumuladores, según las opciones.
+  const auto excluded = [&](const plantraces::LiftedAtom& fluent) {
+    return (options.action_costs && is_total_cost(fluent)) ||
+           (options.accumulators && accumulators.contains(fluent.name));
+  };
 
   const auto side = [&](Attribute attribute, Operand operand, std::vector<double> column) {
     Side result{std::move(attribute), std::move(operand), std::move(column), false};
@@ -165,6 +215,9 @@ std::vector<Relation> numeric_relations(const Table& table,
   for (std::size_t a = 0; a < table.attributes.size(); ++a) {
     const Attribute& attribute = table.attributes[a];
     if (attribute.kind == AttributeKind::fluent) {
+      if (excluded(attribute.term)) {
+        continue;
+      }
       numeric.push_back(side(attribute, fluent_operand(attribute.term), table.columns[a]));
     } else if (attribute.kind == AttributeKind::time && options.time) {
       numeric.push_back(side(attribute, {OperandKind::expression, Expression::variable(0), {}},
@@ -183,6 +236,9 @@ std::vector<Relation> numeric_relations(const Table& table,
       const NumericEffect& effect = *change.effect;
       // Un fluente solo ya se compara con los demás fluentes.
       if (effect.expression.operation() == Operation::variable) {
+        continue;
+      }
+      if (uses(effect.expression, effect.variables, excluded)) {
         continue;
       }
       Operand operand{OperandKind::expression, effect.expression, effect.variables};
