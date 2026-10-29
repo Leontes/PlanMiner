@@ -55,4 +55,20 @@ TEST(Expression, EqualityIsStructural) {
   EXPECT_FALSE(example() == swapped);
 }
 
+// Las operaciones entre constantes se sustituyen por su valor, también dentro de otras; una
+// división por 0 se queda.
+TEST(FoldConstants, OperationsBetweenConstants) {
+  const Expression product =
+      Expression::binary(Operation::multiply, Expression::constant(10), Expression::constant(3));
+  EXPECT_EQ(regression::fold_constants(product), Expression::constant(30));
+
+  const Expression sum = Expression::binary(Operation::add, Expression::variable(0), product);
+  EXPECT_EQ(regression::fold_constants(sum).to_string({"(x)"}), "(+ (x) 30)");
+
+  const Expression by_zero =
+      Expression::binary(Operation::divide, Expression::constant(1), Expression::constant(0));
+  EXPECT_EQ(regression::fold_constants(by_zero), by_zero);
+  EXPECT_EQ(regression::fold_constants(Expression::variable(2)), Expression::variable(2));
+}
+
 }  // namespace

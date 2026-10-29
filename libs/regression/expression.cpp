@@ -132,4 +132,20 @@ bool Expression::operator==(const Expression& other) const {
   }
 }
 
+Expression fold_constants(const Expression& expression) {
+  if (expression.is_leaf()) {
+    return expression;
+  }
+  Expression left = fold_constants(expression.left());
+  Expression right = fold_constants(expression.right());
+  if (left.operation() == Operation::constant && right.operation() == Operation::constant) {
+    const double value =
+        Expression::binary(expression.operation(), left, right).evaluate({}, 1).front();
+    if (std::isfinite(value)) {
+      return Expression::constant(value);
+    }
+  }
+  return Expression::binary(expression.operation(), std::move(left), std::move(right));
+}
+
 }  // namespace regression

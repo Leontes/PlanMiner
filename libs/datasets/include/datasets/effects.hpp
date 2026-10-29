@@ -51,6 +51,10 @@ struct EffectOptions {
   /// Si no, cualquier cambio cuenta, como en el original.
   bool null_model = true;
   double max_unchanged = 0.75;
+  /// Las operaciones entre constantes de la expresión se sustituyen por su valor
+  /// (regression::fold_constants): (* 10 3) pasa a 30. Si no, como en el original, la expresión
+  /// queda como la construye la búsqueda.
+  bool fold_constants = true;
   /// La búsqueda.
   regression::Options search;
 

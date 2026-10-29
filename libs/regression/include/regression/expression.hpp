@@ -49,4 +49,9 @@ class Expression {
   std::shared_ptr<const Node> node_;
 };
 
+/// La expresión con cada operación entre constantes sustituida por su valor: (* 10 3) pasa a 30.
+/// Las búsquedas construyen las constantes que no tienen con operaciones. Una operación que no da
+/// un valor finito (una división por 0) se queda.
+Expression fold_constants(const Expression& expression);
+
 }  // namespace regression

@@ -68,6 +68,7 @@ EffectOptions EffectOptions::original() {
   options.before_state = false;
   options.effect_forms = false;
   options.null_model = false;
+  options.fold_constants = false;
   options.search = regression::Options::original();
   return options;
 }
@@ -135,6 +136,9 @@ std::vector<FluentChange> numeric_effects(const Table& table, const EffectOption
           effect.kind = rewritten->first;
           effect.expression = rewritten->second;
         }
+      }
+      if (options.fold_constants) {
+        effect.expression = regression::fold_constants(effect.expression);
       }
       change.effect = std::move(effect);
     }
