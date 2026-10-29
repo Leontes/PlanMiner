@@ -50,6 +50,12 @@ struct Options {
   /// y contradirían a los de la regresión.
   rules::ExampleOptions examples;
   rules::FusionOptions fusion;
+  /// Si las trazas no tienen ruido (plantraces::frame_changes es 0), la validación de la fusión
+  /// exige que cada condición se cumpla en todos los ejemplos en que se conoce (min_support 1):
+  /// sin ruido, una condición que contradice algún ejemplo es falsa. Si no, con el min_support de
+  /// fusion: con datos limpios, (> (value ?0) 1) en decrement pasaba con 21 de 1611 aplicaciones
+  /// con valor 1.
+  bool exact_without_noise = true;
   /// El dominio declara :numeric-fluents si tiene funciones. El original no lo declara, y algunos
   /// planificadores (PyPlanner) rechazan el dominio.
   bool numeric_fluents = true;

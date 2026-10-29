@@ -198,6 +198,7 @@ Options Options::original() {
   options.numeric_fluents = false;
   options.equality = false;
   options.aliasing = false;
+  options.exact_without_noise = false;
   return options;
 }
 
@@ -206,6 +207,10 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
   const std::set<std::string> accumulators = datasets::accumulators(traces);
+  rules::FusionOptions fusion = options.fusion;
+  if (options.exact_without_noise && plantraces::frame_changes(traces) == 0.0) {
+    fusion.min_support = 1.0;
+  }
   for (const auto& [name, transitions] : plantraces::group_by_action(traces)) {
     LearnedAction action;
     action.name = name;
@@ -233,7 +238,7 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
 
     action.fused = rules::fuse(
         rules, header_of(domain.hierarchy.actions, name),
-        rules::evidence({&action.logic, &action.numeric}, action.argument_types), options.fusion);
+        rules::evidence({&action.logic, &action.numeric}, action.argument_types), fusion);
     if (!options.examples.changes) {
       std::erase_if(action.fused.effect, [](const rules::Literal& literal) {
         const std::string op = token(split(literal.attribute), 0);

@@ -157,6 +157,19 @@ TEST(Learn, ImprovedZenotravelEffects) {
   }
 }
 
+// Mejora: sin ruido, la validación exige todos los ejemplos. En counters hay aplicaciones de
+// decrement con valor 1: con min_support 0.95 pasaría (> (value ?0) 1); con todos, queda la de la
+// referencia.
+TEST(Learn, ExactWithoutNoise) {
+  const std::string guard = "(>= ( value ?param_0 ) 1 )";
+  EXPECT_NE(pddl::write("counters", pddl::learn(traces("counters"))).find(guard),
+            std::string::npos);
+  pddl::Options options;
+  options.exact_without_noise = false;
+  EXPECT_EQ(pddl::write("counters", pddl::learn(traces("counters"), options)).find(guard),
+            std::string::npos);
+}
+
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la
 // precondición fusionada también están los átomos falsos, que se pierden al escribirla.
 TEST(LearnOriginal, Blocksworld) {
