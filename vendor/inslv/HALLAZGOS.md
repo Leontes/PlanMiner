@@ -167,6 +167,35 @@ quedan sin solución en todos los problemas. No se ha analizado la causa (el umb
 consistencia de NSLV, los ejemplos contradictorios que crea el ruido...): es lo primero que mirar
 para que PlanMiner aguante el ruido.
 
+## Lo que ha enseñado el banco de pruebas
+
+Con el banco de pruebas de PlanMiner (`scripts/benchmark.py`, 15 dominios, 90 problemas, 60 trazas
+por aprendizaje; octubre de 2026). Son cosas que PlanMiner ha tenido que resolver fuera de INSLV y
+que conviene tener en cuenta al diseñar el clasificador nuevo:
+
+- **Las reglas distinguen, no describen.** PlanMiner lee las precondiciones y los efectos de las
+  reglas que separan `PreState` de `PostState`, pero una regla solo tiene las condiciones que
+  bastan para separar las clases. Una condición que vale lo mismo en las dos no aparece nunca,
+  aunque se cumpla en todos los estados de antes: en zenotravel, fly-fast no cambia onboard, y
+  `(<= (onboard ?0) (zoom-limit ?0))` no está en ninguna regla. PlanMiner las añade ahora fuera
+  de INSLV (`rules::contrast_rule`). Un clasificador que diera descripciones características
+  (todo lo que cumple la clase) lo cubriría.
+- **Lo que entra en una regla depende del volumen de datos.** En gripper, el 25 % de las
+  aplicaciones de move son de una habitación a ella misma, y en esas filas `(at-robby ?0)` sigue
+  cierto después. Con 20 trazas, la regla de `PostState` tenía `(at-robby ?0)` falso; con 60, ya
+  no (le basta `(at-robby ?1)` cierto), y se perdía el borrado. PlanMiner oculta ahora esas filas
+  (`datasets::hide_aliased_atoms`).
+- **Sin ruido, una regla acepta condiciones que contradicen ejemplos.** En counters, decrement
+  aprendía `(> (value ?0) 1)` con 21 de 1611 aplicaciones con valor 1. La validación de la fusión
+  de PlanMiner exige ahora todos los ejemplos cuando no hay ruido; dentro de INSLV, es el umbral de
+  consistencia.
+- **El fallo con un conjunto de reglas vacío** (arriba) no ha vuelto a aparecer en más de 600
+  aprendizajes con 60 trazas: es cosa de pocos ejemplos.
+- **Tiempo:** con 60 trazas completas, scanalyzer tarda unos 200 s; con un 5 % de ruido, más de
+  7 minutos. El resto, segundos.
+- **Ruido:** sigue como en el apartado anterior: con un 5 % de ruido, un 1 % de planes válidos en
+  los 13 dominios STRIPS.
+
 ## Casos de equivalencia
 
 Los 26 casos de `tests/cases/` son autosuficientes: la entrada exacta de `inslv()` en el
