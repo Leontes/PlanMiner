@@ -6,9 +6,10 @@ Aprendizaje de dominios de planificación PDDL a partir de trazas de planes, inc
 incompletas o tienen ruido. PlanMiner descubre las precondiciones y los efectos de cada acción,
 también las expresiones aritméticas de los fluentes numéricos.
 
-Es una reescritura en C++20 del PlanMiner original, con mejoras sobre el algoritmo publicado. El
-algoritmo original se puede seguir usando (`--original`), y cada mejora es separable y medible
-frente a él.
+Es una reescritura en C++20 del PlanMiner original, con mejoras sobre el algoritmo publicado
+([Segura-Muros, Pérez y Fernández-Olivares, 2021](https://doi.org/10.1007/s10489-021-02232-6)).
+El algoritmo original se puede seguir usando (`--original`), y cada mejora es separable y
+medible frente a él.
 
 ## Qué aprende
 
@@ -156,6 +157,7 @@ están en git.
   resultados.
 - [Tests](docs/es/pruebas.md): las etiquetas, las trazas de prueba, el oráculo y los límites de
   memoria.
+- [Licencias](LICENCIAS.md): la de PlanMiner, la de INSLV y la de los dominios de prueba.
 
 ## Desarrollo
 
@@ -180,8 +182,31 @@ ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 - **Integración continua:** compila y prueba con GCC y Clang, con los sanitizers y con los tests
   del planificador, y comprueba el formato (clang-format 18) y los scripts (ruff y mypy).
 
+## Cómo citar
+
+Si usas PlanMiner en una publicación, cita el artículo:
+
+> José Á. Segura-Muros, Raúl Pérez y Juan Fernández-Olivares. Discovering relational and
+> numerical expressions from plan traces for learning action models. *Applied Intelligence*,
+> 51(11):7973–7989, 2021. [doi:10.1007/s10489-021-02232-6](https://doi.org/10.1007/s10489-021-02232-6)
+
+```bibtex
+@article{seguramuros2021planminer,
+  author  = {Segura-Muros, Jos{\'e} {\'A}. and P{\'e}rez, Ra{\'u}l and Fern{\'a}ndez-Olivares, Juan},
+  title   = {Discovering relational and numerical expressions from plan traces for learning action models},
+  journal = {Applied Intelligence},
+  volume  = {51},
+  number  = {11},
+  pages   = {7973--7989},
+  year    = {2021},
+  doi     = {10.1007/s10489-021-02232-6}
+}
+```
+
 ## Licencia
 
-El código y la documentación se distribuyen con la [licencia GPL-3.0](LICENSE). INSLV
-(`vendor/inslv`) parte de NSLV, de Raúl Pérez. Los dominios y problemas del catálogo
-PDDLDomains (submódulo) tienen sus propias condiciones: ver su `LICENCIAS.md`.
+El código y la documentación se distribuyen con la [licencia MIT](LICENSE) (© 2026 José
+Segura). INSLV (`vendor/inslv`), que parte de NSLV, de Raúl Pérez, sigue con la licencia GPL, y
+el ejecutable `planminer`, que lo enlaza, queda sujeto a ella. Los dominios y problemas del
+catálogo PDDLDomains (submódulo) tienen sus propias condiciones. Ver
+[LICENCIAS.md](LICENCIAS.md).

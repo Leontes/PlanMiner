@@ -62,6 +62,12 @@ los tests). Lo que cambia:
   - la salida por `std::cout` se silencia salvo con `verbose`.
 - Todos los fuentes están en UTF-8.
 
+## Licencia
+
+GNU GPL versión 2 o posterior, como dicen las cabeceras de los fuentes de NSLV (© 2002–2003 Raúl
+Pérez). [LICENSE](LICENSE) tiene el texto de la versión 3. El resto de PlanMiner usa la licencia
+MIT; ver [LICENCIAS.md](../../LICENCIAS.md).
+
 ## Tests
 
 ```bash
