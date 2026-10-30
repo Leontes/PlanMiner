@@ -2,79 +2,83 @@
 
 [English](README.md) · **Español**
 
-PlanMiner aprende dominios de planificación PDDL a partir de trazas de planes, incluso si
-están incompletas, y descubre las expresiones lógicas y aritméticas de las precondiciones y
-los efectos.
+Aprendizaje de dominios de planificación PDDL a partir de trazas de planes, incluso si están
+incompletas o tienen ruido. PlanMiner descubre las precondiciones y los efectos de cada acción,
+también las expresiones aritméticas de los fluentes numéricos.
 
-> **En desarrollo.** PlanMiner se está reescribiendo en C++20, con mejoras sobre el algoritmo
-> original que se van incorporando poco a poco. El algoritmo original se puede seguir usando
-> (`--original`).
+Es una reescritura en C++20 del PlanMiner original, con mejoras sobre el algoritmo publicado. El
+algoritmo original se puede seguir usando (`--original`), y cada mejora es separable y medible
+frente a él.
 
-## Trazas
+## Qué aprende
 
-PlanMiner aprende de trazas en el formato de
-[PDDLDomains](https://github.com/Leontes/PDDLDomains) (`pddldomains trace`): los estados por
-los que pasa la ejecución de un plan, con huecos, estados que faltan y ruido, y las acciones.
-El formato está descrito en
-[`vendor/PDDLDomains/docs/es/trazas.md`](https://github.com/Leontes/PDDLDomains/blob/main/docs/es/trazas.md).
+| Lenguaje | Qué incluye | Estado |
+|----------|-------------|--------|
+| STRIPS | precondiciones, añadidos y borrados, con tipos y costes de acción | sí |
+| PDDL 2.1 sin tiempo | fluentes numéricos: precondiciones con comparaciones y efectos con expresiones aritméticas | sí |
+| ADL | cuantificadores, efectos condicionales, disyunciones y constantes del dominio | no |
+| PDDL 2.1 temporal | acciones durativas | no |
 
-## Requisitos
+Con trazas completas, o con un 30 % de los átomos y valores desconocidos, la configuración
+mejorada da planes válidos en todos los problemas de prueba de 14 de los 15 dominios del banco de
+pruebas (el que falta usa constantes del dominio). Con un 5 % de ruido, todavía no:
+ver [Evaluación](docs/es/evaluacion.md#resultados).
 
-- Linux.
-- CMake 3.25 o posterior.
-- Un compilador de C++20. Se ha probado con GCC 13 y Clang 18.
-- GoogleTest 1.14 o posterior, para los tests. Si no está instalado (`libgtest-dev`), CMake lo
-  descarga.
+## Características
 
-Para los tests del planificador, además:
+- **Entrada:** trazas en el formato de [PDDLDomains](https://github.com/Leontes/PDDLDomains)
+  (`pddldomains trace`): los estados por los que pasa la ejecución de un plan, en JSON, con
+  huecos, estados que faltan y ruido.
+- **Precondiciones y efectos lógicos:** reglas que distinguen el estado de antes de cada acción
+  del de después, aprendidas con INSLV (reglas difusas, con el genético de NSLV) y fusionadas.
+- **Efectos numéricos:** regresión simbólica, una búsqueda A* de la expresión aritmética de cada
+  cambio: `(decrease (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
+- **Precondiciones numéricas:** comparaciones entre fluentes y con las expresiones de los
+  efectos: `(>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
+- **Tipos:** la jerarquía se infiere de los objetos de las trazas.
+- **Dos configuraciones:** la mejorada (por defecto) y la original. Las mejoras están descritas
+  en [Cómo aprende PlanMiner](docs/es/algoritmo.md).
+- **Memoria:** PlanMiner se pone un límite de memoria y sus búsquedas paran al llegar a él, en
+  lugar de agotar la de la máquina.
+- **Evaluación:** precisión, recall y F de un dominio aprendido frente al de referencia, y un
+  banco de pruebas reproducible con validación cruzada que planifica con los dominios
+  aprendidos y valida los planes con VAL.
 
-- El submódulo `vendor/PDDLDomains` (`git clone --recursive`, o
-  `git submodule update --init` en un clon ya hecho).
-- Python 3.12 o posterior, con [PyPlanner](https://github.com/Leontes/PyPlanner) y
-  `pddldomains` (`scripts/setup_python.sh`).
-- [VAL](https://github.com/KCL-Planning/VAL) (`scripts/build_val.sh`, necesita git, cmake y
-  g++).
+## Instalación
 
-## Compilar y probar
+Requiere Linux, CMake 3.25 o posterior y un compilador de C++20 (probado con GCC 13 y Clang 18).
 
 ```bash
-cmake --workflow --preset debug     # configura, compila y pasa los tests
-
-# o paso a paso
-cmake --preset debug
-cmake --build --preset debug
-ctest --preset debug
+git clone --recursive https://github.com/Leontes/PlanMiner.git
+cd PlanMiner
+cmake --preset release
+cmake --build --preset release      # el ejecutable: build/release/bin/planminer
 ```
 
 | Preset | Para qué |
 |--------|----------|
-| `debug` | desarrollo |
 | `release` | uso normal y experimentos |
-| `asan` | Debug con AddressSanitizer y UBSan; los tests solo pasan los unitarios |
-| `ci-gcc`, `ci-clang` | Release con los avisos como errores |
+| `debug` | desarrollo |
+| `asan` | Debug con AddressSanitizer y UBSan |
+| `ci-gcc`, `ci-clang` | Release con los avisos como errores, como la integración continua |
 
-Cada preset compila en `build/<preset>`, y el ejecutable queda en `build/<preset>/bin/planminer`.
+Cada preset compila en `build/<preset>`. El submódulo `vendor/PDDLDomains` (el catálogo de
+dominios) solo hace falta para los tests y para la evaluación.
 
-Los tests van por etiquetas de CTest (`ctest --preset debug -L <etiqueta>`):
+## Idioma
 
-| Etiqueta | Qué comprueba |
-|----------|---------------|
-| `unit` | las librerías, la línea de comandos y los scripts |
-| `planner` | con PyPlanner, VAL y PDDLDomains: el arnés que valida dominios aprendidos, las trazas de prueba y el banco de pruebas mínimo |
-| `inslv` | la librería de aprendizaje de reglas difusas (`vendor/inslv`) |
-
-Los tests del planificador solo se registran si están PyPlanner, pddldomains y VAL:
-
-```bash
-scripts/setup_python.sh   # .venv con PyPlanner y pddldomains
-scripts/build_val.sh      # tools/bin/Validate
-cmake --preset debug      # volver a configurar para que los detecte
-```
+La ayuda de la línea de comandos, los mensajes y los errores están en español. Los
+identificadores (opciones, claves de los ficheros de configuración, nombres del PDDL) están en
+inglés. La documentación está en español y en inglés.
 
 ## Uso
 
+### Desde la terminal
+
 ```bash
-planminer -o dominio.pddl trazas/*.json
+planminer -o dominio.pddl trazas/*.json         # configuración mejorada
+planminer --original -o dominio.pddl trazas/*.json
+planminer -n blocks -m 2048 trazas/*.json        # a la salida estándar, con 2 GB como mucho
 ```
 
 PlanMiner lee las trazas de un mismo dominio y escribe el dominio aprendido en el fichero (o en
@@ -88,125 +92,96 @@ la salida estándar, sin `-o`).
 | `--original` | aprende con el algoritmo del PlanMiner original, sin mejoras |
 | `-h`, `--help`, `--version` | la ayuda y la versión |
 
-Termina con 0 si todo va bien, con 1 si no puede leer las trazas o escribir el dominio, y con 2
-si los argumentos no son válidos.
+Códigos de salida:
+
+- 0: dominio aprendido;
+- 1: no se han podido leer las trazas o escribir el dominio;
+- 2: argumentos no válidos.
 
 Con `--original` y un dominio numérico, el dominio aprendido declara las funciones pero no el
 requisito `:numeric-fluents`, como el PlanMiner original, y algunos planificadores lo rechazan.
 
-## Evaluación
+### Como librería
 
-### Comparar un dominio
+Cada parte del algoritmo es una librería estática de CMake (ver [Estructura](#estructura)).
+`pddl` aprende el dominio de principio a fin:
 
-`scripts/compare_domains.py` compara un dominio aprendido con el de referencia (solo necesita
-Python 3.12 o posterior):
+```cpp
+#include "pddl/domain.hpp"
+#include "plantraces/trace.hpp"
 
-```bash
-scripts/compare_domains.py dominio.pddl referencia.pddl [--tolerant [--symmetric NOMBRE]...] \
-    [--details] [--json]
+std::vector<plantraces::Trace> traces = {plantraces::read_trace("p01.json"),
+                                         plantraces::read_trace("p02.json")};
+pddl::LearnedDomain domain = pddl::learn(traces);  // o pddl::learn(traces, pddl::Options::original())
+std::string text = pddl::write("blocks", domain);
 ```
 
-Cada elemento de las precondiciones y los efectos de las acciones (un átomo, su negación, una
-comparación numérica o un efecto numérico) cuenta como:
+- **Errores:** las trazas que no se pueden leer lanzan `plantraces::TraceError`.
+- **Opciones:** `pddl::Options` reúne las de cada parte (`Options{}` es la configuración
+  mejorada y `Options::original()`, la original); cada mejora es un campo que se puede
+  desactivar por separado.
+- **Reproducibilidad:** la configuración original usa el `rand()` global en el mismo orden que el
+  original. Con `std::srand(1)` antes, como al empezar un programa, da los mismos ejemplos y reglas.
+- **Memoria:** `resources::limit_process` pone al proceso un límite duro, como hace la línea de
+  comandos.
 
-- verdadero positivo si está en los dos dominios;
-- falso positivo si solo está en el aprendido (sobra);
-- falso negativo si solo está en el de referencia (falta).
+## Estructura
 
-Sumando todas las acciones, da la precisión, el recall y el F-score de las precondiciones, de
-los efectos y de todo junto. `--details` lista los elementos que sobran, los que faltan y los
-medios aciertos de cada acción, y `--json` escribe el resultado en JSON.
+| Ruta | Qué hay |
+|------|---------|
+| `apps/planminer/` | la línea de comandos |
+| `libs/plantraces/` | lectura de las trazas, aplicaciones de cada acción, átomos sobre sus parámetros y jerarquía de tipos |
+| `libs/datasets/` | la tabla de ejemplos de cada acción, los efectos numéricos (con la regresión), las relaciones numéricas y la discretización |
+| `libs/regression/` | la regresión simbólica: expresiones aritméticas y su búsqueda A* |
+| `libs/rules/` | los ejemplos de INSLV, la interpretación de sus reglas y su fusión en precondición y efecto |
+| `libs/pddl/` | el aprendizaje de principio a fin, la simplificación de las precondiciones y la escritura en PDDL |
+| `libs/resources/` | los límites de memoria |
+| `vendor/inslv/` | INSLV, el aprendizaje de reglas difusas (proyecto de CMake aparte) |
+| `vendor/PDDLDomains/` | submódulo: el catálogo de dominios de los tests y del banco de pruebas |
+| `scripts/` | la comparación de dominios, el banco de pruebas, las trazas de prueba y la preparación del entorno |
+| `benchmarks/` | las definiciones del banco de pruebas y sus huellas |
+| `tests/` | tests unitarios, del planificador, de los scripts y del oráculo; `data/traces/`: las trazas de prueba |
+| `cmake/` | los módulos de CMake: avisos, sanitizers, dependencias y herramientas de los tests |
+| `docs/es/`, `docs/en/` | documentación, en español y en inglés |
 
-Las acciones se emparejan por su nombre, y sus parámetros por su posición; los tipos no se
-comparan. Antes de comparar, los elementos se normalizan (mayúsculas, formato de los números,
-`>` como `<` con los lados cambiados, el orden de los operandos de `=`, `+` y `*`), pero no se
-reconocen otras equivalencias: `(< a b)` y `(<= a b)` son elementos distintos.
+`build/` (compilaciones), `tools/` (VAL compilado en local), `.venv/` (el entorno de Python),
+`Old/` (el código original, el oráculo de los tests) y `privado/` (documentos de uso privado) no
+están en git.
 
-Con `--tolerant`, un elemento que sobra y otro que falta casi iguales cuentan como medio acierto
-(medio verdadero positivo, medio falso positivo y medio falso negativo) en lugar de como un
-falso positivo y un falso negativo. Son casi iguales si solo se distinguen en `<` frente a `<=`,
-o en el orden de los argumentos de un símbolo simétrico: una función o un predicado de dos
-argumentos cuyo valor no depende de su orden, como la distancia entre dos ciudades, que se
-indica con `--symmetric` (una vez por símbolo).
+## Documentación
 
-Termina con 0 si ha podido comparar los dominios y con 2 si los argumentos o los dominios no son
-válidos.
+- [Cómo aprende PlanMiner](docs/es/algoritmo.md): las partes del algoritmo y las mejoras de la
+  configuración mejorada.
+- [Evaluación](docs/es/evaluacion.md): la comparación de dominios, el banco de pruebas y sus
+  resultados.
+- [Tests](docs/es/pruebas.md): las etiquetas, las trazas de prueba, el oráculo y los límites de
+  memoria.
 
-### Banco de pruebas
-
-`scripts/benchmark.py` evalúa PlanMiner con los dominios del catálogo de PDDLDomains que puede
-aprender: STRIPS (con tipos y costes de acción) y PDDL 2.1 sin acciones durativas (fluentes
-numéricos). Necesita el entorno de Python, VAL y PlanMiner compilado con el preset `release`:
+## Desarrollo
 
 ```bash
-.venv/bin/python scripts/benchmark.py generate   # problemas, planes y trazas
-.venv/bin/python scripts/benchmark.py run        # validación cruzada
-.venv/bin/python scripts/benchmark.py report     # tablas en build/benchmark/default/report.md
+git clone --recursive https://github.com/Leontes/PlanMiner.git   # con el catálogo
+git submodule update --init vendor/PDDLDomains                    # o, en un clon ya hecho
+scripts/setup_python.sh     # .venv con PyPlanner y pddldomains
+scripts/build_val.sh        # compila VAL en tools/bin/Validate (necesita git, cmake y g++)
+cmake --workflow --preset debug                                   # configura, compila y prueba
+git ls-files -- '*.cpp' '*.hpp' ':!vendor' | xargs clang-format --dry-run --Werror
+ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 ```
 
-El banco se define en [`benchmarks/default.toml`](benchmarks/default.toml), que explica cada
-ajuste:
-
-- **Dominios.** Las colecciones que la selección pide a PDDLDomains. Se dejan fuera las que
-  tienen un dominio por problema, porque PlanMiner aprende uno solo.
-- **Problemas.** 90 por dominio, cada uno con su plan. En los clásicos son paseos aleatorios (el
-  generador `random-walk` de PDDLDomains) desde los 6 problemas más pequeños de la colección, y
-  el paseo es el plan. En los numéricos, el generador de la colección da los problemas y
-  PyPlanner los planes; se descartan los problemas que no resuelve.
-- **Cobertura.** De los paseos se generan 3 candidatos por problema y se eligen los que cubren
-  el dominio: cada acción aplicada y cada efecto cambiando el estado en al menos 6 problemas, o
-  en todos los candidatos que lo muestran, si son menos. Lo que no muestra ningún problema (una
-  acción que no se puede aplicar en ningún problema de la colección) no cuenta en las métricas,
-  porque no se puede aprender; el informe lo indica, junto con lo que falte en el entrenamiento
-  de alguna partición.
-- **Trazas.** Una por plan y variante: completa, con el 30 % de los átomos y valores
-  desconocidos (`missing30`) y con un 5 % de ruido (`noise5`).
-- **Validación cruzada.** Los problemas de cada dominio se reparten en 3 particiones. Con cada
-  partición, variante y configuración (`--original` o no), PlanMiner aprende el dominio con las
-  trazas de las demás particiones. El dominio aprendido se compara con el de referencia
-  (precisión, recall y F en modo tolerante, y también exacto). Después, PyPlanner planifica con
-  él los problemas de la partición, y VAL valida los planes con el dominio de referencia. La
-  validez solo cuenta los problemas que resuelve el dominio de referencia.
-- **Informe.** Para cada dominio, variante y configuración: la media y la desviación típica de
-  las particiones en precisión, recall y F, y los planes válidos. Los planes que no son válidos
-  se desglosan por causa: inválidos, sin solución, límite del planificador, error (PyPlanner
-  rechaza el dominio) y sin dominio (PlanMiner ha fallado).
-
-Todo es reproducible:
-
-- Las semillas son fijas.
-- `generate` comprueba las huellas de lo que genera con las de
-  `benchmarks/default.lock.json`, y termina con 1 si no coinciden (`--update-lock` guarda las
-  nuevas).
-- `run` guarda el resultado de cada aprendizaje y sigue donde se quedó (`--force` los repite).
-
-Otras opciones:
-
-| Opción | Para qué |
-|--------|----------|
-| `--jobs N` | trabajos en paralelo (3 por defecto); tienen que caber en el 80 % de la memoria disponible |
-| `--collections PATRÓN...` | solo estas colecciones (`'ipc-2011/*'`) |
-| `--configurations NOMBRE...` | con `run`, solo estas configuraciones de PlanMiner (`original`, `improved`) |
-| `--output DIR` | el directorio de salida (por defecto, `build/benchmark/<banco>`) |
-| `--planminer FICHERO`, `--validate FICHERO` | los ejecutables de PlanMiner y de VAL |
-
-Otro banco es otro TOML: `scripts/benchmark.py run mio.toml`.
-[`benchmarks/smoke.toml`](benchmarks/smoke.toml) es el mínimo de los tests `planner`.
-
-## Memoria
-
-PlanMiner limita la memoria que usa, para no agotar la de la máquina (en WSL, agotarla
-congela WSL entero):
-
-- La línea de comandos se pone al empezar un límite del 80 % de la memoria disponible, o el de
-  `-m`. Al llegar a él, las búsquedas paran y lo indican en lugar de seguir reservando memoria.
-- Cada ejecutable de tests se limita a 2048 MB (`PLANMINER_TEST_MEMORY_MB`; 0, sin límite).
-  Con `ctest` en paralelo (4 trabajos), el peor caso es 8 GB.
-- Los tests lanzan PyPlanner siempre con límite de memoria (`-m`).
-- El banco de pruebas lanza PlanMiner y PyPlanner con los límites de su definición (2560 MB y
-  1024 MB por defecto), y no empieza si sus trabajos no caben en el 80 % de la memoria
-  disponible.
+- **Tests:** por etiquetas de CTest (`ctest --preset debug -L unit`): `unit`, `planner` (con
+  PyPlanner, VAL y PDDLDomains), `inslv` y `oracle` (solo con `Old/`, en local). Ver
+  [Tests](docs/es/pruebas.md).
+- **Dependencias de los tests:** GoogleTest 1.14 o posterior (si no está instalado, CMake lo
+  descarga); para los del planificador, Python 3.12 o posterior con
+  [PyPlanner](https://github.com/Leontes/PyPlanner) y pddldomains (`scripts/setup_python.sh`) y
+  [VAL](https://github.com/KCL-Planning/VAL) (`scripts/build_val.sh`). Tras instalarlos hay que
+  volver a configurar.
+- **Integración continua:** compila y prueba con GCC y Clang, con los sanitizers y con los tests
+  del planificador, y comprueba el formato (clang-format 18) y los scripts (ruff y mypy).
 
 ## Licencia
 
-[GPL-3.0](LICENSE).
+El código y la documentación se distribuyen con la [licencia GPL-3.0](LICENSE). INSLV
+(`vendor/inslv`) parte de NSLV, de Raúl Pérez. Los dominios y problemas del catálogo
+PDDLDomains (submódulo) tienen sus propias condiciones: ver su `LICENCIAS.md`.

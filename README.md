@@ -2,210 +2,184 @@
 
 **English** · [Español](README.es.md)
 
-PlanMiner learns PDDL planning domains from plan traces, even incomplete ones. It also
-discovers the logical and arithmetic expressions in preconditions and effects.
+Learning of PDDL planning domains from plan traces, even incomplete or noisy ones. PlanMiner
+discovers the preconditions and effects of every action, including the arithmetic expressions
+of numeric fluents.
 
-> **In development.** PlanMiner is being rewritten in C++20, with improvements over the original
-> algorithm that are added step by step. The original algorithm is still available
-> (`--original`).
+This is a C++20 rewrite of the original PlanMiner, with improvements over the published
+algorithm. The original algorithm is still available (`--original`), and every improvement can
+be switched off and measured against it.
 
-## Traces
+## What it learns
 
-PlanMiner learns from traces in the [PDDLDomains](https://github.com/Leontes/PDDLDomains)
-format (`pddldomains trace`): the states a plan goes through, with gaps, missing states and
-noise, and its actions. The format is described in
-[`vendor/PDDLDomains/docs/en/traces.md`](https://github.com/Leontes/PDDLDomains/blob/main/docs/en/traces.md).
+| Language | What it includes | Status |
+|----------|------------------|--------|
+| STRIPS | preconditions, add and delete effects, with types and action costs | yes |
+| PDDL 2.1 without time | numeric fluents: preconditions with comparisons and effects with arithmetic expressions | yes |
+| ADL | quantifiers, conditional effects, disjunctions and domain constants | no |
+| Temporal PDDL 2.1 | durative actions | no |
 
-## Requirements
+With complete traces, or with 30 % of the atoms and values unknown, the improved configuration
+gives valid plans in every test problem of 14 of the 15 domains of the benchmark (the other one
+uses domain constants). With 5 % noise, not yet: see
+[Evaluation](docs/en/evaluation.md#results).
 
-- Linux.
-- CMake 3.25 or later.
-- A C++20 compiler. Tested with GCC 13 and Clang 18.
-- GoogleTest 1.14 or later, for the tests. If it is not installed (`libgtest-dev`), CMake
-  downloads it.
+## Features
 
-The planner tests also need:
+- **Input:** traces in the [PDDLDomains](https://github.com/Leontes/PDDLDomains) format
+  (`pddldomains trace`): the states a plan goes through when executed, in JSON, with gaps,
+  missing states and noise.
+- **Logical preconditions and effects:** rules that tell the state before each action from the
+  state after it, learned with INSLV (fuzzy rules, with the NSLV genetic algorithm) and fused.
+- **Numeric effects:** symbolic regression, an A* search for the arithmetic expression of each
+  change: `(decrease (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
+- **Numeric preconditions:** comparisons between fluents and with the expressions of the
+  effects: `(>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
+- **Types:** the hierarchy is inferred from the objects in the traces.
+- **Two configurations:** the improved one (the default) and the original one. The improvements
+  are described in [How PlanMiner learns](docs/en/algorithm.md).
+- **Memory:** PlanMiner sets itself a memory limit, and its searches stop when they reach it
+  instead of exhausting the machine's memory.
+- **Evaluation:** precision, recall and F of a learned domain against the reference one, and a
+  reproducible benchmark with cross-validation that plans with the learned domains and
+  validates the plans with VAL.
 
-- The `vendor/PDDLDomains` submodule (`git clone --recursive`, or
-  `git submodule update --init` in an existing clone).
-- Python 3.12 or later, with [PyPlanner](https://github.com/Leontes/PyPlanner) and
-  `pddldomains` (`scripts/setup_python.sh`).
-- [VAL](https://github.com/KCL-Planning/VAL) (`scripts/build_val.sh`, needs git, cmake and
-  g++).
+## Installation
 
-## Build and test
+Requires Linux, CMake 3.25 or later and a C++20 compiler (tested with GCC 13 and Clang 18).
 
 ```bash
-cmake --workflow --preset debug     # configure, build and test
-
-# or step by step
-cmake --preset debug
-cmake --build --preset debug
-ctest --preset debug
+git clone --recursive https://github.com/Leontes/PlanMiner.git
+cd PlanMiner
+cmake --preset release
+cmake --build --preset release      # the executable: build/release/bin/planminer
 ```
 
 | Preset | Use |
 |--------|-----|
-| `debug` | development |
 | `release` | normal use and experiments |
-| `asan` | Debug with AddressSanitizer and UBSan; its test step runs only the unit tests |
-| `ci-gcc`, `ci-clang` | Release with warnings as errors |
+| `debug` | development |
+| `asan` | Debug with AddressSanitizer and UBSan |
+| `ci-gcc`, `ci-clang` | Release with warnings as errors, as in continuous integration |
 
-Each preset builds in `build/<preset>`, and the executable is `build/<preset>/bin/planminer`.
+Each preset builds in `build/<preset>`. The `vendor/PDDLDomains` submodule (the domain catalog)
+is only needed for the tests and the evaluation.
 
-Tests are grouped by CTest label (`ctest --preset debug -L <label>`):
+## Language
 
-| Label | What it checks |
-|-------|----------------|
-| `unit` | the libraries, the command line and the scripts |
-| `planner` | with PyPlanner, VAL and PDDLDomains: the harness that validates learned domains, the test traces and the minimal benchmark |
-| `inslv` | the fuzzy rule learning library (`vendor/inslv`) |
-
-The planner tests are registered only when PyPlanner, pddldomains and VAL are available:
-
-```bash
-scripts/setup_python.sh   # .venv with PyPlanner and pddldomains
-scripts/build_val.sh      # tools/bin/Validate
-cmake --preset debug      # reconfigure so CMake finds them
-```
+The command-line help, the messages and the errors are in Spanish. The identifiers (options,
+configuration keys, PDDL names) are in English. The documentation is in Spanish and English.
 
 ## Usage
 
+### From the terminal
+
 ```bash
-planminer -o domain.pddl traces/*.json
+planminer -o domain.pddl traces/*.json          # improved configuration
+planminer --original -o domain.pddl traces/*.json
+planminer -n blocks -m 2048 traces/*.json        # to standard output, with at most 2 GB
 ```
 
-PlanMiner reads traces of a single domain and writes the learned domain to the file (or to
+PlanMiner reads the traces of one domain and writes the learned domain to the file (or to
 standard output, without `-o`).
 
 | Option | Use |
 |--------|-----|
 | `-o`, `--output <file>` | the domain file |
-| `-n`, `--name <name>` | the domain name; by default, the traces' (some planners require it to match the problems') |
+| `-n`, `--name <name>` | the domain name; by default, the one in the traces (some planners require it to match the problems' one) |
 | `-m`, `--memory-limit <MB>` | the memory limit; by default, 80 % of the available memory |
-| `--original` | learns with the algorithm of the original PlanMiner, without improvements |
+| `--original` | learns with the original PlanMiner algorithm, without improvements |
 | `-h`, `--help`, `--version` | help and version |
 
-It exits with 0 on success, 1 if it cannot read the traces or write the domain, and 2 if the
-arguments are not valid.
+Exit codes:
 
-With `--original` and a numeric domain, the learned domain declares its functions but not the
+- 0: domain learned;
+- 1: the traces could not be read or the domain could not be written;
+- 2: invalid arguments.
+
+With `--original` and a numeric domain, the learned domain declares the functions but not the
 `:numeric-fluents` requirement, as the original PlanMiner did, and some planners reject it.
 
-## Evaluation
+### As a library
 
-### Comparing a domain
+Each part of the algorithm is a static CMake library (see [Structure](#structure)). `pddl`
+learns the domain end to end:
 
-`scripts/compare_domains.py` compares a learned domain with the reference one (it only needs
-Python 3.12 or later):
+```cpp
+#include "pddl/domain.hpp"
+#include "plantraces/trace.hpp"
 
-```bash
-scripts/compare_domains.py domain.pddl reference.pddl [--tolerant [--symmetric NAME]...] \
-    [--details] [--json]
+std::vector<plantraces::Trace> traces = {plantraces::read_trace("p01.json"),
+                                         plantraces::read_trace("p02.json")};
+pddl::LearnedDomain domain = pddl::learn(traces);  // or pddl::learn(traces, pddl::Options::original())
+std::string text = pddl::write("blocks", domain);
 ```
 
-Each element of the preconditions and effects of the actions (an atom, its negation, a numeric
-comparison or a numeric effect) counts as:
+- **Errors:** traces that cannot be read throw `plantraces::TraceError`.
+- **Options:** `pddl::Options` gathers the options of every part (`Options{}` is the improved
+  configuration and `Options::original()`, the original one); each improvement is a field that
+  can be switched off on its own.
+- **Reproducibility:** the original configuration uses the global `rand()` in the same order as
+  the original. With `std::srand(1)` first, as at the start of a program, it gives the same
+  examples and rules.
+- **Memory:** `resources::limit_process` sets a hard limit on the process, as the command line
+  does.
 
-- a true positive if it is in both domains;
-- a false positive if it is only in the learned one (it is extra);
-- a false negative if it is only in the reference one (it is missing).
+## Structure
 
-Adding up all the actions, it reports the precision, recall and F-score of the preconditions,
-of the effects and of both. `--details` lists the extra and missing elements and the half hits
-of each action, and `--json` writes the result as JSON.
+| Path | Contents |
+|------|----------|
+| `apps/planminer/` | the command line |
+| `libs/plantraces/` | trace reading, the applications of each action, atoms over its parameters and the type hierarchy |
+| `libs/datasets/` | the example table of each action, numeric effects (with the regression), numeric relations and discretization |
+| `libs/regression/` | symbolic regression: arithmetic expressions and their A* search |
+| `libs/rules/` | the INSLV examples, the interpretation of its rules and their fusion into precondition and effect |
+| `libs/pddl/` | end-to-end learning, precondition simplification and PDDL writing |
+| `libs/resources/` | memory limits |
+| `vendor/inslv/` | INSLV, fuzzy rule learning (a separate CMake project) |
+| `vendor/PDDLDomains/` | submodule: the domain catalog of the tests and the benchmark |
+| `scripts/` | domain comparison, the benchmark, the test traces and environment setup |
+| `benchmarks/` | the benchmark definitions and their fingerprints |
+| `tests/` | unit, planner, script and oracle tests; `data/traces/`: the test traces |
+| `cmake/` | CMake modules: warnings, sanitizers, dependencies and test tools |
+| `docs/es/`, `docs/en/` | documentation, in Spanish and English |
 
-Actions are matched by name, and their parameters by position; types are not compared. Before
-comparing, elements are normalized (case, number format, `>` as `<` with the sides swapped,
-the order of the operands of `=`, `+` and `*`), but no other equivalence is recognized:
-`(< a b)` and `(<= a b)` are different elements.
+`build/` (builds), `tools/` (VAL built locally), `.venv/` (the Python environment), `Old/` (the
+original code, the tests' oracle) and `privado/` (private documents) are not in git.
 
-With `--tolerant`, an extra element and a missing one that are almost equal count as half a
-hit (half a true positive, half a false positive and half a false negative) instead of a false
-positive and a false negative. They are almost equal if they only differ in `<` versus `<=`, or
-in the order of the arguments of a symmetric symbol: a function or predicate of two arguments
-whose value does not depend on their order, such as the distance between two cities, given
-with `--symmetric` (once per symbol).
+## Documentation
 
-It exits with 0 if the domains could be compared and 2 if the arguments or the domains are not
-valid.
+- [How PlanMiner learns](docs/en/algorithm.md): the parts of the algorithm and the improvements
+  of the improved configuration.
+- [Evaluation](docs/en/evaluation.md): domain comparison, the benchmark and its results.
+- [Tests](docs/en/tests.md): labels, test traces, the oracle and memory limits.
 
-### Benchmark
-
-`scripts/benchmark.py` evaluates PlanMiner on the domains of the PDDLDomains catalog that it can
-learn: STRIPS (with types and action costs) and PDDL 2.1 without durative actions (numeric
-fluents). It needs the Python environment, VAL and PlanMiner built with the `release` preset:
+## Development
 
 ```bash
-.venv/bin/python scripts/benchmark.py generate   # problems, plans and traces
-.venv/bin/python scripts/benchmark.py run        # cross-validation
-.venv/bin/python scripts/benchmark.py report     # tables in build/benchmark/default/report.md
+git clone --recursive https://github.com/Leontes/PlanMiner.git   # with the catalog
+git submodule update --init vendor/PDDLDomains                    # or, in an existing clone
+scripts/setup_python.sh     # .venv with PyPlanner and pddldomains
+scripts/build_val.sh        # builds VAL into tools/bin/Validate (needs git, cmake and g++)
+cmake --workflow --preset debug                                   # configure, build and test
+git ls-files -- '*.cpp' '*.hpp' ':!vendor' | xargs clang-format --dry-run --Werror
+ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 ```
 
-The benchmark is defined in [`benchmarks/default.toml`](benchmarks/default.toml), which explains
-each setting:
-
-- **Domains.** The collections that the selection asks PDDLDomains for. Those with a domain per
-  problem are left out, because PlanMiner learns a single domain.
-- **Problems.** 90 per domain, each with its plan. In classical domains, they are random walks
-  (the `random-walk` generator of PDDLDomains) from the 6 smallest problems of the collection,
-  and the walk is the plan. In numeric domains, the collection's generator gives the problems
-  and PyPlanner the plans; the problems it does not solve are discarded.
-- **Coverage.** The walks give 3 candidates per problem, and the chosen ones cover the domain:
-  every action applied and every effect changing the state in at least 6 problems, or in all
-  the candidates that show it, if there are fewer. What no problem shows (an action that cannot
-  be applied in any problem of the collection) does not count in the metrics, because it cannot
-  be learned; the report lists it, along with anything missing from the training data of a
-  fold.
-- **Traces.** One per plan and variant: complete, with 30 % of the atoms and values unknown
-  (`missing30`) and with 5 % noise (`noise5`).
-- **Cross-validation.** The problems of each domain are split into 3 folds. For each fold,
-  variant and configuration (`--original` or not), PlanMiner learns the domain from the traces
-  of the other folds. The learned domain is compared with the reference one (precision, recall
-  and F in tolerant mode, and also exact). PyPlanner then plans the fold's problems with it,
-  and VAL validates the plans against the reference domain. Validity only counts the problems
-  that the reference domain solves.
-- **Report.** For each domain, variant and configuration: the mean and standard deviation over
-  the folds of precision, recall and F, and the valid plans. The plans that are not valid are
-  broken down by cause: invalid, unsolvable, planner limit, error (PyPlanner rejects the
-  domain) and no domain (PlanMiner failed).
-
-Everything is reproducible:
-
-- The seeds are fixed.
-- `generate` checks the hashes of what it generates against `benchmarks/default.lock.json`, and
-  exits with 1 if they differ (`--update-lock` saves the new ones).
-- `run` saves the result of every learning and continues where it left off (`--force` repeats
-  them).
-
-Other options:
-
-| Option | Use |
-|--------|-----|
-| `--jobs N` | parallel jobs (3 by default); they must fit in 80 % of the available memory |
-| `--collections PATTERN...` | only these collections (`'ipc-2011/*'`) |
-| `--configurations NAME...` | with `run`, only these PlanMiner configurations (`original`, `improved`) |
-| `--output DIR` | the output directory (by default, `build/benchmark/<benchmark>`) |
-| `--planminer FILE`, `--validate FILE` | the PlanMiner and VAL executables |
-
-Another benchmark is another TOML: `scripts/benchmark.py run my.toml`.
-[`benchmarks/smoke.toml`](benchmarks/smoke.toml) is the minimal one of the `planner` tests.
-
-## Memory
-
-PlanMiner limits the memory it uses so it cannot exhaust the machine's (on WSL, exhausting it
-freezes all of WSL):
-
-- The command line sets a limit of 80 % of the available memory at startup, or the one given
-  with `-m`. When a search reaches it, the search stops and reports it instead of allocating
-  more.
-- Every test executable is limited to 2048 MB (`PLANMINER_TEST_MEMORY_MB`; 0, no limit). With
-  `ctest` in parallel (4 jobs), the worst case is 8 GB.
-- The tests always run PyPlanner with a memory limit (`-m`).
-- The benchmark runs PlanMiner and PyPlanner with the limits of its definition (2560 MB and
-  1024 MB by default), and refuses to start if its jobs do not fit in 80 % of the available
-  memory.
+- **Tests:** by CTest label (`ctest --preset debug -L unit`): `unit`, `planner` (with
+  PyPlanner, VAL and PDDLDomains), `inslv` and `oracle` (only with `Old/`, locally). See
+  [Tests](docs/en/tests.md).
+- **Test dependencies:** GoogleTest 1.14 or later (if it is not installed, CMake downloads it);
+  for the planner tests, Python 3.12 or later with
+  [PyPlanner](https://github.com/Leontes/PyPlanner) and pddldomains (`scripts/setup_python.sh`)
+  and [VAL](https://github.com/KCL-Planning/VAL) (`scripts/build_val.sh`). After installing
+  them, configure again.
+- **Continuous integration:** builds and tests with GCC and Clang, with the sanitizers and with
+  the planner tests, and checks the formatting (clang-format 18) and the scripts (ruff and
+  mypy).
 
 ## License
 
-[GPL-3.0](LICENSE).
+The code and the documentation are distributed under the [GPL-3.0 license](LICENSE). INSLV
+(`vendor/inslv`) is based on NSLV, by Raúl Pérez. The domains and problems of the PDDLDomains
+catalog (submodule) have their own terms: see its `LICENSES.md`.
