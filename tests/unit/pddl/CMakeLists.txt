@@ -1,4 +1,4 @@
-add_executable(pddl_tests test_domain.cpp)
+add_executable(pddl_tests test_domain.cpp test_simplify.cpp)
 target_link_libraries(pddl_tests PRIVATE pddl planminer_test_main)
 target_compile_definitions(pddl_tests
                            PRIVATE PLANMINER_TRACES_DIR="${PROJECT_SOURCE_DIR}/tests/data/traces")

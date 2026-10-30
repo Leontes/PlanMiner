@@ -64,6 +64,11 @@ struct Options {
   /// Solo sin ruido (plantraces::frame_changes es 0): con ruido, casi ninguna relación es un
   /// invariante (el ruido la contradice en algún estado), y pasan cotas que son coincidencias.
   bool contrast = true;
+  /// De la precondición fusionada se quita lo que implican las demás condiciones en los estados de
+  /// las trazas (drop_implied): la inversa de una relación simétrica o un invariante del estado,
+  /// que se cumplen siempre en los datos. Además de sobrar, las numéricas redundantes empeoran la
+  /// heurística de los planificadores: (>= (onboard ?1) 1) en debark, implicada por (in ?0 ?1).
+  bool drop_implied = true;
   /// El dominio declara :numeric-fluents si tiene funciones. El original no lo declara, y algunos
   /// planificadores (PyPlanner) rechazan el dominio.
   bool numeric_fluents = true;

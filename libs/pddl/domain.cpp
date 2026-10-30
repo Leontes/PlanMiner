@@ -13,6 +13,7 @@
 #include "datasets/effects.hpp"
 #include "datasets/relations.hpp"
 #include "datasets/table.hpp"
+#include "pddl/simplify.hpp"
 #include "plantraces/actions.hpp"
 #include "rules/legacy.hpp"
 
@@ -200,6 +201,7 @@ Options Options::original() {
   options.aliasing = false;
   options.exact_without_noise = false;
   options.contrast = false;
+  options.drop_implied = false;
   return options;
 }
 
@@ -263,6 +265,9 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     action.fused = rules::fuse(
         rules, header_of(domain.hierarchy.actions, name),
         rules::evidence({&action.logic, &action.numeric}, action.argument_types), fusion);
+    if (options.drop_implied) {
+      action.fused.precondition = drop_implied(action.fused.precondition, transitions, traces);
+    }
     if (!options.examples.changes) {
       std::erase_if(action.fused.effect, [](const rules::Literal& literal) {
         const std::string op = token(split(literal.attribute), 0);
