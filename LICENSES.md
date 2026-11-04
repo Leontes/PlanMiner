@@ -8,14 +8,14 @@ scripts), the documentation and the benchmark definitions are distributed under 
 
 ## INSLV
 
-`vendor/inslv` is based on NSLV, by Raúl Pérez (© 2002–2003), under the GNU GPL version 2 or
-later, as stated in the headers of its sources. The MIT license does **not** apply to INSLV: it
-stays under the GPL ([text of version 3](vendor/inslv/LICENSE)), including the changes made to
-it here.
+[INSLV](https://github.com/Leontes/INSLV-PlanMiner) is not in this repository: it is downloaded
+when configuring. It is based on NSLV, by Raúl Pérez (© 2002–2003), and is distributed under the
+GNU General Public License, version 3 (`GPL-3.0-only`). The MIT license does **not** apply to
+INSLV.
 
 The `planminer` executable and the libraries that link INSLV (`rules` and `pddl`) form a
-combined work with it: built and distributed, they are subject to the GPL. The rest of the code
-can be used on its own under the MIT license.
+combined work with it: built and distributed, they are subject to the GPL-3.0. The rest of the
+code can be used on its own under the MIT license.
 
 ## Test domains and traces
 

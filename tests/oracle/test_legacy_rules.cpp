@@ -114,11 +114,11 @@ LegacyExamples as_legacy(const rules::Examples& examples, const std::vector<rule
   for (std::size_t a = 0; a < examples.attributes.size(); ++a) {
     result.names.push_back(rules::legacy_name(examples.attributes[a], examples, types));
     std::vector<oracle::LegacyLabel> labels;
-    for (const inslv::FuzzySet& set : examples.data.attributes[a].labels) {
-      labels.push_back({set.label, set.a, set.b, set.c, set.d});
+    for (const inslv::ConjuntoDifuso& set : examples.data.atributos[a].etiquetas) {
+      labels.push_back({set.etiqueta, set.a, set.b, set.c, set.d});
     }
     result.labels.push_back(labels);
-    std::vector<double> values = examples.data.values[a];
+    std::vector<double> values = examples.data.valores[a];
     for (double& value : values) {
       if (std::isnan(value)) {
         value = legacy_missing;
@@ -126,7 +126,7 @@ LegacyExamples as_legacy(const rules::Examples& examples, const std::vector<rule
     }
     result.values.push_back(values);
   }
-  for (const std::size_t c : examples.data.classes) {
+  for (const std::size_t c : examples.data.clases) {
     result.classes.push_back(static_cast<double>(c));
   }
   result.rules = as_rule_list(rules::legacy_rules(rules, examples, types));

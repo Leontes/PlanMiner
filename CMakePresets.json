@@ -66,10 +66,7 @@
       "inherits": "base",
       "configurePreset": "asan",
       "filter": { "include": { "label": "unit" } },
-      "environment": {
-        "ASAN_OPTIONS": "hard_rss_limit_mb=2048",
-        "LSAN_OPTIONS": "suppressions=${sourceDir}/tests/lsan.supp"
-      }
+      "environment": { "ASAN_OPTIONS": "hard_rss_limit_mb=2048" }
     },
     { "name": "ci-gcc", "inherits": "base", "configurePreset": "ci-gcc" },
     { "name": "ci-clang", "inherits": "base", "configurePreset": "ci-clang" }

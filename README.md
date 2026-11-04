@@ -7,9 +7,9 @@ discovers the preconditions and effects of every action, including the arithmeti
 of numeric fluents.
 
 This is a C++20 rewrite of the original PlanMiner, with improvements over the published
-algorithm ([Segura-Muros, Pérez and Fernández-Olivares, 2021](https://doi.org/10.1007/s10489-021-02232-6)).
-The original algorithm is still available (`--original`), and every improvement can be switched
-off and measured against it.
+algorithm ([Segura-Muros, Pérez and Fernández-Olivares,
+2021](https://doi.org/10.1007/s10489-021-02232-6)). The original algorithm is still available
+(`--original`), and every improvement can be switched off and measured against it.
 
 ## What it learns
 
@@ -30,8 +30,9 @@ uses domain constants). With 5 % noise, not yet: see
 - **Input:** traces in the [PDDLDomains](https://github.com/Leontes/PDDLDomains) format
   (`pddldomains trace`): the states a plan goes through when executed, in JSON, with gaps,
   missing states and noise.
-- **Logical preconditions and effects:** rules that tell the state before each action from the
-  state after it, learned with INSLV (fuzzy rules, with the NSLV genetic algorithm) and fused.
+- **Logical preconditions and effects:** rules that describe the state before each action and the
+  state after it, learned with [INSLV](https://github.com/Leontes/INSLV-PlanMiner) (fuzzy rules,
+  with the NSLV genetic algorithm) and fused.
 - **Numeric effects:** symbolic regression, an A* search for the arithmetic expression of each
   change: `(decrease (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
 - **Numeric preconditions:** comparisons between fluents and with the expressions of the
@@ -47,7 +48,7 @@ uses domain constants). With 5 % noise, not yet: see
 
 ## Installation
 
-Requires Linux, CMake 3.25 or later and a C++20 compiler (tested with GCC 13 and Clang 18).
+Requires Linux, CMake 3.25 or later, git and a C++20 compiler (tested with GCC 13 and Clang 18).
 
 ```bash
 git clone --recursive https://github.com/Leontes/PlanMiner.git
@@ -63,8 +64,9 @@ cmake --build --preset release      # the executable: build/release/bin/planmine
 | `asan` | Debug with AddressSanitizer and UBSan |
 | `ci-gcc`, `ci-clang` | Release with warnings as errors, as in continuous integration |
 
-Each preset builds in `build/<preset>`. The `vendor/PDDLDomains` submodule (the domain catalog)
-is only needed for the tests and the evaluation.
+Each preset builds in `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) is
+downloaded when configuring (FetchContent), pinned to a commit. The `vendor/PDDLDomains` submodule
+(the domain catalog) is only needed for the tests and the evaluation.
 
 ## Language
 
@@ -137,12 +139,11 @@ std::string text = pddl::write("blocks", domain);
 | `libs/rules/` | the INSLV examples, the interpretation of its rules and their fusion into precondition and effect |
 | `libs/pddl/` | end-to-end learning, precondition simplification and PDDL writing |
 | `libs/resources/` | memory limits |
-| `vendor/inslv/` | INSLV, fuzzy rule learning (a separate CMake project) |
 | `vendor/PDDLDomains/` | submodule: the domain catalog of the tests and the benchmark |
 | `scripts/` | domain comparison, the benchmark, the test traces and environment setup |
 | `benchmarks/` | the benchmark definitions and their fingerprints |
 | `tests/` | unit, planner, script and oracle tests; `data/traces/`: the test traces |
-| `cmake/` | CMake modules: warnings, sanitizers, dependencies and test tools |
+| `cmake/` | CMake modules: warnings, sanitizers, dependencies (INSLV among them) and test tools |
 | `docs/es/`, `docs/en/` | documentation, in Spanish and English |
 
 `build/` (builds), `tools/` (VAL built locally), `.venv/` (the Python environment), `Old/` (the
@@ -164,13 +165,15 @@ git submodule update --init vendor/PDDLDomains                    # or, in an ex
 scripts/setup_python.sh     # .venv with PyPlanner and pddldomains
 scripts/build_val.sh        # builds VAL into tools/bin/Validate (needs git, cmake and g++)
 cmake --workflow --preset debug                                   # configure, build and test
-git ls-files -- '*.cpp' '*.hpp' ':!vendor' | xargs clang-format --dry-run --Werror
+git ls-files -- '*.cpp' '*.hpp' | xargs clang-format --dry-run --Werror
 ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 ```
 
 - **Tests:** by CTest label (`ctest --preset debug -L unit`): `unit`, `planner` (with
-  PyPlanner, VAL and PDDLDomains), `inslv` and `oracle` (only with `Old/`, locally). See
+  PyPlanner, VAL and PDDLDomains) and `oracle` (only with `Old/`, locally). See
   [Tests](docs/en/tests.md).
+- **Local INSLV:** to try a local copy instead of the commit pinned in `cmake/Inslv.cmake`,
+  `cmake --preset debug -DFETCHCONTENT_SOURCE_DIR_INSLV=<directory>`.
 - **Test dependencies:** GoogleTest 1.14 or later (if it is not installed, CMake downloads it);
   for the planner tests, Python 3.12 or later with
   [PyPlanner](https://github.com/Leontes/PyPlanner) and pddldomains (`scripts/setup_python.sh`)
@@ -204,6 +207,7 @@ If you use PlanMiner in a publication, please cite the paper:
 ## License
 
 The code and the documentation are distributed under the [MIT license](LICENSE) (© 2026 José
-Segura). INSLV (`vendor/inslv`), based on NSLV by Raúl Pérez, stays under the GPL, and the
-`planminer` executable, which links it, is subject to it. The domains and problems of the
-PDDLDomains catalog (submodule) have their own terms. See [LICENSES.md](LICENSES.md).
+Segura). [INSLV](https://github.com/Leontes/INSLV-PlanMiner), which is downloaded when configuring
+and is based on NSLV by Raúl Pérez, is under the GPL-3.0, and the `planminer` executable, which
+links it, is subject to it. The domains and problems of the PDDLDomains catalog (submodule) have
+their own terms. See [LICENSES.md](LICENSES.md).

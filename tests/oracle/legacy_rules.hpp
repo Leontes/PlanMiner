@@ -1,5 +1,5 @@
 // El pipeline del PlanMiner original hasta INSLV, en su propia unidad de compilación: las cabeceras
-// del original declaran una función inslv() que choca con el espacio de nombres de vendor/inslv.
+// del original declaran una función inslv() que choca con el espacio de nombres de INSLV.
 #pragma once
 
 #include <array>

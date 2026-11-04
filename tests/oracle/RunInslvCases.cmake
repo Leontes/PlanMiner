@@ -1,5 +1,5 @@
 # Genera con Old/ los casos de equivalencia de INSLV y los compara con los guardados en
-# vendor/inslv/tests/cases.
+# tests/datos/planminer de su repositorio.
 #
 #   cmake -DGENERATOR=<dump_inslv_cases> -DTRACES=<prefijo>=<traza.pts>;...
 #         -DEXPECTED_DIR=<casos guardados> -DWORK_DIR=<directorio>

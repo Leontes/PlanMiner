@@ -45,10 +45,10 @@ struct Attribute {
 std::string to_string(const Attribute& attribute);
 
 /// Un conjunto de ejemplos para INSLV y lo que representa cada uno de sus atributos
-/// (attributes[i] es data.attributes[i]). La clase es PreState en las filas de antes de la acción
+/// (attributes[i] es data.atributos[i]). La clase es PreState en las filas de antes de la acción
 /// y PostState en las de después.
 struct Examples {
-  inslv::Dataset data;
+  inslv::Datos data;
   std::vector<Attribute> attributes;
 };
 
@@ -117,6 +117,6 @@ struct Rule {
 /// Las reglas que aprende INSLV con los ejemplos, interpretadas como en el original: solo cuentan
 /// los atributos de hasta dos etiquetas, y en cada uno, cada etiqueta que admite la regla es una
 /// condición. Sin atributos, no hay reglas.
-std::vector<Rule> learn(const Examples& examples, const inslv::Options& options = {});
+std::vector<Rule> learn(const Examples& examples, const inslv::Opciones& options = {});
 
 }  // namespace rules

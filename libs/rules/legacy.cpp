@@ -117,9 +117,9 @@ Evidence evidence(const std::vector<const Examples*>& examples,
   Evidence result;
   for (const Examples* set : examples) {
     result.transitions = static_cast<std::size_t>(
-        std::count(set->data.classes.begin(), set->data.classes.end(), std::size_t{0}));
+        std::count(set->data.clases.begin(), set->data.clases.end(), std::size_t{0}));
     for (std::size_t a = 0; a < set->attributes.size(); ++a) {
-      result.columns.emplace(legacy_name(set->attributes[a], *set, types), set->data.values[a]);
+      result.columns.emplace(legacy_name(set->attributes[a], *set, types), set->data.valores[a]);
     }
   }
   return result;

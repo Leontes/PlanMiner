@@ -11,12 +11,12 @@ namespace {
 
 constexpr double unknown = std::numeric_limits<double>::quiet_NaN();
 
-inslv::FuzzySet crisp(const char* label, double value) {
+inslv::ConjuntoDifuso crisp(const char* label, double value) {
   return {label, value, value, value, value};
 }
 
-const std::vector<inslv::FuzzySet>& logical() {
-  static const std::vector<inslv::FuzzySet> sets{crisp("False", 0.0), crisp("True", 1.0)};
+const std::vector<inslv::ConjuntoDifuso>& logical() {
+  static const std::vector<inslv::ConjuntoDifuso> sets{crisp("False", 0.0), crisp("True", 1.0)};
   return sets;
 }
 
@@ -24,10 +24,10 @@ std::string name(const datasets::Attribute& term) {
   return term.kind == datasets::AttributeKind::time ? "time" : plantraces::to_string(term.term);
 }
 
-void add(Examples& examples, Attribute attribute, std::vector<inslv::FuzzySet> labels,
+void add(Examples& examples, Attribute attribute, std::vector<inslv::ConjuntoDifuso> labels,
          std::vector<double> column) {
-  examples.data.attributes.push_back({to_string(attribute), std::move(labels)});
-  examples.data.values.push_back(std::move(column));
+  examples.data.atributos.push_back({to_string(attribute), std::move(labels)});
+  examples.data.valores.push_back(std::move(column));
   examples.attributes.push_back(std::move(attribute));
 }
 
@@ -92,10 +92,10 @@ namespace {
 
 Examples empty_examples(const datasets::Table& table) {
   Examples examples;
-  examples.data.target = {"Class", {crisp("PreState", 0.0), crisp("PostState", 1.0)}};
-  examples.data.classes.assign(table.rows(), 0);
-  std::fill(examples.data.classes.begin() + static_cast<std::ptrdiff_t>(table.transitions),
-            examples.data.classes.end(), 1);
+  examples.data.clase = {"Class", {crisp("PreState", 0.0), crisp("PostState", 1.0)}};
+  examples.data.clases.assign(table.rows(), 0);
+  std::fill(examples.data.clases.begin() + static_cast<std::ptrdiff_t>(table.transitions),
+            examples.data.clases.end(), 1);
   return examples;
 }
 
@@ -131,7 +131,7 @@ Examples numeric_examples(const datasets::Table& table,
   }
 
   for (const std::size_t a : numeric) {
-    std::vector<inslv::FuzzySet> labels;
+    std::vector<inslv::ConjuntoDifuso> labels;
     for (const datasets::FuzzySet& set : datasets::discretize(table.columns[a], random)) {
       labels.push_back({"L_" + std::to_string(labels.size()), set.a, set.b, set.c, set.d});
     }
@@ -187,7 +187,7 @@ Examples numeric_examples(const datasets::Table& table,
       attribute.variables = change->effect->variables;
     }
 
-    std::vector<inslv::FuzzySet> labels{crisp("NA", 0.0)};
+    std::vector<inslv::ConjuntoDifuso> labels{crisp("NA", 0.0)};
     if (std::find(column.begin(), column.end(), 1.0) != column.end()) {
       labels.push_back(crisp("POS", 1.0));
     }
@@ -199,27 +199,27 @@ Examples numeric_examples(const datasets::Table& table,
   return result;
 }
 
-std::vector<Rule> learn(const Examples& examples, const inslv::Options& options) {
-  if (examples.data.attributes.empty()) {
+std::vector<Rule> learn(const Examples& examples, const inslv::Opciones& options) {
+  if (examples.data.atributos.empty()) {
     return {};
   }
   std::vector<Rule> rules;
-  for (const inslv::Rule& learned : inslv::learn(examples.data, options)) {
+  for (const inslv::Regla& learned : inslv::aprender(examples.data, options)) {
     Rule rule;
-    rule.post = examples.data.target.labels[learned.consequent].label == "PostState";
-    rule.covered = static_cast<int>(learned.covered);
-    for (const inslv::Condition& condition : learned.antecedent) {
-      const std::vector<inslv::FuzzySet>& labels =
-          examples.data.attributes[condition.attribute].labels;
+    rule.post = examples.data.clase.etiquetas[learned.consecuente].etiqueta == "PostState";
+    rule.covered = static_cast<int>(learned.cubiertos);
+    for (const inslv::Condicion& condition : learned.antecedente) {
+      const std::vector<inslv::ConjuntoDifuso>& labels =
+          examples.data.atributos[condition.atributo].etiquetas;
       if (labels.size() > 2) {
         continue;
       }
-      for (const std::size_t label : condition.labels) {
-        const inslv::FuzzySet& set = labels[label];
-        if (set.label == "True" || set.label == "False") {
-          rule.conditions.push_back({condition.attribute, set.label == "True"});
+      for (const std::size_t label : condition.etiquetas) {
+        const inslv::ConjuntoDifuso& set = labels[label];
+        if (set.etiqueta == "True" || set.etiqueta == "False") {
+          rule.conditions.push_back({condition.atributo, set.etiqueta == "True"});
         } else {
-          rule.conditions.push_back({condition.attribute, static_cast<int>((set.b + set.c) / 2.0)});
+          rule.conditions.push_back({condition.atributo, static_cast<int>((set.b + set.c) / 2.0)});
         }
       }
     }

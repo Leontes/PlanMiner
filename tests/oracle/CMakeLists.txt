@@ -73,8 +73,9 @@ planminer_add_legacy_golden(depots "Depots_Numerical.pts" depots)
 # Zenotravel no está: el original tarda 5 minutos y llega a 7 GB (el A* agota los 300 s en
 # REFUEL).
 
-# Los casos de equivalencia de INSLV (vendor/inslv/tests/cases): la entrada y la salida de
-# inslv() en el pipeline original. Para regenerarlos:
+# Los casos de equivalencia de INSLV (tests/datos/planminer en su repositorio): la entrada y la
+# salida de inslv() en el pipeline original. Para regenerarlos, con una copia local de INSLV
+# (-DFETCHCONTENT_SOURCE_DIR_INSLV=<directorio>):
 #   PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.inslv_cases
 add_executable(planminer_dump_inslv_cases dump_inslv_cases.cpp)
 target_link_libraries(planminer_dump_inslv_cases PRIVATE planminer::legacy)
@@ -90,7 +91,7 @@ add_test(
   COMMAND
     "${CMAKE_COMMAND}" "-DGENERATOR=$<TARGET_FILE:planminer_dump_inslv_cases>"
     "-DLIMIT=$<TARGET_FILE:planminer_limit_memory>" "-DMEMORY_MB=${PLANMINER_LEGACY_MEMORY_MB}"
-    "-DTRACES=${inslv_traces}" "-DEXPECTED_DIR=${PROJECT_SOURCE_DIR}/vendor/inslv/tests/cases"
+    "-DTRACES=${inslv_traces}" "-DEXPECTED_DIR=${inslv_SOURCE_DIR}/tests/datos/planminer"
     "-DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/inslv_cases" -P
     "${CMAKE_CURRENT_SOURCE_DIR}/RunInslvCases.cmake")
 set_tests_properties(oracle.inslv_cases PROPERTIES LABELS oracle TIMEOUT 900 RESOURCE_LOCK

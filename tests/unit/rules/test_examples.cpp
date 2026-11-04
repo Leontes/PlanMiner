@@ -37,16 +37,16 @@ datasets::Table table(std::vector<double> p, std::vector<double> x, std::vector<
 
 std::vector<std::string> names(const rules::Examples& examples) {
   std::vector<std::string> out;
-  for (const inslv::Variable& variable : examples.data.attributes) {
-    out.push_back(variable.name);
+  for (const inslv::Variable& variable : examples.data.atributos) {
+    out.push_back(variable.nombre);
   }
   return out;
 }
 
 std::vector<std::string> labels(const inslv::Variable& variable) {
   std::vector<std::string> out;
-  for (const inslv::FuzzySet& set : variable.labels) {
-    out.push_back(set.label);
+  for (const inslv::ConjuntoDifuso& set : variable.etiquetas) {
+    out.push_back(set.etiqueta);
   }
   return out;
 }
@@ -54,12 +54,12 @@ std::vector<std::string> labels(const inslv::Variable& variable) {
 TEST(LogicExamples, TheAtoms) {
   const rules::Examples examples = rules::logic_examples(table({1, 1, 0, unknown}, {}, {}));
   EXPECT_EQ(names(examples), std::vector<std::string>{"(p)"});
-  EXPECT_EQ(labels(examples.data.attributes[0]), (std::vector<std::string>{"False", "True"}));
-  ASSERT_EQ(examples.data.values.size(), 1U);
-  EXPECT_EQ(examples.data.values[0][2], 0.0);
-  EXPECT_TRUE(std::isnan(examples.data.values[0][3]));
-  EXPECT_EQ(examples.data.classes, (std::vector<std::size_t>{0, 0, 1, 1}));
-  EXPECT_EQ(labels(examples.data.target), (std::vector<std::string>{"PreState", "PostState"}));
+  EXPECT_EQ(labels(examples.data.atributos[0]), (std::vector<std::string>{"False", "True"}));
+  ASSERT_EQ(examples.data.valores.size(), 1U);
+  EXPECT_EQ(examples.data.valores[0][2], 0.0);
+  EXPECT_TRUE(std::isnan(examples.data.valores[0][3]));
+  EXPECT_EQ(examples.data.clases, (std::vector<std::size_t>{0, 0, 1, 1}));
+  EXPECT_EQ(labels(examples.data.clase), (std::vector<std::string>{"PreState", "PostState"}));
   EXPECT_EQ(examples.attributes[0].kind, rules::AttributeKind::atom);
 }
 
@@ -82,9 +82,9 @@ TEST(NumericExamples, ValuesRelationsAndChanges) {
   EXPECT_EQ(names(examples),
             (std::vector<std::string>{"value (x)", "value (y)", "value time", "(< (x) (y))",
                                       "change (x) 1", "change time 1"}));
-  EXPECT_EQ(labels(examples.data.attributes[3]), (std::vector<std::string>{"False", "True"}));
-  EXPECT_EQ(labels(examples.data.attributes[4]), (std::vector<std::string>{"NA", "POS"}));
-  EXPECT_EQ(examples.data.values[4], (std::vector<double>{0, 0, 1, 1}));
+  EXPECT_EQ(labels(examples.data.atributos[3]), (std::vector<std::string>{"False", "True"}));
+  EXPECT_EQ(labels(examples.data.atributos[4]), (std::vector<std::string>{"NA", "POS"}));
+  EXPECT_EQ(examples.data.valores[4], (std::vector<double>{0, 0, 1, 1}));
   EXPECT_EQ(examples.attributes[4].kind, rules::AttributeKind::change);
 
   // Sin el instante.
@@ -113,12 +113,12 @@ TEST(NumericExamples, TheChangeSign) {
   options.changes = true;
   const rules::Examples examples = rules::numeric_examples(t, changes, {}, first, options);
   EXPECT_EQ(names(examples), (std::vector<std::string>{"value (x)", "value (y)", "change (x) 1"}));
-  const std::vector<double>& change = examples.data.values[2];
+  const std::vector<double>& change = examples.data.valores[2];
   EXPECT_EQ(change[0], 0.0);
   EXPECT_EQ(change[1], 0.0);
   EXPECT_EQ(change[2], -1.0);
   EXPECT_TRUE(std::isnan(change[3]));
-  EXPECT_EQ(labels(examples.data.attributes[2]), (std::vector<std::string>{"NA", "NEG"}));
+  EXPECT_EQ(labels(examples.data.atributos[2]), (std::vector<std::string>{"NA", "NEG"}));
 }
 
 // Un átomo cierto antes y falso después: la regla del estado de antes pide (p) y la del de

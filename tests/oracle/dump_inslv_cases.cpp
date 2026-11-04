@@ -1,5 +1,5 @@
-// Genera los casos de equivalencia de INSLV (vendor/inslv/tests/cases) con el PlanMiner
-// original.
+// Genera los casos de equivalencia de INSLV (tests/datos/planminer en su repositorio) con el
+// PlanMiner original.
 //
 //   dump_inslv_cases <directorio de salida> <prefijo>=<traza.pts>...
 //

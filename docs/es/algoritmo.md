@@ -22,10 +22,10 @@ algoritmo y lo que cambia la configuración mejorada respecto al PlanMiner origi
 4. **Las relaciones numéricas** (`datasets::numeric_relations`). Comparaciones (`=`, `<`, `>`)
    entre fluentes y con las expresiones de los efectos, que se añaden a la tabla como atributos
    ciertos o falsos. De ellas salen las precondiciones numéricas.
-5. **Las reglas** (`libs/rules`, `vendor/inslv`). Dos conjuntos de ejemplos por acción: el lógico,
-   con los átomos, y el numérico, con los valores de los fluentes (discretizados) y las
-   relaciones. La clase de cada fila es estado de antes o de después. INSLV aprende reglas difusas
-   que describen cada clase.
+5. **Las reglas** (`libs/rules`, [INSLV](https://github.com/Leontes/INSLV-PlanMiner)). Dos conjuntos
+   de ejemplos por acción: el lógico, con los átomos, y el numérico, con los valores de los fluentes
+   (discretizados) y las relaciones. La clase de cada fila es estado de antes o de después. INSLV
+   aprende reglas difusas que describen cada clase.
 6. **La fusión** (`rules::fuse`). Las condiciones de las reglas del estado de antes forman la
    precondición, y las del de después que no estaban antes, el efecto.
 7. **La escritura** (`pddl::write`). El dominio en PDDL, con los tipos, los predicados, las

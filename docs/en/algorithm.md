@@ -22,10 +22,10 @@ algorithm and what the improved configuration changes with respect to the origin
 4. **Numeric relations** (`datasets::numeric_relations`). Comparisons (`=`, `<`, `>`) between
    fluents and with the expressions of the effects, added to the table as true or false
    attributes. The numeric preconditions come from them.
-5. **The rules** (`libs/rules`, `vendor/inslv`). Two example sets per action: the logical one,
-   with the atoms, and the numeric one, with the fluent values (discretized) and the relations.
-   The class of each row is the state before or after. INSLV learns fuzzy rules that describe
-   each class.
+5. **The rules** (`libs/rules`, [INSLV](https://github.com/Leontes/INSLV-PlanMiner)). Two example
+   sets per action: the logical one, with the atoms, and the numeric one, with the fluent values
+   (discretized) and the relations. The class of each row is the state before or after. INSLV learns
+   fuzzy rules that describe each class.
 6. **The fusion** (`rules::fuse`). The conditions of the rules of the state before form the
    precondition, and those of the state after that were not there before, the effect.
 7. **The writing** (`pddl::write`). The domain in PDDL, with the types, predicates, functions

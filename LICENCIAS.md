@@ -8,13 +8,12 @@ scripts), la documentación y las definiciones del banco de pruebas se distribuy
 
 ## INSLV
 
-`vendor/inslv` parte de NSLV, de Raúl Pérez (© 2002–2003), con la licencia GNU GPL versión 2 o
-posterior, como dicen las cabeceras de sus fuentes. La licencia MIT **no** se aplica a INSLV:
-sigue con la GPL ([texto de la versión 3](vendor/inslv/LICENSE)), también los cambios que se le
-han hecho aquí.
+[INSLV](https://github.com/Leontes/INSLV-PlanMiner) no está en este repositorio: se descarga al
+configurar. Parte de NSLV, de Raúl Pérez (© 2002–2003), y se distribuye con la licencia pública
+general de GNU, versión 3 (`GPL-3.0-only`). La licencia MIT **no** se aplica a INSLV.
 
 El ejecutable `planminer` y las librerías que enlazan INSLV (`rules` y `pddl`) forman una obra
-combinada con él: compilados y distribuidos, quedan sujetos a la GPL. El resto del código se
+combinada con él: compilados y distribuidos, quedan sujetos a la GPL-3.0. El resto del código se
 puede usar por separado con la licencia MIT.
 
 ## Dominios y trazas de prueba

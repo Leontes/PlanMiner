@@ -14,8 +14,10 @@ ctest --preset debug -R 'unit.pddl.*' # por nombre
 |----------|---------------|----------|
 | `unit` | las librerías, la línea de comandos y los scripts de Python | GoogleTest (si no está instalado, CMake lo descarga) |
 | `planner` | el arnés que valida dominios aprendidos, que las trazas de prueba se regeneran igual y el banco de pruebas mínimo, de principio a fin | PyPlanner, pddldomains, VAL y el submódulo `vendor/PDDLDomains` |
-| `inslv` | INSLV (`vendor/inslv`): su interfaz y su equivalencia con el original | — |
 | `oracle` | la configuración original frente al PlanMiner original (`Old/`), función a función y de principio a fin | `Old/`, solo en local |
+
+Los tests de INSLV se pasan en [su repositorio](https://github.com/Leontes/INSLV-PlanMiner): al
+descargarlo, no se compilan.
 
 ## Tests del planificador
 
@@ -60,10 +62,13 @@ git archive 3823a14 Old | tar -x
 
 Comprueban que la configuración original da lo mismo que el original: función a función, de
 principio a fin con las trazas de prueba (el dominio aprendido, comparado con el guardado en
-`tests/oracle/golden/`) y los casos de equivalencia de INSLV. Para regenerar lo guardado:
+`tests/oracle/golden/`) y los casos de equivalencia de INSLV, que están en su repositorio
+(`tests/datos/planminer`). Para regenerar lo guardado:
 
 ```bash
-PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R 'oracle.legacy|oracle.inslv_cases'
+PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.legacy
+# Los casos de INSLV, en una copia local (-DFETCHCONTENT_SOURCE_DIR_INSLV=<directorio>):
+PLANMINER_UPDATE_GOLDEN=1 ctest --preset debug -R oracle.inslv_cases
 ```
 
 ## Memoria

@@ -30,8 +30,9 @@ ver [Evaluación](docs/es/evaluacion.md#resultados).
 - **Entrada:** trazas en el formato de [PDDLDomains](https://github.com/Leontes/PDDLDomains)
   (`pddldomains trace`): los estados por los que pasa la ejecución de un plan, en JSON, con
   huecos, estados que faltan y ruido.
-- **Precondiciones y efectos lógicos:** reglas que distinguen el estado de antes de cada acción
-  del de después, aprendidas con INSLV (reglas difusas, con el genético de NSLV) y fusionadas.
+- **Precondiciones y efectos lógicos:** reglas que describen el estado de antes de cada acción y el
+  de después, aprendidas con [INSLV](https://github.com/Leontes/INSLV-PlanMiner) (reglas difusas,
+  con el genético de NSLV) y fusionadas.
 - **Efectos numéricos:** regresión simbólica, una búsqueda A* de la expresión aritmética de cada
   cambio: `(decrease (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
 - **Precondiciones numéricas:** comparaciones entre fluentes y con las expresiones de los
@@ -47,7 +48,8 @@ ver [Evaluación](docs/es/evaluacion.md#resultados).
 
 ## Instalación
 
-Requiere Linux, CMake 3.25 o posterior y un compilador de C++20 (probado con GCC 13 y Clang 18).
+Requiere Linux, CMake 3.25 o posterior, git y un compilador de C++20 (probado con GCC 13 y
+Clang 18).
 
 ```bash
 git clone --recursive https://github.com/Leontes/PlanMiner.git
@@ -63,8 +65,9 @@ cmake --build --preset release      # el ejecutable: build/release/bin/planminer
 | `asan` | Debug con AddressSanitizer y UBSan |
 | `ci-gcc`, `ci-clang` | Release con los avisos como errores, como la integración continua |
 
-Cada preset compila en `build/<preset>`. El submódulo `vendor/PDDLDomains` (el catálogo de
-dominios) solo hace falta para los tests y para la evaluación.
+Cada preset compila en `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) se
+descarga al configurar (FetchContent), fijado en un commit. El submódulo `vendor/PDDLDomains` (el
+catálogo de dominios) solo hace falta para los tests y para la evaluación.
 
 ## Idioma
 
@@ -137,12 +140,11 @@ std::string text = pddl::write("blocks", domain);
 | `libs/rules/` | los ejemplos de INSLV, la interpretación de sus reglas y su fusión en precondición y efecto |
 | `libs/pddl/` | el aprendizaje de principio a fin, la simplificación de las precondiciones y la escritura en PDDL |
 | `libs/resources/` | los límites de memoria |
-| `vendor/inslv/` | INSLV, el aprendizaje de reglas difusas (proyecto de CMake aparte) |
 | `vendor/PDDLDomains/` | submódulo: el catálogo de dominios de los tests y del banco de pruebas |
 | `scripts/` | la comparación de dominios, el banco de pruebas, las trazas de prueba y la preparación del entorno |
 | `benchmarks/` | las definiciones del banco de pruebas y sus huellas |
 | `tests/` | tests unitarios, del planificador, de los scripts y del oráculo; `data/traces/`: las trazas de prueba |
-| `cmake/` | los módulos de CMake: avisos, sanitizers, dependencias y herramientas de los tests |
+| `cmake/` | los módulos de CMake: avisos, sanitizers, dependencias (entre ellas, INSLV) y herramientas de los tests |
 | `docs/es/`, `docs/en/` | documentación, en español y en inglés |
 
 `build/` (compilaciones), `tools/` (VAL compilado en local), `.venv/` (el entorno de Python),
@@ -167,13 +169,15 @@ git submodule update --init vendor/PDDLDomains                    # o, en un clo
 scripts/setup_python.sh     # .venv con PyPlanner y pddldomains
 scripts/build_val.sh        # compila VAL en tools/bin/Validate (necesita git, cmake y g++)
 cmake --workflow --preset debug                                   # configura, compila y prueba
-git ls-files -- '*.cpp' '*.hpp' ':!vendor' | xargs clang-format --dry-run --Werror
+git ls-files -- '*.cpp' '*.hpp' | xargs clang-format --dry-run --Werror
 ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 ```
 
 - **Tests:** por etiquetas de CTest (`ctest --preset debug -L unit`): `unit`, `planner` (con
-  PyPlanner, VAL y PDDLDomains), `inslv` y `oracle` (solo con `Old/`, en local). Ver
+  PyPlanner, VAL y PDDLDomains) y `oracle` (solo con `Old/`, en local). Ver
   [Tests](docs/es/pruebas.md).
+- **INSLV en local:** para probar una copia local en lugar del commit fijado en
+  `cmake/Inslv.cmake`, `cmake --preset debug -DFETCHCONTENT_SOURCE_DIR_INSLV=<directorio>`.
 - **Dependencias de los tests:** GoogleTest 1.14 o posterior (si no está instalado, CMake lo
   descarga); para los del planificador, Python 3.12 o posterior con
   [PyPlanner](https://github.com/Leontes/PyPlanner) y pddldomains (`scripts/setup_python.sh`) y
@@ -205,8 +209,8 @@ Si usas PlanMiner en una publicación, cita el artículo:
 
 ## Licencia
 
-El código y la documentación se distribuyen con la [licencia MIT](LICENSE) (© 2026 José
-Segura). INSLV (`vendor/inslv`), que parte de NSLV, de Raúl Pérez, sigue con la licencia GPL, y
-el ejecutable `planminer`, que lo enlaza, queda sujeto a ella. Los dominios y problemas del
-catálogo PDDLDomains (submódulo) tienen sus propias condiciones. Ver
-[LICENCIAS.md](LICENCIAS.md).
+El código y la documentación se distribuyen con la [licencia MIT](LICENSE) (© 2026 José Segura).
+[INSLV](https://github.com/Leontes/INSLV-PlanMiner), que se descarga al configurar y parte de NSLV,
+de Raúl Pérez, tiene la licencia GPL-3.0, y el ejecutable `planminer`, que lo enlaza, queda sujeto a
+ella. Los dominios y problemas del catálogo PDDLDomains (submódulo) tienen sus propias condiciones.
+Ver [LICENCIAS.md](LICENCIAS.md).
