@@ -71,8 +71,9 @@ std::vector<LegacyRule> legacy_rules(const std::vector<Rule>& rules, const Examp
 
 /// Las cotas que se cumplen en los estados de antes de una acción y no en todos los estados de las
 /// trazas, como una regla del estado de antes que cubre todos sus ejemplos: son precondiciones que
-/// INSLV no elige si valen lo mismo antes y después de la acción (en fly-fast, onboard no cambia, y
-/// (<= (onboard ?0) (zoom-limit ?0)) se cumple en todas las filas). De las relaciones candidatas
+/// INSLV no ve si valen lo mismo antes y después de la acción, porque datasets::numeric_relations
+/// descarta las relaciones constantes (en fly-fast, onboard no cambia, y (> (onboard ?0)
+/// (zoom-limit ?0)) es falsa en todas las filas). De las relaciones candidatas
 /// (datasets::candidate_relations), una cota x <= y (o x >= y) se queda si
 ///
 /// - se cumple en al menos min_support de los estados de antes en que se conoce;

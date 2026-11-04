@@ -57,12 +57,13 @@ struct Options {
   /// con valor 1.
   bool exact_without_noise = true;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
-  /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule): son
-  /// precondiciones que INSLV no elige porque valen lo mismo antes y después, como (<= (onboard ?0)
-  /// (zoom-limit ?0)) en fly-fast. Las candidatas (datasets::candidate_relations) incluyen las
-  /// constantes en las filas de la acción y las de los fluentes que cambian en otras acciones.
-  /// Solo sin ruido (plantraces::frame_changes es 0): con ruido, casi ninguna relación es un
-  /// invariante (el ruido la contradice en algún estado), y pasan cotas que son coincidencias.
+  /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son
+  /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes
+  /// en las filas de la acción, como (> (onboard ?0) (zoom-limit ?0)) en fly-fast, porque
+  /// pasárselas todas añade coincidencias. Las candidatas (datasets::candidate_relations) incluyen
+  /// esas constantes y las de los fluentes que cambian en otras acciones. Solo sin ruido
+  /// (plantraces::frame_changes es 0): con ruido, casi ninguna relación es un invariante (el ruido
+  /// la contradice en algún estado), y pasan cotas que son coincidencias.
   bool contrast = true;
   /// De la precondición fusionada se quita lo que implican las demás condiciones en los estados de
   /// las trazas (drop_implied): la inversa de una relación simétrica o un invariante del estado,

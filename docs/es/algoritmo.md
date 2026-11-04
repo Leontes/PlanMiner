@@ -60,7 +60,7 @@ poder medirla por separado.
 | Constantes | Se descartan las relaciones que valen lo mismo en todas las filas en que se conocen. | `RelationOptions::known_constants` |
 | Sin el instante | El instante no es un fluente: ni se compara ni es un atributo. | `RelationOptions::time`, `ExampleOptions::time` |
 | Sin costes ni acumuladores | `(total-cost)` y los fluentes que no bajan nunca (como `total-fuel-used`) no se comparan: sus relaciones dependen de cuándo se aplica la acción. | `RelationOptions::action_costs`, `RelationOptions::accumulators` |
-| Cotas que no distinguen | Las cotas (`<=`, `>=`) que se cumplen en todos los estados de antes de la acción, se alcanzan en alguno y no son invariantes son precondiciones, aunque INSLV no las elija por valer lo mismo antes y después: `(<= (onboard ?0) (zoom-limit ?0))`. Solo sin ruido. | `Options::contrast` |
+| Cotas constantes | Las relaciones que valen lo mismo en todas las filas de una acción no se le pasan a INSLV, porque añadirían coincidencias. De ellas y de las demás, las cotas (`<=`, `>=`) que se cumplen en todos los estados de antes de la acción, se alcanzan en alguno y no son invariantes son precondiciones: `(<= (onboard ?0) (zoom-limit ?0))`. Solo sin ruido. | `Options::contrast` |
 
 ### Reglas y fusión
 
@@ -85,8 +85,8 @@ poder medirla por separado.
 - **Lenguaje:** STRIPS con tipos y costes de acción, y fluentes numéricos sin acciones
   durativas. Ni ADL (cuantificadores, efectos condicionales, disyunciones), ni constantes del
   dominio, ni acciones durativas.
-- **Ruido:** con un 5 % de ruido en las trazas, INSLV pierde literales esenciales y casi ningún
-  dominio aprendido da planes válidos.
+- **Ruido:** con un 5 % de ruido en las trazas faltan literales esenciales y casi ningún dominio
+  aprendido da planes válidos.
 - **Ambigüedad:** solo hay ejemplos de lo que pasa, no de lo que no puede pasar. Una precondición
   que se cumple en todos los estados de las trazas en que se aplica la acción no se puede
   descartar con ellas: una relación estática (`(reachable-floor ?lift ?floor)`), un invariante

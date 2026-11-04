@@ -60,7 +60,7 @@ options, so that it can be measured on its own.
 | Constants | Relations that have the same value in every row where they are known are discarded. | `RelationOptions::known_constants` |
 | No time | The time is not a fluent: it is neither compared nor an attribute. | `RelationOptions::time`, `ExampleOptions::time` |
 | No costs or accumulators | `(total-cost)` and the fluents that never decrease (such as `total-fuel-used`) are not compared: their relations depend on when the action is applied. | `RelationOptions::action_costs`, `RelationOptions::accumulators` |
-| Non-distinguishing bounds | Bounds (`<=`, `>=`) that hold in every state before the action, are reached in some and are not invariants are preconditions, even if INSLV does not pick them because they have the same value before and after: `(<= (onboard ?0) (zoom-limit ?0))`. Only without noise. | `Options::contrast` |
+| Constant bounds | Relations that have the same value in every row of an action are not passed to INSLV, because they would add coincidences. From those and the others, bounds (`<=`, `>=`) that hold in every state before the action, are reached in some and are not invariants are preconditions: `(<= (onboard ?0) (zoom-limit ?0))`. Only without noise. | `Options::contrast` |
 
 ### Rules and fusion
 
@@ -85,7 +85,7 @@ options, so that it can be measured on its own.
 - **Language:** STRIPS with types and action costs, and numeric fluents without durative
   actions. No ADL (quantifiers, conditional effects, disjunctions), no domain constants, no
   durative actions.
-- **Noise:** with 5 % noise in the traces, INSLV loses essential literals and almost no learned
+- **Noise:** with 5 % noise in the traces, essential literals go missing and almost no learned
   domain gives valid plans.
 - **Ambiguity:** there are only examples of what happens, not of what cannot happen. A
   precondition that holds in every state of the traces where the action is applied cannot be
