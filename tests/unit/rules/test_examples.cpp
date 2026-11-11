@@ -129,19 +129,6 @@ TEST(NumericExamples, ValuesRelationsAndChanges) {
 
 // El cambio vale -1 en las filas de después si el valor no sube, también si no cambia, como en el
 // original; desconocido si falta el valor. Y sin expresión no hay atributo del cambio.
-// Con HRC, el valor de un cluster descartado pasa a desconocido para INSLV.
-TEST(NumericExamples, HierarchicalDiscretization) {
-  rules::ExampleOptions options;
-  options.hierarchical = true;
-  const rules::Examples examples = rules::numeric_examples(
-      table({1, 1, 0, 0}, {1, 1, 1, 7}, {2, 2, 2, 2}), {}, {}, first, options);
-  ASSERT_GE(examples.data.atributos.size(), 2U);
-  EXPECT_EQ(examples.data.atributos[0].etiquetas.size(), 1U);
-  EXPECT_EQ(examples.data.valores[0][0], 1.0);
-  EXPECT_TRUE(std::isnan(examples.data.valores[0][3]));
-  EXPECT_EQ(examples.data.atributos[1].etiquetas.size(), 1U);
-}
-
 TEST(NumericExamples, TheChangeSign) {
   const datasets::Table t = table({1, 1, 1, 1}, {3, 5, 2, unknown}, {4, 4, 4, 5});
   const plantraces::LiftedAtom x{"x", {}};

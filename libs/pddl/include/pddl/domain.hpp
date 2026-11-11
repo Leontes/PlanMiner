@@ -64,6 +64,11 @@ struct Options {
   /// como el original, nada.
   double rare_values = 0.0;
   bool rare_values_per_noise = false;
+  /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
+  /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
+  /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos
+  /// y las relaciones, que así se calculan con los valores suavizados. Si no, como el original.
+  bool smooth_fluents = false;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
   /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son
   /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes

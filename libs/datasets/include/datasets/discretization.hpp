@@ -5,6 +5,8 @@
 #include <functional>
 #include <vector>
 
+#include "datasets/table.hpp"
+
 namespace datasets {
 
 /// Una etiqueta difusa trapezoidal: [a, d] es su soporte y [b, c], su núcleo.
@@ -41,37 +43,30 @@ using Random = std::function<int()>;
 /// Sin valores conocidos, la partición está vacía (el original lee fuera de rango).
 std::vector<FuzzySet> discretize(const std::vector<double>& values, const Random& random);
 
-/// Cómo se parten los clusters en la discretización HRC (hierarchical_discretize).
-struct HierarchicalOptions {
-  /// Un cluster se parte en dos si alpha (1 - s) + beta σ / n pasa de threshold: s, su silueta (con
-  /// distancias al cuadrado); σ, la raíz de la suma de los cuadrados de las distancias de sus
-  /// valores a su media; y n, los valores del conjunto que se partió.
-  double threshold = 0.05;
-  double alpha = 0.5;
-  double beta = 0.5;
-  /// Los valores se llevan a [0, 1] (con el mínimo y el máximo de la columna) antes de agruparlos,
-  /// para que σ / n no dependa de las unidades. La rama ExperimentosRuido no lo hacía: con valores
-  /// grandes, como el combustible de zenotravel, parte casi hasta un cluster por valor.
-  bool normalize = false;
-  /// Un cluster de un solo valor que habría que partir se queda. La rama lo descartaba, y su valor
-  /// quedaba fuera de la partición.
-  bool keep_singletons = false;
+/// Cómo agrupa HRC los valores (la tabla 4 del artículo de PlanMiner-N).
+struct SmoothingOptions {
+  /// Un cluster se acepta si su dispersión, alpha (1 - s) + beta σ / μ, no pasa de acceptance: s,
+  /// la silueta media de sus valores frente al otro cluster de la partición (con la distancia
+  /// euclídea); σ / μ, su coeficiente de variación.
+  double alpha = 0.6;
+  double beta = 0.4;
+  double acceptance = 0.05;
 };
 
-/// La discretización HRC (Hierarchical Recursive Clustering) de la rama ExperimentosRuido del
-/// PlanMiner original: de arriba abajo, sin saber cuántos clusters hay. Los valores conocidos se
-/// parten en dos con k-means (el de discretize, la mejor de cinco ejecuciones por el índice CH) y
-/// cada cluster que no es lo bastante bueno (HierarchicalOptions) se vuelve a partir.
+/// El filtro numérico de PlanMiner-N (Segura-Muros, Fernández-Olivares y Pérez, «Robust Knowledge
+/// Acquisition for Automated Planning», algoritmos 4 y 5): HRC (Hierarchical Recursive
+/// Clustering), de arriba abajo y sin saber cuántos clusters hay. Los valores conocidos se parten
+/// en dos con k-means (los dos centroides, valores distintos al azar; hasta que ningún valor cambia
+/// de cluster), y cada mitad con un solo valor se descarta como atípica, la que no pasa de la
+/// dispersión aceptada se queda, y las demás se vuelven a partir.
 ///
-/// Cada cluster da una etiqueta exacta con sus valores, [mínimo, máximo], en orden: en la rama,
-/// cada valor pasaba al centroide de su cluster y cada centroide era una etiqueta. Los valores de
-/// los clusters descartados no caen en ninguna.
-///
-/// La rama solo la usó en una versión en que no hacía nada (k-means no calculaba la silueta, y no
-/// salía ningún cluster). Esta es la de su último commit, con los clusters vacíos y la profundidad
-/// acotados.
-std::vector<FuzzySet> hierarchical_discretize(const std::vector<double>& values,
-                                              const Random& random,
-                                              const HierarchicalOptions& options = {});
+/// Cada valor conocido pasa a la media de su cluster, y los de los clusters descartados, a
+/// desconocidos: el ruido aleatorio se suaviza y los atípicos se quitan. Una columna sin dos
+/// valores distintos se queda como está.
+std::vector<double> smooth(const std::vector<double>& values, const Random& random,
+                           const SmoothingOptions& options = {});
+
+/// smooth en cada fluente de la tabla (no en el instante), uno a uno.
+void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options = {});
 
 }  // namespace datasets

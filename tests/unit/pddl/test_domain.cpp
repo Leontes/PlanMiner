@@ -182,6 +182,14 @@ TEST(Learn, RareValuesOnlyWithNoise) {
             pddl::write("blocks", pddl::learn(noisy)));
 }
 
+// El suavizado de los fluentes (HRC) solo cuenta si se estima ruido.
+TEST(Learn, SmoothFluentsOnlyWithNoise) {
+  pddl::Options options;
+  options.smooth_fluents = true;
+  EXPECT_EQ(pddl::write("zenotravel", pddl::learn(traces("zenotravel"), options)),
+            pddl::write("zenotravel", pddl::learn(traces("zenotravel"))));
+}
+
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la
 // precondición fusionada también están los átomos falsos, que se pierden al escribirla.
 TEST(LearnOriginal, Blocksworld) {

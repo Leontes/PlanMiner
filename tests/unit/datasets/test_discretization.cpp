@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <cstddef>
 #include <limits>
 #include <vector>
@@ -70,38 +71,52 @@ TEST(Discretize, EmptyClustersAreReseeded) {
   EXPECT_EQ(sets, (std::vector<FuzzySet>{{9, 9, 9, 9}, {1, 1, 1, 1}}));
 }
 
-// HRC: los grupos bien separados se quedan juntos; el de 1 y 10 se parte otra vez.
-TEST(HierarchicalDiscretize, SeparatedGroups) {
-  EXPECT_EQ(datasets::hierarchical_discretize({1, 1, 1, 10, 10, 10, 20, 20, 20, unknown}, unused),
-            (std::vector<FuzzySet>{{1, 1, 1, 1}, {10, 10, 10, 10}, {20, 20, 20, 20}}));
+// La columna (bat_usage ?arg1) de la tabla 2 del artículo de PlanMiner-N (figura 2): los valores
+// cerca de 3 y de 5 quedan en dos clusters y pasan a su media; el atípico, -4, a desconocido.
+const std::vector<double> bat_usage{3.25, 3, 3, 3, 3, 3, 2.97, 3, 5, 5.05, 5, 5, 3, 3, -4, 5, 3, 3};
+
+TEST(Smooth, ClustersAndOutliers) {
+  std::vector<double> values = bat_usage;
+  values.push_back(unknown);
+  const std::vector<double> smoothed = datasets::smooth(values, first);
+  ASSERT_EQ(smoothed.size(), values.size());
+  for (std::size_t i = 0; i < bat_usage.size(); ++i) {
+    if (bat_usage[i] == -4) {
+      EXPECT_TRUE(std::isnan(smoothed[i])) << i;
+    } else if (bat_usage[i] < 4) {
+      EXPECT_NEAR(smoothed[i], (3 * 10 + 3.25 + 2.97) / 12, 1e-12) << i;
+    } else {
+      EXPECT_NEAR(smoothed[i], (5 * 4 + 5.05) / 5, 1e-12) << i;
+    }
+  }
+  EXPECT_TRUE(std::isnan(smoothed.back()));
 }
 
-// Un valor aislado queda solo en su cluster, que habría que partir: la rama lo descarta.
-TEST(HierarchicalDiscretize, SingletonsAreDroppedOrKept) {
-  const std::vector<double> values{0, 0, 0, 0, 5, 10, 10, 10, 10};
-  EXPECT_EQ(datasets::hierarchical_discretize(values, first),
-            (std::vector<FuzzySet>{{0, 0, 0, 0}, {10, 10, 10, 10}}));
-  datasets::HierarchicalOptions options;
-  options.keep_singletons = true;
-  EXPECT_EQ(datasets::hierarchical_discretize(values, first, options),
-            (std::vector<FuzzySet>{{0, 0, 0, 0}, {5, 5, 5, 5}, {10, 10, 10, 10}}));
+// σ / μ no depende de las unidades: lo mismo por mil.
+TEST(Smooth, TheScaleDoesNotMatter) {
+  const std::vector<double>& small = bat_usage;
+  std::vector<double> large;
+  for (const double value : small) {
+    large.push_back(value * 1000);
+  }
+  const std::vector<double> a = datasets::smooth(small, first);
+  const std::vector<double> b = datasets::smooth(large, first);
+  for (std::size_t i = 0; i < a.size(); ++i) {
+    if (std::isnan(a[i])) {
+      EXPECT_TRUE(std::isnan(b[i])) << i;
+    } else {
+      EXPECT_NEAR(a[i] * 1000, b[i], 1e-6) << i;
+    }
+  }
 }
 
-// Sin normalizar, σ / n depende de las unidades: con valores de 100 en 100, los grupos se parten
-// hasta quedarse en valores sueltos, y se descartan todos. Normalizados, quedan dos.
-TEST(HierarchicalDiscretize, NormalizedValues) {
-  const std::vector<double> values{100, 101, 102, 200, 201, 202};
-  EXPECT_TRUE(datasets::hierarchical_discretize(values, unused).empty());
-  datasets::HierarchicalOptions options;
-  options.normalize = true;
-  EXPECT_EQ(datasets::hierarchical_discretize(values, unused, options),
-            (std::vector<FuzzySet>{{100, 100, 102, 102}, {200, 200, 202, 202}}));
-}
-
-TEST(HierarchicalDiscretize, AConstantOrNothing) {
-  EXPECT_EQ(datasets::hierarchical_discretize({4, unknown, 4}, unused),
-            (std::vector<FuzzySet>{{4, 4, 4, 4}}));
-  EXPECT_TRUE(datasets::hierarchical_discretize({unknown}, unused).empty());
+// Sin dos valores distintos, nada que agrupar.
+TEST(Smooth, AConstantStays) {
+  const std::vector<double> values{4, unknown, 4};
+  const std::vector<double> smoothed = datasets::smooth(values, unused);
+  EXPECT_EQ(smoothed[0], 4.0);
+  EXPECT_TRUE(std::isnan(smoothed[1]));
+  EXPECT_EQ(smoothed[2], 4.0);
 }
 
 }  // namespace

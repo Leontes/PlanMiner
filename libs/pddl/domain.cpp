@@ -212,9 +212,17 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   const std::map<std::string, std::vector<plantraces::Transition>> actions =
       plantraces::group_by_action(traces);
 
+  const double noise = plantraces::frame_changes(traces);
+  const bool noiseless = noise == 0.0;
+  // El generador de INSLV, con la secuencia del rand() de glibc. INSLV lo siembra al empezar cada
+  // aprendizaje, y la discretización sigue su secuencia: el original hacía lo mismo con el rand()
+  // global. Antes, solo lo usa el suavizado de los fluentes.
+  inslv::GeneradorDeAzar generator;
+  const datasets::Random random = [&generator] { return generator(); };
+
   // Primero las tablas y los efectos numéricos de todas las acciones: las relaciones de cada una
   // dependen de qué fluentes cambian en el dominio. Ni la tabla ni la regresión usan números al
-  // azar.
+  // azar; el suavizado de los fluentes, sí.
   std::map<std::string, datasets::Table> tables;
   std::map<std::string, std::vector<datasets::FluentChange>> effects;
   datasets::DomainFluents fluents{datasets::accumulators(traces), {}};
@@ -223,6 +231,9 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     if (options.aliasing) {
       datasets::hide_aliased_atoms(table, transitions);
     }
+    if (options.smooth_fluents && !noiseless) {
+      datasets::smooth_fluents(table, random);
+    }
     effects[name] = datasets::numeric_effects(table, options.effects);
     for (const datasets::FluentChange& change : effects[name]) {
       fluents.changing.insert(change.fluent.name);
@@ -230,16 +241,10 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     tables.emplace(name, std::move(table));
   }
 
-  const double noise = plantraces::frame_changes(traces);
-  const bool noiseless = noise == 0.0;
   rules::FusionOptions fusion = options.fusion;
   if (options.exact_without_noise && noiseless) {
     fusion.min_support = 1.0;
   }
-  // El generador de INSLV, con la secuencia del rand() de glibc. INSLV lo siembra al empezar cada
-  // aprendizaje, y la discretización sigue su secuencia: el original hacía lo mismo con el rand()
-  // global.
-  inslv::GeneradorDeAzar generator;
   inslv::Opciones inslv_options;
   inslv_options.azar = &generator;
   for (const auto& [name, transitions] : actions) {
@@ -262,7 +267,7 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     action.numeric = rules::numeric_examples(
         table, changes,
         datasets::numeric_relations(table, changes, options.relations, {fluents.accumulators, {}}),
-        [&generator] { return generator(); }, options.examples);
+        random, options.examples);
     const std::vector<rules::LegacyRule> numeric = rules::legacy_rules(
         rules::learn(action.numeric, inslv_options), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());

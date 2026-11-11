@@ -1,11 +1,13 @@
 #include "datasets/discretization.hpp"
 
 #include <algorithm>
+#include <array>
 #include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <limits>
+#include <map>
 #include <utility>
 
 namespace datasets {
@@ -239,125 +241,164 @@ FuzzySet trapezoid(std::vector<double> elements) {
   return {a.x, b.x, c.x, d.x};
 }
 
-// (SI, en la rama ExperimentosRuido) La silueta media de cada cluster, con distancias al cuadrado:
-// 0 si tiene menos de dos valores, y -1 para un valor sin distancia a los otros clusters.
-std::vector<double> silhouettes(const std::vector<std::vector<double>>& elements) {
-  std::vector<double> result;
-  for (std::size_t i = 0; i < elements.size(); ++i) {
-    if (elements[i].size() < 2) {
-      result.push_back(0.0);
-      continue;
+// (HRC) La partición en dos de k-means: los centroides empiezan en dos valores distintos al azar,
+// y cada valor va al centroide más cercano (con un empate, al primero) hasta que ninguno cambia de
+// cluster. values tiene al menos dos valores distintos.
+std::array<std::vector<double>, 2> halve(const std::vector<double>& values, const Random& random) {
+  const auto pick = [&random](std::size_t size) {
+    return static_cast<std::size_t>(random()) % size;
+  };
+  std::array<double, 2> centroids{};
+  centroids[0] = values[pick(values.size())];
+  std::vector<double> others;
+  for (const double value : values) {
+    if (value != centroids[0]) {
+      others.push_back(value);
     }
-    double total = 0.0;
-    for (std::size_t j = 0; j < elements[i].size(); ++j) {
-      double a = 0.0;
-      for (std::size_t k = 0; k < elements[i].size(); ++k) {
-        if (j != k) {
-          a += std::pow(elements[i][j] - elements[i][k], 2);
-        }
-      }
-      a /= static_cast<double>(elements[i].size() - 1);
-      double b = 999999999.9;
-      for (std::size_t k = 0; k < elements.size(); ++k) {
-        if (k != i && !elements[k].empty()) {
-          double mean = 0.0;
-          for (const double other : elements[k]) {
-            mean += std::pow(elements[i][j] - other, 2);
-          }
-          b = std::min(b, mean / static_cast<double>(elements[k].size()));
-        }
-      }
-      total += b == 0.0 ? -1.0 : (b - a) / std::max(a, b);
-    }
-    result.push_back(total / static_cast<double>(elements[i].size()));
   }
-  return result;
+  centroids[1] = others[pick(others.size())];
+
+  std::vector<std::size_t> assigned(values.size(), 2);
+  for (std::size_t iteration = 0; iteration < max_iterations; ++iteration) {
+    bool changed = false;
+    std::array<double, 2> sums{};
+    std::array<std::size_t, 2> sizes{};
+    for (std::size_t i = 0; i < values.size(); ++i) {
+      const std::size_t cluster =
+          std::abs(values[i] - centroids[1]) < std::abs(values[i] - centroids[0]) ? 1 : 0;
+      changed = changed || cluster != assigned[i];
+      assigned[i] = cluster;
+      sums[cluster] += values[i];
+      ++sizes[cluster];
+    }
+    if (!changed) {
+      break;
+    }
+    for (std::size_t c = 0; c < 2; ++c) {
+      if (sizes[c] > 0) {
+        centroids[c] = sums[c] / static_cast<double>(sizes[c]);
+      }
+    }
+  }
+  std::array<std::vector<double>, 2> halves;
+  for (std::size_t i = 0; i < values.size(); ++i) {
+    halves[assigned[i]].push_back(values[i]);
+  }
+  return halves;
+}
+
+// La silueta media de los valores de un cluster frente al otro de la partición, con la distancia
+// euclídea: 0 si tiene un solo valor.
+double silhouette(const std::vector<double>& cluster, const std::vector<double>& other) {
+  if (cluster.size() < 2) {
+    return 0.0;
+  }
+  double total = 0.0;
+  for (const double x : cluster) {
+    double a = 0.0;
+    for (const double y : cluster) {
+      a += std::abs(x - y);
+    }
+    a /= static_cast<double>(cluster.size() - 1);
+    double b = 0.0;
+    for (const double y : other) {
+      b += std::abs(x - y);
+    }
+    b /= static_cast<double>(other.size());
+    const double scale = std::max(a, b);
+    total += scale == 0.0 ? 0.0 : (b - a) / scale;
+  }
+  return total / static_cast<double>(cluster.size());
+}
+
+// alpha (1 - s) + beta σ / μ. Sin σ, 0; con σ y μ = 0, infinita.
+double dispersion(const std::vector<double>& cluster, double silhouette,
+                  const SmoothingOptions& options) {
+  double mean = 0.0;
+  for (const double value : cluster) {
+    mean += value;
+  }
+  mean /= static_cast<double>(cluster.size());
+  double variance = 0.0;
+  for (const double value : cluster) {
+    variance += std::pow(value - mean, 2);
+  }
+  const double deviation = std::sqrt(variance / static_cast<double>(cluster.size()));
+  double variation = 0.0;
+  if (deviation > 0.0) {
+    variation = mean == 0.0 ? std::numeric_limits<double>::infinity() : deviation / std::abs(mean);
+  }
+  return (options.alpha * (1.0 - silhouette)) + (options.beta * variation);
 }
 
 // Más allá de esta profundidad, un cluster ya no se parte.
 constexpr int max_depth = 64;
 
-// (HRC) Los clusters de values, partiendo de arriba abajo.
+// (HRC) Los clusters aceptados de values.
 void hierarchical(const std::vector<double>& values, const Random& random,
-                  const HierarchicalOptions& options, int depth,
-                  std::vector<std::vector<double>>& result) {
-  Clusters best = kmeans(2, values, random);
-  for (int run = 0; run < 4; ++run) {
-    Clusters other = kmeans(2, values, random);
-    if (other.ch > best.ch || std::isnan(best.ch)) {
-      best = std::move(other);
-    }
-  }
-  const std::vector<double> silhouette = silhouettes(best.elements);
-  for (std::size_t i = 0; i < best.elements.size(); ++i) {
-    const std::vector<double>& cluster = best.elements[i];
-    if (cluster.empty()) {
+                  const SmoothingOptions& options, int depth,
+                  std::vector<std::vector<double>>& accepted) {
+  const std::array<std::vector<double>, 2> halves = halve(values, random);
+  for (std::size_t h = 0; h < 2; ++h) {
+    const std::vector<double>& cluster = halves[h];
+    if (cluster.size() <= 1) {
       continue;
     }
-    double mean = 0.0;
-    for (const double value : cluster) {
-      mean += value;
-    }
-    mean /= static_cast<double>(cluster.size());
-    double spread = 0.0;
-    for (const double value : cluster) {
-      spread += std::pow(mean - value, 2);
-    }
-    spread = std::sqrt(spread) / static_cast<double>(values.size());
-    const double score = options.alpha * (1.0 - silhouette[i]) + options.beta * spread;
-    if (score <= options.threshold || depth >= max_depth || (cluster.size() == values.size())) {
-      result.push_back(cluster);
-    } else if (cluster.size() > 1) {
-      hierarchical(cluster, random, options, depth + 1, result);
-    } else if (options.keep_singletons) {
-      result.push_back(cluster);
+    const double score = dispersion(cluster, silhouette(cluster, halves[1 - h]), options);
+    if (score <= options.acceptance || depth >= max_depth) {
+      accepted.push_back(cluster);
+    } else {
+      hierarchical(cluster, random, options, depth + 1, accepted);
     }
   }
 }
 
 }  // namespace
 
-std::vector<FuzzySet> hierarchical_discretize(const std::vector<double>& values,
-                                              const Random& random,
-                                              const HierarchicalOptions& options) {
+std::vector<double> smooth(const std::vector<double>& values, const Random& random,
+                           const SmoothingOptions& options) {
   std::vector<double> known;
   for (const double value : values) {
     if (!std::isnan(value)) {
       known.push_back(value);
     }
   }
-  if (known.empty()) {
-    return {};
-  }
-  const auto [low, high] = std::minmax_element(known.begin(), known.end());
-  const double min = *low;
-  const double range = *high - *low;
-  if (range == 0.0) {
-    return {{min, min, min, min}};
-  }
-  std::vector<double> scaled = known;
-  if (options.normalize) {
-    for (double& value : scaled) {
-      value = (value - min) / range;
-    }
+  const bool varies = std::any_of(known.begin(), known.end(),
+                                  [&known](double value) { return value != known.front(); });
+  if (!varies) {
+    return values;
   }
   std::vector<std::vector<double>> clusters;
-  hierarchical(scaled, random, options, 0, clusters);
+  hierarchical(known, random, options, 0, clusters);
 
-  std::vector<FuzzySet> sets;
+  // Cada valor, la media de su cluster; un mismo valor siempre cae en el mismo.
+  std::map<double, double> means;
   for (const std::vector<double>& cluster : clusters) {
-    auto [first, last] = std::minmax_element(cluster.begin(), cluster.end());
-    double from = *first;
-    double to = *last;
-    if (options.normalize) {
-      from = min + (from * range);
-      to = min + (to * range);
+    double mean = 0.0;
+    for (const double value : cluster) {
+      mean += value;
     }
-    sets.push_back({from, from, to, to});
+    mean /= static_cast<double>(cluster.size());
+    for (const double value : cluster) {
+      means[value] = mean;
+    }
   }
-  std::sort(sets.begin(), sets.end(),
-            [](const FuzzySet& x, const FuzzySet& y) { return x.a < y.a; });
-  return sets;
+  std::vector<double> result = values;
+  for (double& value : result) {
+    if (!std::isnan(value)) {
+      const auto found = means.find(value);
+      value = found == means.end() ? std::numeric_limits<double>::quiet_NaN() : found->second;
+    }
+  }
+  return result;
+}
+
+void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options) {
+  for (std::size_t a = 0; a < table.attributes.size(); ++a) {
+    if (table.attributes[a].kind == AttributeKind::fluent) {
+      table.columns[a] = smooth(table.columns[a], random, options);
+    }
+  }
 }
 
 std::vector<FuzzySet> discretize(const std::vector<double>& values, const Random& random) {
