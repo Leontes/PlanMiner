@@ -232,7 +232,9 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
       datasets::hide_aliased_atoms(table, transitions);
     }
     if (options.smooth_fluents && !noiseless) {
-      datasets::smooth_fluents(table, random);
+      std::set<std::string> cumulative = fluents.accumulators;
+      cumulative.insert("total-cost");
+      datasets::smooth_fluents(table, random, {}, cumulative);
     }
     effects[name] = datasets::numeric_effects(table, options.effects);
     for (const datasets::FluentChange& change : effects[name]) {

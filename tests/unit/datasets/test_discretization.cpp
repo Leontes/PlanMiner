@@ -119,4 +119,25 @@ TEST(Smooth, AConstantStays) {
   EXPECT_EQ(smoothed[2], 4.0);
 }
 
+// smooth_fluents suaviza los fluentes de la tabla, salvo los excluidos, y no toca los átomos.
+TEST(Smooth, TheFluentsOfATable) {
+  datasets::Table table;
+  table.transitions = 9;
+  table.attributes = {{datasets::AttributeKind::atom, {"p", {}}},
+                      {datasets::AttributeKind::fluent, {"bat_usage", {}}},
+                      {datasets::AttributeKind::fluent, {"total-cost", {}}}};
+  const std::vector<double> atoms(18, 1.0);
+  table.columns = {atoms, bat_usage, bat_usage};
+  datasets::smooth_fluents(table, first, {}, {"total-cost"});
+  EXPECT_EQ(table.columns[0], atoms);
+  const std::vector<double> smoothed = datasets::smooth(bat_usage, first);
+  ASSERT_EQ(table.columns[1].size(), smoothed.size());
+  for (std::size_t i = 0; i < smoothed.size(); ++i) {
+    EXPECT_TRUE(table.columns[1][i] == smoothed[i] ||
+                (std::isnan(table.columns[1][i]) && std::isnan(smoothed[i])))
+        << i;
+  }
+  EXPECT_EQ(table.columns[2], bat_usage);
+}
+
 }  // namespace

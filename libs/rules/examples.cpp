@@ -164,6 +164,11 @@ Examples numeric_examples(const datasets::Table& table,
     for (const datasets::FuzzySet& set : datasets::discretize(table.columns[a], random)) {
       labels.push_back({"L_" + std::to_string(labels.size()), set.a, set.b, set.c, set.d});
     }
+    // Sin valores conocidos (el suavizado puede dejar así un fluente) no hay etiquetas, e INSLV no
+    // acepta una variable sin ellas.
+    if (labels.empty()) {
+      continue;
+    }
     add(result, {AttributeKind::value, table.attributes[a], std::nullopt, std::nullopt, {}},
         std::move(labels), table.columns[a]);
   }

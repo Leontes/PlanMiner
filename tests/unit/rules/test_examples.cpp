@@ -94,6 +94,13 @@ TEST(HideRareValues, TheRareValueOfEachClass) {
   }
 }
 
+// Un fluente sin valores conocidos no tiene etiquetas: no se le pasa a INSLV.
+TEST(NumericExamples, AFluentWithoutValues) {
+  const rules::Examples examples = rules::numeric_examples(
+      table({1, 1, 1, 1}, {unknown, unknown, unknown, unknown}, {9, 9, 9, 9}), {}, {}, first);
+  EXPECT_EQ(names(examples), std::vector<std::string>{"value (y)"});
+}
+
 TEST(NumericExamples, ValuesRelationsAndChanges) {
   const datasets::Table t = table({1, 1, 1, 1}, {3, 5, 4, 6}, {9, 9, 9, 9});
   const plantraces::LiftedAtom x{"x", {}};

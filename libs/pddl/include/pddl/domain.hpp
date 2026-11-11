@@ -67,7 +67,10 @@ struct Options {
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos
-  /// y las relaciones, que así se calculan con los valores suavizados. Si no, como el original.
+  /// y las relaciones, que así se calculan con los valores suavizados. Salvo (total-cost) y los
+  /// acumuladores (datasets::accumulators): sus valores no se repiten, y suavizarlos estropea la
+  /// regresión de lo que suman (en barman, (increase (total-cost) 1) en todas las acciones). Si no,
+  /// como el original.
   bool smooth_fluents = false;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
   /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son

@@ -3,6 +3,8 @@
 #pragma once
 
 #include <functional>
+#include <set>
+#include <string>
 #include <vector>
 
 #include "datasets/table.hpp"
@@ -66,7 +68,9 @@ struct SmoothingOptions {
 std::vector<double> smooth(const std::vector<double>& values, const Random& random,
                            const SmoothingOptions& options = {});
 
-/// smooth en cada fluente de la tabla (no en el instante), uno a uno.
-void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options = {});
+/// smooth en cada fluente de la tabla (no en el instante), uno a uno, salvo los de excluded (por su
+/// nombre).
+void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options = {},
+                    const std::set<std::string>& excluded = {});
 
 }  // namespace datasets

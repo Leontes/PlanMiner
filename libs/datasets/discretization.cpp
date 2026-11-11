@@ -393,9 +393,11 @@ std::vector<double> smooth(const std::vector<double>& values, const Random& rand
   return result;
 }
 
-void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options) {
+void smooth_fluents(Table& table, const Random& random, const SmoothingOptions& options,
+                    const std::set<std::string>& excluded) {
   for (std::size_t a = 0; a < table.attributes.size(); ++a) {
-    if (table.attributes[a].kind == AttributeKind::fluent) {
+    if (table.attributes[a].kind == AttributeKind::fluent &&
+        !excluded.contains(table.attributes[a].term.name)) {
       table.columns[a] = smooth(table.columns[a], random, options);
     }
   }
