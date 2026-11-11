@@ -57,6 +57,14 @@ struct FusionOptions {
   /// como el original: solo cuentan las ciertas, de las relaciones queda la última y de los
   /// números, un intervalo.
   bool combine_comparisons = true;
+  /// El refinamiento de los meta-estados de PlanMiner-N (algoritmos 7 y 8 del artículo). El soporte
+  /// de una condición son los ejemplos que cubren, sumados, las reglas de su estado que la tienen.
+  /// Una condición con un soporte por debajo de min_rule_support de las aplicaciones de la acción
+  /// es irrelevante y se descarta (el artículo usa 0.05). Y, con majority, en un conflicto entre
+  /// dos valores de un atributo, si la diferencia de sus soportes no pasa de conflict_band por su
+  /// media, se descartan los dos (el artículo usa 0.1). Con 0, nada: el empate exacto de majority.
+  double min_rule_support = 0.0;
+  double conflict_band = 0.0;
 
   static FusionOptions original();
 };

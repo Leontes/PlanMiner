@@ -108,9 +108,10 @@ void accumulate(std::vector<Weighted>& all, const Literal& literal, int covered)
 }
 
 // Un atributo con dos valores: gana el primero si cubre más del 5 % de los ejemplos de los dos; si
-// no, el otro (en el estado de después, el primero también). Con majority, el que cubre más (con
-// un empate, ninguno).
-std::vector<Weighted> select(const std::vector<Weighted>& all, bool post, bool majority) {
+// no, el otro (en el estado de después, el primero también). Con majority, el que cubre más, salvo
+// si la diferencia no pasa de band por la media de los dos (con 0, un empate): entonces, ninguno.
+std::vector<Weighted> select(const std::vector<Weighted>& all, bool post, bool majority,
+                             double band) {
   std::vector<Weighted> selected;
   std::vector<bool> seen(all.size(), false);
   for (std::size_t i = 0; i < all.size(); ++i) {
@@ -132,10 +133,8 @@ std::vector<Weighted> select(const std::vector<Weighted>& all, bool post, bool m
     const double w1 = all[i].weight;
     const double w2 = all[*conflict].weight;
     if (majority) {
-      if (w1 > w2) {
-        selected.push_back(all[i]);
-      } else if (w2 > w1) {
-        selected.push_back(all[*conflict]);
+      if (std::abs(w1 - w2) > band * (w1 + w2) / 2.0) {
+        selected.push_back(w1 > w2 ? all[i] : all[*conflict]);
       }
     } else if (w1 / (w1 + w2) > 0.05) {
       selected.push_back(all[i]);
@@ -525,7 +524,7 @@ std::vector<Literal> precondition(const std::vector<Weighted>& pre, const Fusion
   Groups groups;
   // (lado izquierdo, lado derecho o número) -> ordenaciones admitidas
   std::map<std::pair<std::string, std::string>, unsigned> combined;
-  for (const Weighted& selected : select(pre, false, options.majority)) {
+  for (const Weighted& selected : select(pre, false, options.majority, options.conflict_band)) {
     std::vector<std::string> tokens = split(selected.literal.attribute);
     const std::string& value = selected.literal.value;
     // Un valor discretizado pasa a ser una igualdad con su número.
@@ -591,10 +590,11 @@ std::vector<Literal> precondition(const std::vector<Weighted>& pre, const Fusion
 }
 
 std::vector<Literal> effect(const std::vector<Weighted>& post,
-                            const std::vector<Literal>& precondition, bool majority) {
+                            const std::vector<Literal>& precondition,
+                            const FusionOptions& options) {
   std::vector<Literal> rule;
   Groups groups;
-  for (const Weighted& selected : select(post, true, majority)) {
+  for (const Weighted& selected : select(post, true, options.majority, options.conflict_band)) {
     const std::vector<std::string> tokens = split(selected.literal.attribute);
     const std::string& value = selected.literal.value;
     if (is_truth(value)) {
@@ -728,9 +728,17 @@ Fused fuse(std::vector<LegacyRule> rules, const std::vector<std::string>& header
     }
   }
 
+  // Las condiciones irrelevantes: las de poco soporte.
+  if (options.min_rule_support > 0.0 && evidence.transitions > 0) {
+    const double least = options.min_rule_support * static_cast<double>(evidence.transitions);
+    const auto irrelevant = [least](const Weighted& weighted) { return weighted.weight < least; };
+    std::erase_if(pre, irrelevant);
+    std::erase_if(post, irrelevant);
+  }
+
   Fused fused;
   fused.precondition = precondition(pre, options);
-  fused.effect = effect(post, fused.precondition, options.majority);
+  fused.effect = effect(post, fused.precondition, options);
   return fused;
 }
 

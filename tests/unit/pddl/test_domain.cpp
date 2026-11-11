@@ -182,6 +182,14 @@ TEST(Learn, RareValuesOnlyWithNoise) {
             pddl::write("blocks", pddl::learn(noisy)));
 }
 
+// El refinamiento de los meta-estados solo cuenta si se estima ruido.
+TEST(Learn, RefineMetaStatesOnlyWithNoise) {
+  pddl::Options options;
+  options.refine_meta_states = true;
+  EXPECT_EQ(pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"), options)),
+            pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"))));
+}
+
 // El suavizado de los fluentes (HRC) solo cuenta si se estima ruido.
 TEST(Learn, SmoothFluentsOnlyWithNoise) {
   pddl::Options options;

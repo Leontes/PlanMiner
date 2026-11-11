@@ -103,6 +103,28 @@ TEST(Fuse, TheMajorityWins) {
   EXPECT_EQ(fused.effect, (std::vector<Literal>{{"( q )", "True"}}));
 }
 
+// PlanMiner-N: fuera la condición de poco soporte, (s), y la del conflicto igualado, (t) con 50 y
+// 48 ejemplos; (q), con 90 frente a 8, se queda.
+TEST(Fuse, RefinesTheMetaStates) {
+  const std::vector<LegacyRule> input = {
+      {-50, {{"( p )", "True"}, {"( q )", "True"}, {"( t )", "True"}}},
+      {-40, {{"( p )", "True"}, {"( q )", "True"}, {"( t )", "False"}}},
+      {-8, {{"( p )", "True"}, {"( q )", "False"}, {"( t )", "False"}}},
+      {-2, {{"( s )", "True"}}},
+  };
+  rules::Evidence evidence;
+  evidence.transitions = 100;
+  rules::FusionOptions options = rules::FusionOptions::original();
+  options.majority = true;
+  EXPECT_EQ(rules::fuse(input, {}, evidence, options).precondition,
+            (std::vector<Literal>{
+                {"( p )", "True"}, {"( q )", "True"}, {"( t )", "True"}, {"( s )", "True"}}));
+  options.min_rule_support = 0.05;
+  options.conflict_band = 0.1;
+  EXPECT_EQ(rules::fuse(input, {}, evidence, options).precondition,
+            (std::vector<Literal>{{"( p )", "True"}, {"( q )", "True"}}));
+}
+
 // Corrección: las comparaciones ciertas y falsas de una pareja se combinan. (x) no es menor que 1:
 // >=. (x) no es menor ni igual que (y): >. (x) es igual y mayor que (z): contradicción, nada.
 TEST(Fuse, CombinesTheComparisons) {

@@ -72,6 +72,11 @@ struct Options {
   /// regresión de lo que suman (en barman, (increase (total-cost) 1) en todas las acciones). Si no,
   /// como el original.
   bool smooth_fluents = false;
+  /// Si las trazas tienen ruido, la fusión refina los meta-estados como PlanMiner-N: fuera las
+  /// condiciones con un soporte por debajo del 5 % de las aplicaciones, y en un conflicto con una
+  /// diferencia de soportes dentro del 10 % de su media, fuera los dos valores
+  /// (rules::FusionOptions::min_rule_support y conflict_band). Si no, como el original.
+  bool refine_meta_states = false;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
   /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son
   /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes

@@ -247,6 +247,10 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   if (options.exact_without_noise && noiseless) {
     fusion.min_support = 1.0;
   }
+  if (options.refine_meta_states && !noiseless) {
+    fusion.min_rule_support = 0.05;
+    fusion.conflict_band = 0.1;
+  }
   inslv::Opciones inslv_options;
   inslv_options.azar = &generator;
   for (const auto& [name, transitions] : actions) {
