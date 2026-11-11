@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -173,7 +172,6 @@ TEST(Learn, ExactWithoutNoise) {
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la
 // precondición fusionada también están los átomos falsos, que se pierden al escribirla.
 TEST(LearnOriginal, Blocksworld) {
-  std::srand(1);
   const pddl::LearnedDomain learned =
       pddl::learn(traces("blocks-strips-untyped"), pddl::Options::original());
   ASSERT_EQ(learned.actions.size(), 4U);

@@ -3,9 +3,9 @@
 // original, frente al pipeline del PlanMiner original hasta INSLV: to_table, discretize, inslv()
 // y su interpretación (SplitAntecedent), como en Old/src/bin/mainPlanMiner.cpp.
 //
-// Los dos lados usan el rand() global (en la discretización y en INSLV), así que cada uno recorre
-// todas las acciones en el orden del original empezando con la misma semilla, y después se
-// comparan.
+// El original usa el rand() global (en la discretización y en INSLV), y el nuevo, el generador de
+// INSLV, que da la misma secuencia: cada uno recorre todas las acciones en el orden del original
+// empezando con la misma semilla, y después se comparan.
 //
 // Solo con trazas en las que el A* del original es inmediato: blocksworld (sin fluentes) y
 // counters (cambios de 1) sin ruido. Con zenotravel el original tarda cientos de segundos y
@@ -182,7 +182,9 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
   const plantraces::TypeHierarchy hierarchy = plantraces::type_hierarchy(traces);
   const auto actions = plantraces::group_by_action(traces);
   ASSERT_EQ(actions.size(), expected.size());
-  std::srand(1);
+  inslv::GeneradorDeAzar generator;
+  inslv::Opciones inslv_options;
+  inslv_options.azar = &generator;
   for (const auto& [name, transitions] : actions) {
     SCOPED_TRACE("acción " + name);
     ASSERT_TRUE(expected.contains(name));
@@ -190,7 +192,7 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
     const std::vector<std::string> types = argument_types(transitions.front());
 
     const rules::Examples logic = rules::logic_examples(table);
-    const std::vector<rules::Rule> logic_rules = rules::learn(logic);
+    const std::vector<rules::Rule> logic_rules = rules::learn(logic, inslv_options);
     {
       SCOPED_TRACE("lógico");
       expect_same(as_legacy(logic, logic_rules, types), expected[name][0]);
@@ -201,8 +203,9 @@ TEST_P(LegacyRules, SameExamplesAndRulesAsTheOriginal) {
     const std::vector<datasets::Relation> relations =
         datasets::numeric_relations(table, {}, datasets::RelationOptions::original());
     const rules::Examples numeric = rules::numeric_examples(
-        table, changes, relations, [] { return std::rand(); }, rules::ExampleOptions::original());
-    const std::vector<rules::Rule> numeric_rules = rules::learn(numeric);
+        table, changes, relations, [&generator] { return generator(); },
+        rules::ExampleOptions::original());
+    const std::vector<rules::Rule> numeric_rules = rules::learn(numeric, inslv_options);
     {
       SCOPED_TRACE("numérico");
       expect_same(as_legacy(numeric, numeric_rules, types), expected[name][1]);
@@ -240,20 +243,23 @@ TEST_P(LegacyFusion, SameFusionAsTheOriginal) {
   // solo hacen falta reglas con las que probar la fusión.
   datasets::EffectOptions effects = datasets::EffectOptions::original();
   effects.search.max_expansions = 2000;
-  std::srand(1);
+  inslv::GeneradorDeAzar generator;
+  inslv::Opciones inslv_options;
+  inslv_options.azar = &generator;
   for (const auto& [name, transitions] : plantraces::group_by_action(traces)) {
     SCOPED_TRACE("acción " + name);
     const datasets::Table table = datasets::build_table(vocabulary, transitions);
     const std::vector<std::string> types = argument_types(transitions.front());
 
     const rules::Examples logic = rules::logic_examples(table);
-    std::vector<rules::LegacyRule> input = rules::legacy_rules(rules::learn(logic), logic, types);
+    std::vector<rules::LegacyRule> input =
+        rules::legacy_rules(rules::learn(logic, inslv_options), logic, types);
     const rules::Examples numeric = rules::numeric_examples(
         table, datasets::numeric_effects(table, effects),
         datasets::numeric_relations(table, {}, datasets::RelationOptions::original()),
-        [] { return std::rand(); }, rules::ExampleOptions::original());
+        [&generator] { return generator(); }, rules::ExampleOptions::original());
     const std::vector<rules::LegacyRule> numeric_input =
-        rules::legacy_rules(rules::learn(numeric), numeric, types);
+        rules::legacy_rules(rules::learn(numeric, inslv_options), numeric, types);
     input.insert(input.end(), numeric_input.begin(), numeric_input.end());
 
     const std::vector<std::string> header =

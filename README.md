@@ -65,7 +65,7 @@ cmake --build --preset release      # the executable: build/release/bin/planmine
 | `ci-gcc`, `ci-clang` | Release with warnings as errors, as in continuous integration |
 
 Each preset builds in `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) is
-downloaded when configuring (FetchContent), pinned to a commit. The `vendor/PDDLDomains` submodule
+downloaded when configuring (FetchContent), pinned to a version (`v1.0.0`). The `vendor/PDDLDomains` submodule
 (the domain catalog) is only needed for the tests and the evaluation.
 
 ## Language
@@ -122,9 +122,9 @@ std::string text = pddl::write("blocks", domain);
 - **Options:** `pddl::Options` gathers the options of every part (`Options{}` is the improved
   configuration and `Options::original()`, the original one); each improvement is a field that
   can be switched off on its own.
-- **Reproducibility:** the original configuration uses the global `rand()` in the same order as
-  the original. With `std::srand(1)` first, as at the start of a program, it gives the same
-  examples and rules.
+- **Reproducibility:** learning does not use the global `rand()`. The discretization follows the
+  sequence of INSLV's generator, which is that of glibc's `rand()`, in the same order as the
+  original: the original configuration gives the same examples and rules.
 - **Memory:** `resources::limit_process` sets a hard limit on the process, as the command line
   does.
 
@@ -172,7 +172,7 @@ ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 - **Tests:** by CTest label (`ctest --preset debug -L unit`): `unit`, `planner` (with
   PyPlanner, VAL and PDDLDomains) and `oracle` (only with `Old/`, locally). See
   [Tests](docs/en/tests.md).
-- **Local INSLV:** to try a local copy instead of the commit pinned in `cmake/Inslv.cmake`,
+- **Local INSLV:** to try a local copy instead of the version pinned in `cmake/Inslv.cmake`,
   `cmake --preset debug -DFETCHCONTENT_SOURCE_DIR_INSLV=<directory>`.
 - **Test dependencies:** GoogleTest 1.14 or later (if it is not installed, CMake downloads it);
   for the planner tests, Python 3.12 or later with

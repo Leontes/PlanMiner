@@ -81,10 +81,10 @@ struct Options {
 
 /// El aprendizaje de principio a fin: para cada acción, en orden, la tabla de ejemplos; los
 /// ejemplos lógicos y sus reglas; los efectos y las relaciones numéricas, los ejemplos numéricos
-/// (discretizados con std::rand) y sus reglas; y la fusión.
+/// (discretizados con el generador de INSLV) y sus reglas; y la fusión.
 ///
-/// Usa el rand() global en el mismo orden que el original: con Options::original() y srand(1)
-/// antes (el estado inicial de un programa), da los mismos ejemplos y reglas.
+/// No usa el rand() global: el generador de INSLV da su secuencia y se recorre en el mismo orden
+/// que el original, así que con Options::original() da los mismos ejemplos y reglas.
 LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options& options = {});
 
 /// El dominio como lo escribe el PlanMiner original (el final de Old/src/bin/mainPlanMiner.cpp),

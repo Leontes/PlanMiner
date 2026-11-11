@@ -56,7 +56,6 @@ TEST_P(LegacyDomain, SameDomainAsTheOriginal) {
   std::ostringstream expected;
   expected << std::ifstream(work / "oracle.pddl").rdbuf();
 
-  std::srand(1);
   const pddl::Options original = pddl::Options::original();
   const std::string learned = pddl::write("oracle", pddl::learn(traces, original), original);
   std::ofstream(work / "new.pddl") << learned;

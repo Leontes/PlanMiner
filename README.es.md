@@ -66,7 +66,7 @@ cmake --build --preset release      # el ejecutable: build/release/bin/planminer
 | `ci-gcc`, `ci-clang` | Release con los avisos como errores, como la integración continua |
 
 Cada preset compila en `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) se
-descarga al configurar (FetchContent), fijado en un commit. El submódulo `vendor/PDDLDomains` (el
+descarga al configurar (FetchContent), fijado en una versión (`v1.0.0`). El submódulo `vendor/PDDLDomains` (el
 catálogo de dominios) solo hace falta para los tests y para la evaluación.
 
 ## Idioma
@@ -124,8 +124,9 @@ std::string text = pddl::write("blocks", domain);
 - **Opciones:** `pddl::Options` reúne las de cada parte (`Options{}` es la configuración
   mejorada y `Options::original()`, la original); cada mejora es un campo que se puede
   desactivar por separado.
-- **Reproducibilidad:** la configuración original usa el `rand()` global en el mismo orden que el
-  original. Con `std::srand(1)` antes, como al empezar un programa, da los mismos ejemplos y reglas.
+- **Reproducibilidad:** el aprendizaje no usa el `rand()` global. La discretización sigue la
+  secuencia del generador de INSLV, que es la del `rand()` de glibc, en el mismo orden que el
+  original: la configuración original da los mismos ejemplos y reglas.
 - **Memoria:** `resources::limit_process` pone al proceso un límite duro, como hace la línea de
   comandos.
 
@@ -176,7 +177,7 @@ ruff check . && ruff format --check . && mypy --strict tests/scripts scripts
 - **Tests:** por etiquetas de CTest (`ctest --preset debug -L unit`): `unit`, `planner` (con
   PyPlanner, VAL y PDDLDomains) y `oracle` (solo con `Old/`, en local). Ver
   [Tests](docs/es/pruebas.md).
-- **INSLV en local:** para probar una copia local en lugar del commit fijado en
+- **INSLV en local:** para probar una copia local en lugar de la versión fijada en
   `cmake/Inslv.cmake`, `cmake --preset debug -DFETCHCONTENT_SOURCE_DIR_INSLV=<directorio>`.
 - **Dependencias de los tests:** GoogleTest 1.14 o posterior (si no está instalado, CMake lo
   descarga); para los del planificador, Python 3.12 o posterior con

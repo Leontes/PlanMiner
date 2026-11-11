@@ -109,7 +109,7 @@ corta al doble.
 
 El banco `default` con PlanMiner en el commit `f69da15` (octubre de 2026): 15 dominios, 90
 problemas por dominio y 3 particiones. P, R y F en modo tolerante; la validez es el porcentaje de
-planes válidos. El INSLV actual da los mismos resultados: con él, los 270 dominios aprendidos son
+planes válidos. INSLV 1.0 da los mismos resultados: con él, los 270 dominios aprendidos son
 idénticos byte a byte.
 
 | Clase | Variante | Original: F · validez | Mejorada: F · validez |

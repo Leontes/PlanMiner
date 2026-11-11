@@ -84,7 +84,7 @@ Examples logic_examples(const datasets::Table& table);
 ///
 /// El original discretiza estos ejemplos después de aprender las reglas de los lógicos, y los dos
 /// pasos usan el rand() global: para reproducir sus particiones hay que seguir ese orden y pasar
-/// std::rand como random.
+/// como random el generador que recibe INSLV en Opciones::azar (como pddl::learn).
 ///
 /// Una diferencia buscada con el original: un fluente que cambia y cuyo efecto no tiene expresión
 /// no tiene atributo de su cambio. El original añadía la columna sin su nombre y desalineaba el

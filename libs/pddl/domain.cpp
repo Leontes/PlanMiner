@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
-#include <cstdlib>
 #include <map>
 #include <optional>
 #include <set>
@@ -13,6 +12,7 @@
 #include "datasets/effects.hpp"
 #include "datasets/relations.hpp"
 #include "datasets/table.hpp"
+#include "inslv/inslv.hpp"
 #include "pddl/simplify.hpp"
 #include "plantraces/actions.hpp"
 #include "rules/legacy.hpp"
@@ -213,7 +213,8 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
       plantraces::group_by_action(traces);
 
   // Primero las tablas y los efectos numéricos de todas las acciones: las relaciones de cada una
-  // dependen de qué fluentes cambian en el dominio. Ni la tabla ni la regresión usan rand().
+  // dependen de qué fluentes cambian en el dominio. Ni la tabla ni la regresión usan números al
+  // azar.
   std::map<std::string, datasets::Table> tables;
   std::map<std::string, std::vector<datasets::FluentChange>> effects;
   datasets::DomainFluents fluents{datasets::accumulators(traces), {}};
@@ -234,6 +235,12 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
   if (options.exact_without_noise && noiseless) {
     fusion.min_support = 1.0;
   }
+  // El generador de INSLV, con la secuencia del rand() de glibc. INSLV lo siembra al empezar cada
+  // aprendizaje, y la discretización sigue su secuencia: el original hacía lo mismo con el rand()
+  // global.
+  inslv::GeneradorDeAzar generator;
+  inslv::Opciones inslv_options;
+  inslv_options.azar = &generator;
   for (const auto& [name, transitions] : actions) {
     LearnedAction action;
     action.name = name;
@@ -242,16 +249,16 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     }
     const datasets::Table& table = tables.at(name);
     action.logic = rules::logic_examples(table);
-    std::vector<rules::LegacyRule> rules =
-        rules::legacy_rules(rules::learn(action.logic), action.logic, action.argument_types);
+    std::vector<rules::LegacyRule> rules = rules::legacy_rules(
+        rules::learn(action.logic, inslv_options), action.logic, action.argument_types);
 
     const std::vector<datasets::FluentChange>& changes = effects.at(name);
     action.numeric = rules::numeric_examples(
         table, changes,
         datasets::numeric_relations(table, changes, options.relations, {fluents.accumulators, {}}),
-        [] { return std::rand(); }, options.examples);
-    const std::vector<rules::LegacyRule> numeric =
-        rules::legacy_rules(rules::learn(action.numeric), action.numeric, action.argument_types);
+        [&generator] { return generator(); }, options.examples);
+    const std::vector<rules::LegacyRule> numeric = rules::legacy_rules(
+        rules::learn(action.numeric, inslv_options), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());
     if (options.contrast && noiseless) {
       rules::LegacyRule contrast = rules::contrast_rule(

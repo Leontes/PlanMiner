@@ -157,8 +157,6 @@ int main(int argc, char* argv[]) {
     }
     const std::string name = arguments.name ? *arguments.name : domain_name(traces);
 
-    // El original usa el rand() global desde el estado inicial del programa.
-    std::srand(1);
     const pddl::Options options = arguments.original ? pddl::Options::original() : pddl::Options{};
     const std::string domain = pddl::write(name, pddl::learn(traces, options), options);
 

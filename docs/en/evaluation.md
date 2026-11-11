@@ -110,7 +110,7 @@ limit.
 
 The `default` benchmark with PlanMiner at commit `f69da15` (October 2026): 15 domains, 90
 problems per domain and 3 folds. P, R and F in tolerant mode; validity is the percentage of
-valid plans. The current INSLV gives the same results: with it, the 270 learned domains are
+valid plans. INSLV 1.0 gives the same results: with it, the 270 learned domains are
 byte-for-byte identical.
 
 | Class | Variant | Original: F · validity | Improved: F · validity |
