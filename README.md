@@ -65,8 +65,9 @@ cmake --build --preset release      # the executable: build/release/bin/planmine
 | `ci-gcc`, `ci-clang` | Release with warnings as errors, as in continuous integration |
 
 Each preset builds in `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) is
-downloaded when configuring (FetchContent), pinned to a version (`v1.0.0`). The `vendor/PDDLDomains` submodule
-(the domain catalog) is only needed for the tests and the evaluation.
+downloaded when configuring (FetchContent), pinned to a version (`v1.0.0`). The
+`vendor/PDDLDomains` submodule (the domain catalog) is only needed for the tests and the
+evaluation.
 
 ## Language
 

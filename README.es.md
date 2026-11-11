@@ -66,8 +66,9 @@ cmake --build --preset release      # el ejecutable: build/release/bin/planminer
 | `ci-gcc`, `ci-clang` | Release con los avisos como errores, como la integración continua |
 
 Cada preset compila en `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) se
-descarga al configurar (FetchContent), fijado en una versión (`v1.0.0`). El submódulo `vendor/PDDLDomains` (el
-catálogo de dominios) solo hace falta para los tests y para la evaluación.
+descarga al configurar (FetchContent), fijado en una versión (`v1.0.0`). El submódulo
+`vendor/PDDLDomains` (el catálogo de dominios) solo hace falta para los tests y para la
+evaluación.
 
 ## Idioma
 
