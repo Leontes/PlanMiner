@@ -230,7 +230,8 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     tables.emplace(name, std::move(table));
   }
 
-  const bool noiseless = plantraces::frame_changes(traces) == 0.0;
+  const double noise = plantraces::frame_changes(traces);
+  const bool noiseless = noise == 0.0;
   rules::FusionOptions fusion = options.fusion;
   if (options.exact_without_noise && noiseless) {
     fusion.min_support = 1.0;
@@ -249,6 +250,11 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     }
     const datasets::Table& table = tables.at(name);
     action.logic = rules::logic_examples(table);
+    if (options.rare_values > 0.0 && !noiseless) {
+      rules::hide_rare_values(action.logic, options.rare_values_per_noise
+                                                ? options.rare_values * noise
+                                                : options.rare_values);
+    }
     std::vector<rules::LegacyRule> rules = rules::legacy_rules(
         rules::learn(action.logic, inslv_options), action.logic, action.argument_types);
 

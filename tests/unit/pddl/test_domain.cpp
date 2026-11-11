@@ -119,11 +119,12 @@ TEST(Write, ImprovedNumericEffects) {
       << text;
 }
 
-std::vector<plantraces::Trace> traces(const std::string& collection) {
+std::vector<plantraces::Trace> traces(const std::string& collection,
+                                      const std::string& variant = "complete") {
   namespace fs = std::filesystem;
   std::vector<fs::path> files;
   for (const auto& entry : fs::directory_iterator(fs::path{PLANMINER_TRACES_DIR} / collection)) {
-    if (entry.path().filename().string().ends_with(".complete.json")) {
+    if (entry.path().filename().string().ends_with("." + variant + ".json")) {
       files.push_back(entry.path());
     }
   }
@@ -167,6 +168,18 @@ TEST(Learn, ExactWithoutNoise) {
   options.exact_without_noise = false;
   EXPECT_EQ(pddl::write("counters", pddl::learn(traces("counters"), options)).find(guard),
             std::string::npos);
+}
+
+// Los valores raros (lowFreq) solo cuentan si se estima ruido: con las trazas completas no cambian
+// nada, y con las de ruido, sí.
+TEST(Learn, RareValuesOnlyWithNoise) {
+  pddl::Options options;
+  options.rare_values = 0.2;
+  EXPECT_EQ(pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"), options)),
+            pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"))));
+  const std::vector<plantraces::Trace> noisy = traces("blocks-strips-untyped", "noise5");
+  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy, options)),
+            pddl::write("blocks", pddl::learn(noisy)));
 }
 
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la

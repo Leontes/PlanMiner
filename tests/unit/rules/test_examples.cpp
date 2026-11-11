@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -65,6 +66,34 @@ TEST(LogicExamples, TheAtoms) {
 
 // Los valores de los fluentes, las relaciones y los cambios. (x) sube 1 en las dos aplicaciones e
 // (y) no cambia: sin cambio. Con el instante, como el original, también su valor y su cambio.
+// lowFreq: en cada clase, el valor que tiene menos de threshold de las filas en que se conoce.
+TEST(HideRareValues, TheRareValueOfEachClass) {
+  datasets::Table t;
+  t.transitions = 20;
+  t.attributes = {{AttributeKind::atom, {"p", {}}}};
+  // Antes: 18 ciertas, 1 falsa y 1 desconocida. Después: todas falsas.
+  std::vector<double> p(40, 0.0);
+  std::fill(p.begin(), p.begin() + 20, 1.0);
+  p[3] = 0.0;
+  p[4] = unknown;
+  t.columns = {p};
+
+  // 1 de 19 es más del 5 %.
+  rules::Examples examples = rules::logic_examples(t);
+  rules::hide_rare_values(examples, 0.05);
+  EXPECT_EQ(examples.data.valores[0][3], 0.0);
+
+  examples = rules::logic_examples(t);
+  rules::hide_rare_values(examples, 0.06);
+  EXPECT_TRUE(std::isnan(examples.data.valores[0][3]));
+  EXPECT_EQ(examples.data.valores[0][0], 1.0);
+  EXPECT_TRUE(std::isnan(examples.data.valores[0][4]));
+  // Después, el único valor es el de todas las filas.
+  for (std::size_t row = 20; row < 40; ++row) {
+    EXPECT_EQ(examples.data.valores[0][row], 0.0);
+  }
+}
+
 TEST(NumericExamples, ValuesRelationsAndChanges) {
   const datasets::Table t = table({1, 1, 1, 1}, {3, 5, 4, 6}, {9, 9, 9, 9});
   const plantraces::LiftedAtom x{"x", {}};

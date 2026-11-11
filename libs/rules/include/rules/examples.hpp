@@ -72,6 +72,17 @@ struct ExampleOptions {
 /// original.
 Examples logic_examples(const datasets::Table& table);
 
+/// Los valores raros de los átomos, desconocidos: en cada átomo y en cada clase (las filas de antes
+/// y las de después de la acción), el valor que tiene menos de threshold de las filas de la clase
+/// en que se conoce pasa a desconocido. Es lowFreq, de la rama ExperimentosRuido del PlanMiner
+/// original, para el ruido: para INSLV, un desconocido cumple cualquier condición, así que una
+/// condición que el ruido contradice en pocas filas deja de costar bondad; y la validación de la
+/// fusión solo cuenta los valores conocidos.
+///
+/// Una diferencia con lowFreq: las filas que se quedan sin ningún valor conocido no se quitan,
+/// porque las de antes y las de después van emparejadas.
+void hide_rare_values(Examples& examples, double threshold);
+
 /// Los ejemplos numéricos de la acción, como los construye el original (to_table y discretize):
 /// los valores de los fluentes (y del instante) en el orden de la tabla, discretizados con random;
 /// las relaciones; y, con options.changes, el signo del cambio de cada fluente (y del instante) que

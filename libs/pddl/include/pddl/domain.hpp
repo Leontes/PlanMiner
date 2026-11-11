@@ -56,6 +56,14 @@ struct Options {
   /// fusion: con datos limpios, (> (value ?0) 1) en decrement pasaba con 21 de 1611 aplicaciones
   /// con valor 1.
   bool exact_without_noise = true;
+  /// Si las trazas tienen ruido (plantraces::frame_changes c > 0), en los ejemplos lógicos, el
+  /// valor de un átomo que tiene menos de rare_values de las filas de su clase (antes o después de
+  /// la acción) pasa a desconocido (rules::hide_rare_values: lowFreq, de la rama ExperimentosRuido,
+  /// con 0.05). Así, INSLV puede añadir la condición sin que le cueste bondad y la validación de la
+  /// fusión no cuenta esos valores. Con rare_values_per_noise, el umbral es rare_values · c. Con 0,
+  /// como el original, nada.
+  double rare_values = 0.0;
+  bool rare_values_per_noise = false;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
   /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son
   /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes

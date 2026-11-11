@@ -113,6 +113,35 @@ Examples logic_examples(const datasets::Table& table) {
   return result;
 }
 
+void hide_rare_values(Examples& examples, double threshold) {
+  const std::vector<std::size_t>& classes = examples.data.clases;
+  for (std::size_t a = 0; a < examples.attributes.size(); ++a) {
+    if (examples.attributes[a].kind != AttributeKind::atom) {
+      continue;
+    }
+    std::vector<double>& column = examples.data.valores[a];
+    // De cada clase, las filas en que se conoce y en cuántas es cierto.
+    std::vector<std::size_t> known(2, 0);
+    std::vector<std::size_t> holds(2, 0);
+    for (std::size_t row = 0; row < column.size(); ++row) {
+      if (!std::isnan(column[row])) {
+        ++known[classes[row]];
+        holds[classes[row]] += column[row] == 1.0 ? 1U : 0U;
+      }
+    }
+    for (std::size_t row = 0; row < column.size(); ++row) {
+      if (std::isnan(column[row])) {
+        continue;
+      }
+      const std::size_t c = classes[row];
+      const std::size_t same = column[row] == 1.0 ? holds[c] : known[c] - holds[c];
+      if (static_cast<double>(same) < threshold * static_cast<double>(known[c])) {
+        column[row] = unknown;
+      }
+    }
+  }
+}
+
 Examples numeric_examples(const datasets::Table& table,
                           const std::vector<datasets::FluentChange>& changes,
                           const std::vector<datasets::Relation>& relations,
