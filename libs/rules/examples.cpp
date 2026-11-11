@@ -160,12 +160,30 @@ Examples numeric_examples(const datasets::Table& table,
   }
 
   for (const std::size_t a : numeric) {
+    std::vector<double> column = table.columns[a];
+    const std::vector<datasets::FuzzySet> sets =
+        options.hierarchical ? datasets::hierarchical_discretize(column, random, options.hierarchy)
+                             : datasets::discretize(column, random);
     std::vector<inslv::ConjuntoDifuso> labels;
-    for (const datasets::FuzzySet& set : datasets::discretize(table.columns[a], random)) {
+    for (const datasets::FuzzySet& set : sets) {
       labels.push_back({"L_" + std::to_string(labels.size()), set.a, set.b, set.c, set.d});
     }
+    if (options.hierarchical) {
+      // Los valores de los clusters descartados no caen en ninguna etiqueta.
+      for (double& value : column) {
+        const bool inside = std::any_of(sets.begin(), sets.end(), [value](const auto& set) {
+          return set.a <= value && value <= set.d;
+        });
+        if (!inside) {
+          value = unknown;
+        }
+      }
+      if (labels.empty()) {
+        labels.push_back({"L_0", 0.0, 0.0, 0.0, 0.0});
+      }
+    }
     add(result, {AttributeKind::value, table.attributes[a], std::nullopt, std::nullopt, {}},
-        std::move(labels), table.columns[a]);
+        std::move(labels), std::move(column));
   }
 
   for (const datasets::Relation& relation : relations) {

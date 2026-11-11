@@ -70,4 +70,38 @@ TEST(Discretize, EmptyClustersAreReseeded) {
   EXPECT_EQ(sets, (std::vector<FuzzySet>{{9, 9, 9, 9}, {1, 1, 1, 1}}));
 }
 
+// HRC: los grupos bien separados se quedan juntos; el de 1 y 10 se parte otra vez.
+TEST(HierarchicalDiscretize, SeparatedGroups) {
+  EXPECT_EQ(datasets::hierarchical_discretize({1, 1, 1, 10, 10, 10, 20, 20, 20, unknown}, unused),
+            (std::vector<FuzzySet>{{1, 1, 1, 1}, {10, 10, 10, 10}, {20, 20, 20, 20}}));
+}
+
+// Un valor aislado queda solo en su cluster, que habría que partir: la rama lo descarta.
+TEST(HierarchicalDiscretize, SingletonsAreDroppedOrKept) {
+  const std::vector<double> values{0, 0, 0, 0, 5, 10, 10, 10, 10};
+  EXPECT_EQ(datasets::hierarchical_discretize(values, first),
+            (std::vector<FuzzySet>{{0, 0, 0, 0}, {10, 10, 10, 10}}));
+  datasets::HierarchicalOptions options;
+  options.keep_singletons = true;
+  EXPECT_EQ(datasets::hierarchical_discretize(values, first, options),
+            (std::vector<FuzzySet>{{0, 0, 0, 0}, {5, 5, 5, 5}, {10, 10, 10, 10}}));
+}
+
+// Sin normalizar, σ / n depende de las unidades: con valores de 100 en 100, los grupos se parten
+// hasta quedarse en valores sueltos, y se descartan todos. Normalizados, quedan dos.
+TEST(HierarchicalDiscretize, NormalizedValues) {
+  const std::vector<double> values{100, 101, 102, 200, 201, 202};
+  EXPECT_TRUE(datasets::hierarchical_discretize(values, unused).empty());
+  datasets::HierarchicalOptions options;
+  options.normalize = true;
+  EXPECT_EQ(datasets::hierarchical_discretize(values, unused, options),
+            (std::vector<FuzzySet>{{100, 100, 102, 102}, {200, 200, 202, 202}}));
+}
+
+TEST(HierarchicalDiscretize, AConstantOrNothing) {
+  EXPECT_EQ(datasets::hierarchical_discretize({4, unknown, 4}, unused),
+            (std::vector<FuzzySet>{{4, 4, 4, 4}}));
+  EXPECT_TRUE(datasets::hierarchical_discretize({unknown}, unused).empty());
+}
+
 }  // namespace

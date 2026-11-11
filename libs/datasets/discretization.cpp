@@ -239,7 +239,126 @@ FuzzySet trapezoid(std::vector<double> elements) {
   return {a.x, b.x, c.x, d.x};
 }
 
+// (SI, en la rama ExperimentosRuido) La silueta media de cada cluster, con distancias al cuadrado:
+// 0 si tiene menos de dos valores, y -1 para un valor sin distancia a los otros clusters.
+std::vector<double> silhouettes(const std::vector<std::vector<double>>& elements) {
+  std::vector<double> result;
+  for (std::size_t i = 0; i < elements.size(); ++i) {
+    if (elements[i].size() < 2) {
+      result.push_back(0.0);
+      continue;
+    }
+    double total = 0.0;
+    for (std::size_t j = 0; j < elements[i].size(); ++j) {
+      double a = 0.0;
+      for (std::size_t k = 0; k < elements[i].size(); ++k) {
+        if (j != k) {
+          a += std::pow(elements[i][j] - elements[i][k], 2);
+        }
+      }
+      a /= static_cast<double>(elements[i].size() - 1);
+      double b = 999999999.9;
+      for (std::size_t k = 0; k < elements.size(); ++k) {
+        if (k != i && !elements[k].empty()) {
+          double mean = 0.0;
+          for (const double other : elements[k]) {
+            mean += std::pow(elements[i][j] - other, 2);
+          }
+          b = std::min(b, mean / static_cast<double>(elements[k].size()));
+        }
+      }
+      total += b == 0.0 ? -1.0 : (b - a) / std::max(a, b);
+    }
+    result.push_back(total / static_cast<double>(elements[i].size()));
+  }
+  return result;
+}
+
+// Más allá de esta profundidad, un cluster ya no se parte.
+constexpr int max_depth = 64;
+
+// (HRC) Los clusters de values, partiendo de arriba abajo.
+void hierarchical(const std::vector<double>& values, const Random& random,
+                  const HierarchicalOptions& options, int depth,
+                  std::vector<std::vector<double>>& result) {
+  Clusters best = kmeans(2, values, random);
+  for (int run = 0; run < 4; ++run) {
+    Clusters other = kmeans(2, values, random);
+    if (other.ch > best.ch || std::isnan(best.ch)) {
+      best = std::move(other);
+    }
+  }
+  const std::vector<double> silhouette = silhouettes(best.elements);
+  for (std::size_t i = 0; i < best.elements.size(); ++i) {
+    const std::vector<double>& cluster = best.elements[i];
+    if (cluster.empty()) {
+      continue;
+    }
+    double mean = 0.0;
+    for (const double value : cluster) {
+      mean += value;
+    }
+    mean /= static_cast<double>(cluster.size());
+    double spread = 0.0;
+    for (const double value : cluster) {
+      spread += std::pow(mean - value, 2);
+    }
+    spread = std::sqrt(spread) / static_cast<double>(values.size());
+    const double score = options.alpha * (1.0 - silhouette[i]) + options.beta * spread;
+    if (score <= options.threshold || depth >= max_depth || (cluster.size() == values.size())) {
+      result.push_back(cluster);
+    } else if (cluster.size() > 1) {
+      hierarchical(cluster, random, options, depth + 1, result);
+    } else if (options.keep_singletons) {
+      result.push_back(cluster);
+    }
+  }
+}
+
 }  // namespace
+
+std::vector<FuzzySet> hierarchical_discretize(const std::vector<double>& values,
+                                              const Random& random,
+                                              const HierarchicalOptions& options) {
+  std::vector<double> known;
+  for (const double value : values) {
+    if (!std::isnan(value)) {
+      known.push_back(value);
+    }
+  }
+  if (known.empty()) {
+    return {};
+  }
+  const auto [low, high] = std::minmax_element(known.begin(), known.end());
+  const double min = *low;
+  const double range = *high - *low;
+  if (range == 0.0) {
+    return {{min, min, min, min}};
+  }
+  std::vector<double> scaled = known;
+  if (options.normalize) {
+    for (double& value : scaled) {
+      value = (value - min) / range;
+    }
+  }
+  std::vector<std::vector<double>> clusters;
+  hierarchical(scaled, random, options, 0, clusters);
+
+  std::vector<FuzzySet> sets;
+  for (const std::vector<double>& cluster : clusters) {
+    auto [first, last] = std::minmax_element(cluster.begin(), cluster.end());
+    double from = *first;
+    double to = *last;
+    if (options.normalize) {
+      from = min + (from * range);
+      to = min + (to * range);
+    }
+    sets.push_back({from, from, to, to});
+  }
+  std::sort(sets.begin(), sets.end(),
+            [](const FuzzySet& x, const FuzzySet& y) { return x.a < y.a; });
+  return sets;
+}
 
 std::vector<FuzzySet> discretize(const std::vector<double>& values, const Random& random) {
   std::vector<double> known;

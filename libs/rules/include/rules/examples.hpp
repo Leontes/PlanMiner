@@ -64,6 +64,11 @@ struct ExampleOptions {
   /// La búsqueda de la expresión del cambio del instante, si cuenta. Sin expresión, no hay
   /// atributo de su cambio.
   regression::Options time_search;
+  /// Los valores se discretizan con HRC (datasets::hierarchical_discretize), con estas opciones, y
+  /// los que no caen en ningún cluster pasan a desconocidos. Si no, como el original
+  /// (datasets::discretize).
+  bool hierarchical = false;
+  datasets::HierarchicalOptions hierarchy;
 
   static ExampleOptions original();
 };
