@@ -73,6 +73,17 @@ options, so that it can be measured on its own.
 | Combined comparisons | The comparisons of a pair, true and false, are combined into one (`<`, `<=`, `=`, `>=`, `>`). | `FusionOptions::combine_comparisons` |
 | Redundant preconditions | Comparisons implied by the other conditions in the states of the traces are removed, and so are atoms equivalent to another one of the same relation: `(connected ?1 ?0)` with `(connected ?0 ?1)`. | `Options::drop_implied` |
 
+### Noise (PlanMiner-N)
+
+The techniques of PlanMiner-N, the extension of PlanMiner for noisy traces. They only act when
+noise is estimated (`plantraces::frame_changes`, c > 0): without noise, the domain is the same.
+
+| Improvement | What it does | Option |
+|-------------|--------------|--------|
+| Rare values | In each atom and each class (before or after the action), the value that appears in less than 2c of the rows becomes unknown, capped at 0.5. INSLV can then describe the state with that condition at no cost, and validation does not count those values. It is PlanMiner-N's statistical filter, with a threshold proportional to the noise instead of a fixed 5 %, which with 5 % noise only cleans half of it. | `Options::rare_values`, `Options::rare_values_per_noise` |
+| Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat. | `Options::smooth_fluents` |
+| Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
+
 ### Writing
 
 | Improvement | What it does | Option |

@@ -60,10 +60,13 @@ struct Options {
   /// valor de un átomo que tiene menos de rare_values de las filas de su clase (antes o después de
   /// la acción) pasa a desconocido (rules::hide_rare_values: lowFreq, de la rama ExperimentosRuido,
   /// con 0.05). Así, INSLV puede añadir la condición sin que le cueste bondad y la validación de la
-  /// fusión no cuenta esos valores. Con rare_values_per_noise, el umbral es rare_values · c. Con 0,
-  /// como el original, nada.
-  double rare_values = 0.0;
-  bool rare_values_per_noise = false;
+  /// fusión no cuenta esos valores. Con rare_values_per_noise, el umbral es rare_values · c. El
+  /// umbral no pasa de 0.5: el valor mayoritario no se borra nunca. Con 0, como el original, nada.
+  ///
+  /// La mejorada usa 2c: con un ruido p por observación, c ≈ 2p, y una condición cierta sale falsa
+  /// en ≈ p de sus filas. Con el 5 % fijo de lowFreq, en noise5 solo se limpia la mitad.
+  double rare_values = 2.0;
+  bool rare_values_per_noise = true;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos
@@ -71,12 +74,12 @@ struct Options {
   /// acumuladores (datasets::accumulators): sus valores no se repiten, y suavizarlos estropea la
   /// regresión de lo que suman (en barman, (increase (total-cost) 1) en todas las acciones). Si no,
   /// como el original.
-  bool smooth_fluents = false;
+  bool smooth_fluents = true;
   /// Si las trazas tienen ruido, la fusión refina los meta-estados como PlanMiner-N: fuera las
   /// condiciones con un soporte por debajo del 5 % de las aplicaciones, y en un conflicto con una
   /// diferencia de soportes dentro del 10 % de su media, fuera los dos valores
   /// (rules::FusionOptions::min_rule_support y conflict_band). Si no, como el original.
-  bool refine_meta_states = false;
+  bool refine_meta_states = true;
   /// A las reglas de cada acción se añade la de las cotas numéricas que se cumplen en sus estados
   /// de antes, se alcanzan en alguno y no son invariantes (rules::contrast_rule). Son
   /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes

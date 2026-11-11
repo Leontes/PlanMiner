@@ -170,32 +170,29 @@ TEST(Learn, ExactWithoutNoise) {
             std::string::npos);
 }
 
-// Los valores raros (lowFreq) solo cuentan si se estima ruido: con las trazas completas no cambian
-// nada, y con las de ruido, sí.
-TEST(Learn, RareValuesOnlyWithNoise) {
-  pddl::Options options;
-  options.rare_values = 0.2;
-  EXPECT_EQ(pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"), options)),
-            pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"))));
+// Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
+// completas, la mejorada da lo mismo sin ellas.
+TEST(Learn, NoiseImprovementsOnlyWithNoise) {
+  const pddl::Options improved;
+  pddl::Options without = improved;
+  without.rare_values = 0.0;
+  without.smooth_fluents = false;
+  without.refine_meta_states = false;
+  for (const char* collection : {"blocks-strips-untyped", "counters", "zenotravel"}) {
+    const std::vector<plantraces::Trace> complete = traces(collection);
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, improved)),
+              pddl::write(collection, pddl::learn(complete, without)))
+        << collection;
+  }
+}
+
+// Con ruido, los valores raros (lowFreq) cambian lo que se aprende.
+TEST(Learn, RareValuesWithNoise) {
   const std::vector<plantraces::Trace> noisy = traces("blocks-strips-untyped", "noise5");
-  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy, options)),
-            pddl::write("blocks", pddl::learn(noisy)));
-}
-
-// El refinamiento de los meta-estados solo cuenta si se estima ruido.
-TEST(Learn, RefineMetaStatesOnlyWithNoise) {
-  pddl::Options options;
-  options.refine_meta_states = true;
-  EXPECT_EQ(pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"), options)),
-            pddl::write("blocks", pddl::learn(traces("blocks-strips-untyped"))));
-}
-
-// El suavizado de los fluentes (HRC) solo cuenta si se estima ruido.
-TEST(Learn, SmoothFluentsOnlyWithNoise) {
-  pddl::Options options;
-  options.smooth_fluents = true;
-  EXPECT_EQ(pddl::write("zenotravel", pddl::learn(traces("zenotravel"), options)),
-            pddl::write("zenotravel", pddl::learn(traces("zenotravel"))));
+  pddl::Options without;
+  without.rare_values = 0.0;
+  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy)),
+            pddl::write("blocks", pddl::learn(noisy, without)));
 }
 
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la

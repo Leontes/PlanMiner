@@ -73,6 +73,17 @@ poder medirla por separado.
 | Comparaciones combinadas | Las comparaciones de una pareja, ciertas y falsas, se combinan en una (`<`, `<=`, `=`, `>=`, `>`). | `FusionOptions::combine_comparisons` |
 | Precondiciones redundantes | Se quitan las comparaciones que implican las demás condiciones en los estados de las trazas y los átomos equivalentes a otro de la misma relación: `(connected ?1 ?0)` con `(connected ?0 ?1)`. | `Options::drop_implied` |
 
+### Ruido (PlanMiner-N)
+
+Las técnicas de PlanMiner-N, la extensión de PlanMiner para trazas con ruido. Solo actúan si se
+estima ruido (`plantraces::frame_changes`, c > 0): sin ruido, el dominio es el mismo.
+
+| Mejora | Qué hace | Opción |
+|--------|----------|--------|
+| Valores raros | En cada átomo y en cada clase (antes o después de la acción), el valor que aparece en menos de 2c de las filas pasa a desconocido, con un tope de 0.5. INSLV puede describir el estado con esa condición sin que le cueste, y la validación no cuenta esos valores. Es el filtro estadístico de PlanMiner-N, con un umbral proporcional al ruido en lugar de un 5 % fijo, que con un 5 % de ruido solo limpia la mitad. | `Options::rare_values`, `Options::rare_values_per_noise` |
+| Suavizado de los fluentes | Los valores de cada fluente se agrupan con un clustering jerárquico de arriba abajo (HRC: k-means con k = 2, que se repite en cada cluster mientras su dispersión, 0.6 (1 - silueta) + 0.4 σ/μ, pase de 0.05) y pasan a la media de su cluster; los clusters de un solo valor son atípicos y pasan a desconocidos. Antes de buscar los efectos y las relaciones. Salvo `(total-cost)` y los acumuladores, que no se repiten. | `Options::smooth_fluents` |
+| Refinamiento de los meta-estados | La fusión descarta las condiciones con un soporte (los ejemplos que cubren las reglas que las tienen) por debajo del 5 % de las aplicaciones, y en un conflicto con una diferencia de soportes dentro del 10 % de su media, los dos valores. | `Options::refine_meta_states` |
+
 ### Escritura
 
 | Mejora | Qué hace | Opción |
