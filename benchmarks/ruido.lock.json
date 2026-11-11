@@ -1,0 +1,69 @@
+{
+  "pddldomains": "38a868974e6b4a70cc35bd706e104b739dea24f5",
+  "collections": {
+    "ipc-1998/gripper-round-1-strips": {
+      "problems": 90,
+      "digest": "371ede5ab77e9e9d6ca1596605a61485d8a31d2c047e3434d974f000c2e953bc"
+    },
+    "ipc-2000/blocks-strips-untyped": {
+      "problems": 90,
+      "digest": "feeb01a502d6ede171a9dc0aa43722eff51612a69c80ac0c2994c0d15eebe764"
+    },
+    "ipc-2011/barman-sequential-satisficing": {
+      "problems": 90,
+      "digest": "4d1503fd45abf519abf5171c662baf0d4e0230fd26f851d42b3f241e967d7711"
+    },
+    "ipc-2011/elevator-sequential-satisficing": {
+      "problems": 90,
+      "digest": "00b33c5d0e57daaade098d2509b6f05a64e3ddd4b13c23b4d68405d862026b2f"
+    },
+    "ipc-2011/floor-tile-sequential-satisficing": {
+      "problems": 90,
+      "digest": "7f909234ec00eb7ddd2cd3981d9fbc2dcbd73ea3fa12dcab6b54e51af679e25f"
+    },
+    "ipc-2011/no-mystery-sequential-satisficing": {
+      "problems": 90,
+      "digest": "91f57b72c7e1b907ca10a13eb8467427cbd13049d4c38a61c656038734d2eac0"
+    },
+    "ipc-2011/parking-sequential-satisficing": {
+      "problems": 90,
+      "digest": "6c9cbca71440a1a9ba06c864a9fb170f94cd2a3efc96195a51ed820474913400"
+    },
+    "ipc-2011/peg-solitaire-sequential-satisficing": {
+      "problems": 90,
+      "digest": "cbaf149b49c71959fe6ba5507075cdd15f7db756b1086c8653427f9390706047"
+    },
+    "ipc-2011/scanalyzer-3d-sequential-satisficing": {
+      "problems": 90,
+      "digest": "8fa528dc89ffbe72fd0e3fffe7949a4972d72ffd931117796b047a8200c127c9"
+    },
+    "ipc-2011/sokoban-sequential-satisficing": {
+      "problems": 90,
+      "digest": "b1ba0444e6785089b162049f7714ef3776b8cbc2107f3439575f6c0ff8dd12d3"
+    },
+    "ipc-2011/transport-sequential-satisficing": {
+      "problems": 90,
+      "digest": "4bf2ca88010801d4c4e0263e8a6b4c6dbcc96ab92e374c845357ecf8c8a99144"
+    },
+    "ipc-2011/visit-all-sequential-satisficing": {
+      "problems": 90,
+      "digest": "5ac81f779b7fb13dcfcd8a8c58d0f5675b59a8967035c20a8eefcea5b12423a2"
+    },
+    "ipc-2011/woodworking-sequential-satisficing": {
+      "problems": 90,
+      "digest": "eac40c9829f17c55b0e6ff456c7dcf63b319b774e08e296da3071f49e41e0df6"
+    },
+    "ipc-2023-numeric/counters": {
+      "problems": 90,
+      "digest": "acfb60399a95de875376164e4c76ff54cb4119412fbf625b9aab726de01afce0"
+    },
+    "ipc-2023-numeric/zenotravel": {
+      "problems": 90,
+      "digest": "0672085d8dc9901e8a34bc1ef0659e4d18d36e1f2467519bdccf1f8866db878f"
+    }
+  },
+  "excluded": {
+    "ipc-2011/openstacks-sequential-satisficing": "un dominio por problema (PlanMiner aprende uno)",
+    "ipc-2011/parc-printer-sequential-satisficing": "un dominio por problema (PlanMiner aprende uno)"
+  }
+}

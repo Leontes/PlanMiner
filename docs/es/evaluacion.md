@@ -98,7 +98,10 @@ Otras opciones:
 | `--planminer FICHERO`, `--validate FICHERO` | los ejecutables de PlanMiner y de VAL |
 
 Otro banco es otro TOML: `scripts/benchmark.py run mio.toml`.
-[`benchmarks/smoke.toml`](../../benchmarks/smoke.toml) es el mínimo de los tests `planner`.
+[`benchmarks/smoke.toml`](../../benchmarks/smoke.toml) es el mínimo de los tests `planner`, y
+[`benchmarks/ruido.toml`](../../benchmarks/ruido.toml), el de ruido: los mismos dominios, problemas
+y planes que `default`, con trazas completas y con un 3, 5, 10 y 20 % de ruido, sin huecos (las
+completas y las del 5 % son las de `default`; `scripts/benchmark.py generate ruido`, `run ruido`).
 
 El banco lanza PlanMiner y PyPlanner con los límites de memoria de su definición (2560 MB y
 1024 MB por defecto), y no empieza si sus trabajos no caben en el 80 % de la memoria disponible.

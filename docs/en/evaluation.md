@@ -99,7 +99,10 @@ Other options:
 
 Another benchmark is another TOML: `scripts/benchmark.py run mine.toml`.
 [`benchmarks/smoke.toml`](../../benchmarks/smoke.toml) is the minimal one of the `planner`
-tests.
+tests, and [`benchmarks/ruido.toml`](../../benchmarks/ruido.toml), the noise one: the same
+domains, problems and plans as `default`, with complete traces and with 3, 5, 10 and 20 % noise,
+without gaps (the complete and 5 % ones are those of `default`; `scripts/benchmark.py generate
+ruido`, `run ruido`).
 
 The benchmark runs PlanMiner and PyPlanner with the memory limits of its definition (2560 MB and
 1024 MB by default), and does not start if its jobs do not fit in 80 % of the available memory.
