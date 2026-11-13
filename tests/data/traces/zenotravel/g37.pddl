@@ -1,0 +1,38 @@
+(define (problem zenotravel-numeric-p37-s37)
+  (:domain zenotravel)
+  (:objects
+    plane1 - aircraft
+    person1 person2 person3 person4 - person
+    city0 city1 city2 - city
+  )
+  (:init
+    (located plane1 city2)
+    (= (capacity plane1) 25003)
+    (= (fuel plane1) 16876)
+    (= (slow-burn plane1) 5)
+    (= (fast-burn plane1) 16)
+    (= (onboard plane1) 0)
+    (= (zoom-limit plane1) 1)
+    (located person1 city2)
+    (located person2 city1)
+    (located person3 city1)
+    (located person4 city2)
+    (= (distance city0 city0) 0)
+    (= (distance city0 city1) 798)
+    (= (distance city0 city2) 722)
+    (= (distance city1 city0) 798)
+    (= (distance city1 city1) 0)
+    (= (distance city1 city2) 193)
+    (= (distance city2 city0) 722)
+    (= (distance city2 city1) 193)
+    (= (distance city2 city2) 0)
+    (= (total-fuel-used) 0)
+  )
+  (:goal (and
+    (located person1 city0)
+    (located person2 city2)
+    (located person3 city1)
+    (located person4 city2)
+  ))
+  (:metric minimize (+ (* 1 (total-time)) (* 1 (total-fuel-used))))
+)

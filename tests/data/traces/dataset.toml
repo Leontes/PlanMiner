@@ -2,10 +2,11 @@
 # comparan con Old/ estas trazas concretas. Para evaluar PlanMiner está el banco de pruebas
 # (benchmarks/, scripts/benchmark.py).
 #
-# Problemas del catálogo PDDLDomains (submódulo vendor/PDDLDomains), planes de PyPlanner y
-# trazas de `pddldomains trace`. Las genera scripts/generate_traces.py en
-# <colección>/<problema>.<variante>.json. Los planes se guardan (<colección>/<problema>.plan) para
-# que las trazas se puedan regenerar sin volver a planificar.
+# Problemas del catálogo PDDLDomains (submódulo vendor/PDDLDomains) y generados con sus
+# generadores, planes de PyPlanner y trazas de `pddldomains trace`. Las genera
+# scripts/generate_traces.py en <colección>/<problema>.<variante>.json. Los planes se guardan
+# (<colección>/<problema>.plan) para que las trazas se puedan regenerar sin volver a planificar, y
+# los problemas generados también (<colección>/<problema>.pddl), con el dominio del catálogo.
 
 # PyPlanner, con un solo núcleo para que el plan sea siempre el mismo, y con límite de memoria
 # (MB): sin él reserva el 80 % de la disponible, y en WSL agotarla congela todo.
@@ -21,6 +22,14 @@ problems = ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p08"]
 [[collections]]
 collection = "ipc-2023-numeric/zenotravel"
 problems = ["p01", "p02", "p03", "p04", "p05", "p06", "p07", "p09", "p10"]
+# Los planes de los del catálogo usan fly-fast 5 veces: con un 30 % de huecos, sus efectos pueden
+# quedarse sin una sola aplicación con todos los valores. Estos son los problemas cuyo plan usa
+# fly-fast de `pddldomains generate zenotravel-numeric -n 40 -s 1 -p cities=3..4 -p planes=1..2
+# -p people=2..4` (gNN es su pNN): 24 vuelos rápidos más.
+generated = [
+  "g03", "g04", "g06", "g07", "g08", "g10", "g13", "g17", "g19", "g20", "g21",
+  "g22", "g23", "g26", "g29", "g31", "g32", "g33", "g34", "g36", "g37", "g38",
+]
 
 [[collections]]
 collection = "ipc-2023-numeric/counters"

@@ -44,7 +44,9 @@ cmake --preset debug      # configure again so that it finds them
 
 [`tests/data/traces`](../../tests/data/traces) holds the traces of the unit and oracle tests:
 blocksworld, counters and zenotravel, from the PDDLDomains catalog, in several variants
-(complete, closed world, with gaps, with missing states and with noise).
+(complete, closed world, with gaps, with missing states and with noise). Zenotravel also has small
+problems from its generator (stored with the traces): fly-fast is rare in the plans of the catalog
+problems, and with gaps its effects could be left without data.
 [`dataset.toml`](../../tests/data/traces/dataset.toml) defines them, and
 `scripts/generate_traces.py` generates them (with `--check`, it checks that they regenerate
 identically without writing anything). The plans come from PyPlanner (`gbfs-ff-pref` on one

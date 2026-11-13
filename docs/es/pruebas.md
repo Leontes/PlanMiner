@@ -44,7 +44,9 @@ cmake --preset debug      # volver a configurar para que los detecte
 
 [`tests/data/traces`](../../tests/data/traces) tiene las trazas de los tests unitarios y del
 oráculo: blocksworld, counters y zenotravel, del catálogo de PDDLDomains, con varias variantes
-(completa, mundo cerrado, con huecos, con estados que faltan y con ruido).
+(completa, mundo cerrado, con huecos, con estados que faltan y con ruido). Zenotravel tiene además
+problemas pequeños de su generador (guardados con las trazas): en los planes de los del catálogo
+fly-fast sale pocas veces, y con huecos sus efectos podían quedarse sin datos.
 [`dataset.toml`](../../tests/data/traces/dataset.toml) las define, y
 `scripts/generate_traces.py` las genera (con `--check`, comprueba que se regeneran igual sin
 escribir nada). Los planes son de PyPlanner (`gbfs-ff-pref` con un núcleo, que es determinista).

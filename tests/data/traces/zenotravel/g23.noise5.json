@@ -1,0 +1,77 @@
+{
+  "format": "pddldomains-trace",
+  "version": 1,
+  "generator": "pddldomains 0.1.0",
+  "collection": null,
+  "domain": {
+    "name": "zenotravel",
+    "file": "domain.pddl",
+    "sha256": "1adf6d3c04e95a77437246d9d96dd8402c8be39292f79f456c4444af14c7a023"
+  },
+  "problem": {
+    "name": "zenotravel-numeric-p23-s23",
+    "file": "g23.pddl",
+    "sha256": "e58f4f3141ad53c75e588a05e8d4e93fe760803533980fffcfa371451a394371"
+  },
+  "plan": {
+    "file": "g23.plan",
+    "sha256": "4d53221eaec1e0927f1ebdf4e9dfca31c64eb58b73436aa309cdce649cd80154",
+    "length": 9,
+    "planner": "pyplanner 1.0.0",
+    "config": "gbfs-ff-pref",
+    "seed": null
+  },
+  "execution": {
+    "goal_reached": true,
+    "val": null
+  },
+  "degradation": {
+    "seed": 1,
+    "missing_percent": 0.0,
+    "missing_states_percent": 0.0,
+    "noise_percent": 5.0,
+    "numeric_noise_percent": 10.0,
+    "hidden_atoms": 0,
+    "hidden_values": 0,
+    "flipped_atoms": 10,
+    "perturbed_values": 10,
+    "missing_states": []
+  },
+  "world": "open",
+  "universe": {
+    "kind": "dynamic",
+    "size": 14
+  },
+  "objects": {
+    "city0": "city",
+    "city1": "city",
+    "city2": "city",
+    "city3": "city",
+    "person1": "person",
+    "person2": "person",
+    "plane1": "aircraft"
+  },
+  "states": [
+    {"step": 0, "time": 0, "true": ["(located person2 city3)", "(located plane1 city2)"], "false": ["(in person1 plane1)", "(in person2 plane1)", "(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located plane1 city0)", "(located plane1 city1)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9629.6499606311, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 2134, "(onboard plane1)": 0, "(slow-burn plane1)": 3, "(total-fuel-used)": 0, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 1, "time": 1, "true": ["(in person1 plane1)", "(located person2 city3)", "(located plane1 city0)", "(located plane1 city2)"], "false": ["(in person2 plane1)", "(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located plane1 city1)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 2134, "(onboard plane1)": 1, "(slow-burn plane1)": 3, "(total-fuel-used)": -0.0958727219, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 2, "time": 2, "true": ["(in person1 plane1)", "(located person1 city1)", "(located person2 city3)", "(located plane1 city1)"], "false": ["(in person2 plane1)", "(located person1 city0)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located plane1 city0)", "(located plane1 city2)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 678.1425358439, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 1579, "(onboard plane1)": 1, "(slow-burn plane1)": 3, "(total-fuel-used)": 555, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 3, "time": 3, "true": ["(in person1 plane1)", "(located person1 city3)", "(located person2 city3)", "(located plane1 city3)"], "false": ["(in person2 plane1)", "(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located plane1 city0)", "(located plane1 city1)", "(located plane1 city2)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 195.4659023664, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 1228, "(onboard plane1)": 1, "(slow-burn plane1)": 3, "(total-fuel-used)": 906, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 4, "time": 4, "true": ["(in person1 plane1)", "(located plane1 city3)"], "false": ["(in person2 plane1)", "(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city0)", "(located plane1 city1)", "(located plane1 city2)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 191.1438258644, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 1228, "(onboard plane1)": 2, "(slow-burn plane1)": 3, "(total-fuel-used)": 906, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 5, "time": 5, "true": ["(in person1 plane1)", "(in person2 plane1)", "(located person1 city1)", "(located plane1 city1)"], "false": ["(located person1 city0)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city0)", "(located plane1 city2)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 961.0757826841, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 877, "(onboard plane1)": 2, "(slow-burn plane1)": 3, "(total-fuel-used)": 1257, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 6, "time": 6, "true": ["(in person1 plane1)", "(in person2 plane1)", "(located person1 city2)", "(located plane1 city1)"], "false": ["(located person1 city0)", "(located person1 city1)", "(located person1 city3)", "(located person2 city0)", "(located person2 city1)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city0)", "(located plane1 city2)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": -0.0963504421, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 9749, "(onboard plane1)": 2, "(slow-burn plane1)": 3, "(total-fuel-used)": 1257, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 7, "time": 7, "true": ["(in person1 plane1)", "(in person2 plane1)", "(located person2 city1)", "(located plane1 city1)"], "false": ["(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city0)", "(located plane1 city2)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": -0.0801151061, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 9749, "(onboard plane1)": 1, "(slow-burn plane1)": 3, "(total-fuel-used)": 1257, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 8, "time": 8, "true": ["(in person1 plane1)", "(located person2 city1)", "(located plane1 city0)", "(located plane1 city2)"], "false": ["(in person2 plane1)", "(located person1 city0)", "(located person1 city1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city1)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 3463, "(onboard plane1)": 1, "(slow-burn plane1)": 3, "(total-fuel-used)": 7013.4516829734, "(zoom-limit plane1)": 4}, "unknown_values": []},
+    {"step": 9, "time": 9, "true": ["(located person1 city0)", "(located person1 city1)", "(located person2 city1)", "(located plane1 city0)"], "false": ["(in person1 plane1)", "(in person2 plane1)", "(located person1 city2)", "(located person1 city3)", "(located person2 city0)", "(located person2 city2)", "(located person2 city3)", "(located plane1 city1)", "(located plane1 city2)", "(located plane1 city3)"], "unknown": [], "values": {"(capacity plane1)": 9749, "(distance city0 city0)": 0, "(distance city0 city1)": 898, "(distance city0 city2)": 396, "(distance city0 city3)": 949, "(distance city1 city0)": 898, "(distance city1 city1)": 0, "(distance city1 city2)": 185, "(distance city1 city3)": 117, "(distance city2 city0)": 396.4366237511, "(distance city2 city1)": 185, "(distance city2 city2)": 0, "(distance city2 city3)": 706, "(distance city3 city0)": 949, "(distance city3 city1)": 117, "(distance city3 city2)": 706, "(distance city3 city3)": 0, "(fast-burn plane1)": 7, "(fuel plane1)": 3463, "(onboard plane1)": 0, "(slow-burn plane1)": 3, "(total-fuel-used)": 7543, "(zoom-limit plane1)": 4}, "unknown_values": []}
+  ],
+  "actions": [
+    {"step": 1, "time": 1, "name": "board", "arguments": ["person1", "plane1", "city2"]},
+    {"step": 2, "time": 2, "name": "fly-slow", "arguments": ["plane1", "city2", "city1"]},
+    {"step": 3, "time": 3, "name": "fly-slow", "arguments": ["plane1", "city1", "city3"]},
+    {"step": 4, "time": 4, "name": "board", "arguments": ["person2", "plane1", "city3"]},
+    {"step": 5, "time": 5, "name": "fly-slow", "arguments": ["plane1", "city3", "city1"]},
+    {"step": 6, "time": 6, "name": "refuel", "arguments": ["plane1"]},
+    {"step": 7, "time": 7, "name": "debark", "arguments": ["person2", "plane1", "city1"]},
+    {"step": 8, "time": 8, "name": "fly-fast", "arguments": ["plane1", "city1", "city0"]},
+    {"step": 9, "time": 9, "name": "debark", "arguments": ["person1", "plane1", "city0"]}
+  ]
+}

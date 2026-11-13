@@ -50,13 +50,13 @@
     "c3": "counter"
   },
   "states": [
-    {"step": 0, "time": 0, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c1)": 0, "(value c3)": 0}, "unknown_values": ["(value c0)", "(value c2)"]},
-    {"step": 1, "time": 1, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c1)": 0, "(value c3)": 1}, "unknown_values": ["(max_int)", "(value c2)"]},
-    {"step": 2, "time": 2, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c1)": 0, "(value c2)": 1}, "unknown_values": ["(max_int)", "(value c3)"]},
+    {"step": 0, "time": 0, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 0, "(value c1)": 0}, "unknown_values": ["(value c2)", "(value c3)"]},
+    {"step": 1, "time": 1, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c1)": 0, "(value c2)": 0}, "unknown_values": ["(max_int)", "(value c3)"]},
+    {"step": 2, "time": 2, "true": [], "false": [], "unknown": [], "values": {"(value c1)": 0, "(value c2)": 1, "(value c3)": 1}, "unknown_values": ["(max_int)", "(value c0)"]},
     {"step": 3, "time": 3, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c2)": 1, "(value c3)": 2}, "unknown_values": ["(max_int)", "(value c1)"]},
-    {"step": 4, "time": 4, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c1)": 1, "(value c2)": 1}, "unknown_values": ["(max_int)", "(value c3)"]},
-    {"step": 5, "time": 5, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c1)": 1, "(value c2)": 2}, "unknown_values": ["(value c0)", "(value c3)"]},
-    {"step": 6, "time": 6, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 0, "(value c3)": 3}, "unknown_values": ["(value c1)", "(value c2)"]}
+    {"step": 4, "time": 4, "true": [], "false": [], "unknown": [], "values": {"(value c1)": 1, "(value c2)": 1, "(value c3)": 2}, "unknown_values": ["(max_int)", "(value c0)"]},
+    {"step": 5, "time": 5, "true": [], "false": [], "unknown": [], "values": {"(value c0)": 0, "(value c1)": 1, "(value c2)": 2}, "unknown_values": ["(max_int)", "(value c3)"]},
+    {"step": 6, "time": 6, "true": [], "false": [], "unknown": [], "values": {"(value c1)": 1, "(value c2)": 2, "(value c3)": 3}, "unknown_values": ["(max_int)", "(value c0)"]}
   ],
   "actions": [
     {"step": 1, "time": 1, "name": "increment", "arguments": ["c3"]},

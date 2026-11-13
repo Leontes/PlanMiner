@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -137,9 +138,12 @@ std::vector<plantraces::Trace> traces(const std::string& collection,
 }
 
 // Con la mejorada, los efectos numéricos de zenotravel salen de la regresión: los siete del
-// dominio de referencia (en zenotravel, (distance ?c2 ?c1) vale lo mismo que (distance ?c1 ?c2)).
+// dominio de referencia. En zenotravel, (distance ?c2 ?c1) vale lo mismo que (distance ?c1 ?c2):
+// cualquiera de las dos es buena.
 TEST(Learn, ImprovedZenotravelEffects) {
   const std::string text = pddl::write("zenotravel", pddl::learn(traces("zenotravel")));
+  const std::string forward = "( distance ?param_1 ?param_2 )";
+  const std::string backward = "( distance ?param_2 ?param_1 )";
   for (const std::string effect : {
            "( increase ( onboard ?param_1 ) 1  )",
            "( decrease ( onboard ?param_1 ) 1  )",
@@ -147,13 +151,19 @@ TEST(Learn, ImprovedZenotravelEffects) {
            ")  )",
            "( increase ( total-fuel-used ) ( * ( distance ?param_1 ?param_2 ) ( slow-burn ?param_0 "
            ") )  )",
-           "( decrease ( fuel ?param_0 ) ( * ( distance ?param_2 ?param_1 ) ( fast-burn ?param_0 ) "
+           "( decrease ( fuel ?param_0 ) ( * ( distance ?param_1 ?param_2 ) ( fast-burn ?param_0 ) "
            ")  )",
-           "( increase ( total-fuel-used ) ( * ( distance ?param_2 ?param_1 ) ( fast-burn ?param_0 "
+           "( increase ( total-fuel-used ) ( * ( distance ?param_1 ?param_2 ) ( fast-burn ?param_0 "
            ") )  )",
            "( assign ( fuel ?param_0 ) ( capacity ?param_0 ) )",
        }) {
-    EXPECT_NE(text.find(effect), std::string::npos) << effect << "\n" << text;
+    std::string swapped = effect;
+    if (const std::size_t at = swapped.find(forward); at != std::string::npos) {
+      swapped.replace(at, forward.size(), backward);
+    }
+    EXPECT_TRUE(text.find(effect) != std::string::npos || text.find(swapped) != std::string::npos)
+        << effect << "\n"
+        << text;
   }
 }
 

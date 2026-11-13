@@ -1,65 +1,65 @@
 {
-  "pddldomains": "38a868974e6b4a70cc35bd706e104b739dea24f5",
+  "pddldomains": "82c37913c7df83f4ba3246954117b395bdf9eb54",
   "collections": {
     "ipc-1998/gripper-round-1-strips": {
       "problems": 90,
-      "digest": "a2a7443033fe1826cdaf9a4c38bb19434d84f3e3f5eafc33318b387f8a0288c9"
+      "digest": "5cf30653155891ff77a833901cb4263e1263825869fa3cb8a61c624d7c8ebd1c"
     },
     "ipc-2000/blocks-strips-untyped": {
       "problems": 90,
-      "digest": "93d18ff87357a8fd3858c065116c192e64e4be47972ca41027bbf45effea41ce"
+      "digest": "d44d4a97fd38cdc8e6092bcedd504d1a67ae29c2bbc60f4f2cb1501250fcd8cf"
     },
     "ipc-2011/barman-sequential-satisficing": {
       "problems": 90,
-      "digest": "9d6b656c97f531ba0077da745277b8db8c227d80c02a57aa247b8d4cc475a7e2"
+      "digest": "fbd7e6cf0169da277e22457f16c58045c3379ec76e1f53c9d5f1c07ae048af36"
     },
     "ipc-2011/elevator-sequential-satisficing": {
       "problems": 90,
-      "digest": "12ac330670d2fdd04fbb3d114dc0a2994c9228ad8bab852d9b097423e791e52b"
+      "digest": "bd46d762e3cf16459b5474551c8cc7be7e46d97eb34dc26b8abea00f70709d47"
     },
     "ipc-2011/floor-tile-sequential-satisficing": {
       "problems": 90,
-      "digest": "d42102fabbd02e71773fda0be38e4cccde79efc3b69d1da3f518c3d601bc299f"
+      "digest": "4abb94b19f9e1f108806c947cd1f235a0dd5c2992470eecb1357f3cb5b920fab"
     },
     "ipc-2011/no-mystery-sequential-satisficing": {
       "problems": 90,
-      "digest": "a7d63d5054bfe7a6f95121ece718aec15732f7f89ad8a86b8d11e8078fa5beaa"
+      "digest": "f6fec90df9349eafc016aa5605af8b71bca1caf1a1ee26d7b4598898d173cc45"
     },
     "ipc-2011/parking-sequential-satisficing": {
       "problems": 90,
-      "digest": "da60bee376a11de0d50407a8bb6dfe8a2d7bde3fe39b7a41ba3b4bdf76aeb23f"
+      "digest": "2e38892fdb394762e868463ceca6a010ad696d1e12c1b76998158a5a06083db2"
     },
     "ipc-2011/peg-solitaire-sequential-satisficing": {
       "problems": 90,
-      "digest": "2a82e9f7d98b17a3d6502d61767f93e447f126d9a2a7092f201547d0687cb30c"
+      "digest": "ae331b473931e72063f6301be7a960f7af894e502ebd937f0490ff4f6117a127"
     },
     "ipc-2011/scanalyzer-3d-sequential-satisficing": {
       "problems": 90,
-      "digest": "3e3e36e8fde5092fcc98ccfa999ff67ed098945b55e1f0c42f6bfa5de9f672f5"
+      "digest": "e58b57e36f408a0e0803148a3e823f76737cf733352c2f9d32f6697eafe94b9a"
     },
     "ipc-2011/sokoban-sequential-satisficing": {
       "problems": 90,
-      "digest": "6d7049ba7152009a5ec94b1d31f58de9878b244ba9567e7c59b8bbf1b52e959d"
+      "digest": "f3ea7d537f6fe7bc18c3cd9b16c759a7e30a783ddd2da54594c9c77546a8188a"
     },
     "ipc-2011/transport-sequential-satisficing": {
       "problems": 90,
-      "digest": "6ef0640cab43e967a62734566c576b4aa50732556577d116a6b9cdf2e8a57ea3"
+      "digest": "09ebf3a8976001f7c836f735e4cde557862f4c39da97b12f838b128e5eec496a"
     },
     "ipc-2011/visit-all-sequential-satisficing": {
       "problems": 90,
-      "digest": "65f74f20e6b1010f988fec90ea85591d13fff7b12618b21c55a0595f4cdf9cb5"
+      "digest": "f912e5f18c3f885692f662f4e025ebe31b81499333fd90106c3333f612b7246c"
     },
     "ipc-2011/woodworking-sequential-satisficing": {
       "problems": 90,
-      "digest": "07408aed60e34b4151d41546b2f326771e046e36336b98c75ddfa24f0ae79cde"
+      "digest": "f4f588ba3464dc489f5b3f921ed60f88c44e755478c3bfc6a6e35dc74b13886f"
     },
     "ipc-2023-numeric/counters": {
       "problems": 90,
-      "digest": "9cc0690f3cf3483d427abf4d14d2f090e01b51b7bf5ed5676c275ffbf4d8a611"
+      "digest": "1721235a40ffacac2da0dcf74ca6c3a97744a3225c1932dc4233bcb29a58f2a8"
     },
     "ipc-2023-numeric/zenotravel": {
       "problems": 90,
-      "digest": "713421c26f68da2d6e6f721676fd80a8c7917566bc6b8e877690111b16c45957"
+      "digest": "eb2ed0912beea37962b35ee34c3fe95fd0ca104711d813b31997c9846431ad21"
     }
   },
   "excluded": {

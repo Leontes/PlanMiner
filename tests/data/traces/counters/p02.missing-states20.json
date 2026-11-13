@@ -37,8 +37,8 @@
     "flipped_atoms": 0,
     "perturbed_values": 0,
     "missing_states": [
-      3,
-      4
+      4,
+      6
     ]
   },
   "world": "open",
@@ -56,10 +56,10 @@
     {"step": 0, "time": 0, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 7, "(value c3)": 1}, "unknown_values": []},
     {"step": 1, "time": 1, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 6, "(value c3)": 1}, "unknown_values": []},
     {"step": 2, "time": 2, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 5, "(value c3)": 1}, "unknown_values": []},
-    {"step": 3, "time": 3, "missing": true},
+    {"step": 3, "time": 3, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 4, "(value c3)": 1}, "unknown_values": []},
     {"step": 4, "time": 4, "missing": true},
     {"step": 5, "time": 5, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 4, "(value c3)": 3}, "unknown_values": []},
-    {"step": 6, "time": 6, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 4, "(value c3)": 4}, "unknown_values": []},
+    {"step": 6, "time": 6, "missing": true},
     {"step": 7, "time": 7, "true": [], "false": [], "unknown": [], "values": {"(max_int)": 8, "(value c0)": 1, "(value c1)": 3, "(value c2)": 4, "(value c3)": 5}, "unknown_values": []}
   ],
   "actions": [
