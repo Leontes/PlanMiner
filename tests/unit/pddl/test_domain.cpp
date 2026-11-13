@@ -181,11 +181,11 @@ TEST(Learn, ExactWithoutNoise) {
 }
 
 // Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
-// completas, la mejorada da lo mismo sin ellas, también con el umbral de la binomial.
+// completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros.
 TEST(Learn, NoiseImprovementsOnlyWithNoise) {
-  pddl::Options binomial;
-  binomial.rare_values_alpha = 1e-4;
-  pddl::Options without;
+  pddl::Options fixed;
+  fixed.rare_values_alpha = 0.0;
+  pddl::Options without = fixed;
   without.rare_values = 0.0;
   without.smooth_fluents = false;
   without.refine_meta_states = false;
@@ -193,30 +193,21 @@ TEST(Learn, NoiseImprovementsOnlyWithNoise) {
     const std::vector<plantraces::Trace> complete = traces(collection);
     const std::string expected = pddl::write(collection, pddl::learn(complete, without));
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
-    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, binomial)), expected) << collection;
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, fixed)), expected) << collection;
   }
 }
 
-// Con ruido, los valores raros (lowFreq) cambian lo que se aprende.
+// Con ruido, los valores raros cambian lo que se aprende: con el umbral de la binomial (el de la
+// mejorada) y con el fijo (lowFreq con 2c). En las trazas de prueba dan lo mismo; en el banco, no.
 TEST(Learn, RareValuesWithNoise) {
   const std::vector<plantraces::Trace> noisy = traces("blocks-strips-untyped", "noise5");
-  pddl::Options without;
+  pddl::Options fixed;
+  fixed.rare_values_alpha = 0.0;
+  pddl::Options without = fixed;
   without.rare_values = 0.0;
-  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy)),
-            pddl::write("blocks", pddl::learn(noisy, without)));
-}
-
-// Con ruido, el umbral de la binomial también cambia lo que se aprende (en las trazas de prueba,
-// lo mismo que el fijo; en el banco no).
-TEST(Learn, BinomialRareValuesWithNoise) {
-  const std::vector<plantraces::Trace> noisy = traces("blocks-strips-untyped", "noise5");
-  pddl::Options binomial;
-  binomial.rare_values = 0.0;
-  binomial.rare_values_alpha = 1e-4;
-  pddl::Options without;
-  without.rare_values = 0.0;
-  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy, binomial)),
-            pddl::write("blocks", pddl::learn(noisy, without)));
+  const std::string unfiltered = pddl::write("blocks", pddl::learn(noisy, without));
+  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy)), unfiltered);
+  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy, fixed)), unfiltered);
 }
 
 // Con las trazas completas de blocksworld, el original aprende el dominio de referencia. En la

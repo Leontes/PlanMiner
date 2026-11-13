@@ -63,15 +63,20 @@ struct Options {
   /// fusión no cuenta esos valores. Con rare_values_per_noise, el umbral es rare_values · c. El
   /// umbral no pasa de 0.5: el valor mayoritario no se borra nunca. Con 0, como el original, nada.
   ///
-  /// La mejorada usa 2c: con un ruido p por observación, c ≈ 2p, y una condición cierta sale falsa
-  /// en ≈ p de sus filas. Con el 5 % fijo de lowFreq, en noise5 solo se limpia la mitad.
+  /// 2c: con un ruido p por observación, c ≈ 2p, y una condición cierta sale falsa en ≈ p de sus
+  /// filas. Con el 5 % fijo de lowFreq, en noise5 solo se limpia la mitad. La mejorada usa el de la
+  /// binomial (rare_values_alpha), y este umbral solo si rare_values_alpha es 0.
   double rare_values = 2.0;
   bool rare_values_per_noise = true;
   /// Si es mayor que 0, en lugar de un umbral fijo, el de una binomial con este alpha
   /// (rules::hide_rare_values_binomial): en cada átomo y clase con n filas, el valor que sale en
   /// binomial_bound(n, p, alpha) filas o menos, con p el ruido de cada observación
   /// (plantraces::observation_noise de c). Si no, el umbral de rare_values.
-  double rare_values_alpha = 0.0;
+  ///
+  /// La mejorada usa 1e-3. Un umbral fijo solo acierta con muchas filas (deja los valores raros
+  /// que son ciertos: 2c los borra en scanalyzer) o con pocas (borra el ruido, que varía más). En
+  /// el banco ruido, de 3493 a 3954 planes válidos STRIPS con ruido; con 1e-4, 3856.
+  double rare_values_alpha = 1e-3;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos
