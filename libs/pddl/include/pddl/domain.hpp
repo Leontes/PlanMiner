@@ -67,6 +67,11 @@ struct Options {
   /// en ≈ p de sus filas. Con el 5 % fijo de lowFreq, en noise5 solo se limpia la mitad.
   double rare_values = 2.0;
   bool rare_values_per_noise = true;
+  /// Si es mayor que 0, en lugar de un umbral fijo, el de una binomial con este alpha
+  /// (rules::hide_rare_values_binomial): en cada átomo y clase con n filas, el valor que sale en
+  /// binomial_bound(n, p, alpha) filas o menos, con p el ruido de cada observación
+  /// (plantraces::observation_noise de c). Si no, el umbral de rare_values.
+  double rare_values_alpha = 0.0;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos

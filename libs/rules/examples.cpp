@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
+#include <map>
 #include <utility>
 
 namespace rules {
@@ -136,6 +138,63 @@ void hide_rare_values(Examples& examples, double threshold) {
       const std::size_t c = classes[row];
       const std::size_t same = column[row] == 1.0 ? holds[c] : known[c] - holds[c];
       if (static_cast<double>(same) < threshold * static_cast<double>(known[c])) {
+        column[row] = unknown;
+      }
+    }
+  }
+}
+
+std::size_t binomial_bound(std::size_t n, double p, double alpha) {
+  if (p <= 0.0) {
+    return 0;
+  }
+  if (p >= 1.0) {
+    return n;
+  }
+  // La función de distribución, término a término en logaritmos: (1 - p)^n se sale del double.
+  const double trials = static_cast<double>(n);
+  double cumulative = 0.0;
+  for (std::size_t m = 0; m < n; ++m) {
+    const double k = static_cast<double>(m);
+    cumulative +=
+        std::exp(std::lgamma(trials + 1.0) - std::lgamma(k + 1.0) - std::lgamma(trials - k + 1.0) +
+                 k * std::log(p) + (trials - k) * std::log1p(-p));
+    if (cumulative >= 1.0 - alpha) {
+      return m;
+    }
+  }
+  return n;
+}
+
+void hide_rare_values_binomial(Examples& examples, double p, double alpha) {
+  const std::vector<std::size_t>& classes = examples.data.clases;
+  std::map<std::size_t, std::size_t> bounds;  // por filas conocidas: se repiten mucho
+  const auto bound = [&](std::size_t n) {
+    const auto found = bounds.find(n);
+    return found != bounds.end() ? found->second
+                                 : bounds.emplace(n, binomial_bound(n, p, alpha)).first->second;
+  };
+  for (std::size_t a = 0; a < examples.attributes.size(); ++a) {
+    if (examples.attributes[a].kind != AttributeKind::atom) {
+      continue;
+    }
+    std::vector<double>& column = examples.data.valores[a];
+    std::vector<std::size_t> known(2, 0);
+    std::vector<std::size_t> holds(2, 0);
+    for (std::size_t row = 0; row < column.size(); ++row) {
+      if (!std::isnan(column[row])) {
+        ++known[classes[row]];
+        holds[classes[row]] += column[row] == 1.0 ? 1U : 0U;
+      }
+    }
+    const std::vector<std::size_t> limits = {bound(known[0]), bound(known[1])};
+    for (std::size_t row = 0; row < column.size(); ++row) {
+      if (std::isnan(column[row])) {
+        continue;
+      }
+      const std::size_t c = classes[row];
+      const std::size_t same = column[row] == 1.0 ? holds[c] : known[c] - holds[c];
+      if (same <= limits[c] && 2 * same < known[c]) {
         column[row] = unknown;
       }
     }

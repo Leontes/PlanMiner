@@ -83,6 +83,19 @@ Examples logic_examples(const datasets::Table& table);
 /// porque las de antes y las de después van emparejadas.
 void hide_rare_values(Examples& examples, double threshold);
 
+/// La cota de lo que explica el azar en una binomial: el menor m tal que P(X > m) <= alpha, con
+/// X ~ Binomial(n, p). Con p 0, 0.
+std::size_t binomial_bound(std::size_t n, double p, double alpha);
+
+/// Los valores que explica el ruido, desconocidos: como hide_rare_values, pero en cada átomo y en
+/// cada clase con n filas en que se conoce, pasa a desconocido el valor que sale en
+/// binomial_bound(n, p, alpha) filas o menos y en menos de la mitad. Si cada observación se
+/// invierte con probabilidad p (observation_noise), una condición cierta sale falsa en
+/// Binomial(n, p) filas: el umbral se adapta a las filas. Con muchas, se acerca a p y deja los
+/// valores raros que son ciertos; con pocas, sube, porque el ruido varía más. Un umbral fijo, como
+/// el de hide_rare_values, solo acierta en uno de los dos casos.
+void hide_rare_values_binomial(Examples& examples, double p, double alpha);
+
 /// Los ejemplos numéricos de la acción, como los construye el original (to_table y discretize):
 /// los valores de los fluentes (y del instante) en el orden de la tabla, discretizados con random;
 /// las relaciones; y, con options.changes, el signo del cambio de cada fluente (y del instante) que

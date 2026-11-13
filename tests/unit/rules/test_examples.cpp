@@ -94,6 +94,46 @@ TEST(HideRareValues, TheRareValueOfEachClass) {
   }
 }
 
+// P(X > m) <= alpha con X ~ Binomial(n, p). Con n = 2 y p = 0.5, P(X <= 0) = 0.25 y P(X <= 1) =
+// 0.75. Con p = 0.05 y alpha = 1e-4, el umbral en proporción baja con las filas: 30 % con 20, 15 %
+// con 100 y 7.7 % con 1000.
+TEST(BinomialBound, TheTailOfTheBinomial) {
+  EXPECT_EQ(rules::binomial_bound(2, 0.5, 0.3), 1U);
+  EXPECT_EQ(rules::binomial_bound(2, 0.5, 0.2), 2U);
+  EXPECT_EQ(rules::binomial_bound(20, 0.05, 1e-4), 6U);
+  EXPECT_EQ(rules::binomial_bound(100, 0.05, 1e-4), 15U);
+  EXPECT_EQ(rules::binomial_bound(100, 0.05, 1e-3), 13U);
+  EXPECT_EQ(rules::binomial_bound(1000, 0.05, 1e-4), 77U);
+  EXPECT_EQ(rules::binomial_bound(100, 0.0, 1e-4), 0U);
+  EXPECT_EQ(rules::binomial_bound(0, 0.05, 1e-4), 0U);
+}
+
+// Con 100 filas, un 5 % de ruido y alpha 1e-4, lo que sale en 15 filas o menos. Antes: (p) falso en
+// 15 filas, (q) falso en 16 y (r) cierto en 50 (la mitad no se borra nunca).
+TEST(HideRareValuesBinomial, WhatTheNoiseExplains) {
+  datasets::Table t;
+  t.transitions = 100;
+  t.attributes = {{AttributeKind::atom, {"p", {}}},
+                  {AttributeKind::atom, {"q", {}}},
+                  {AttributeKind::atom, {"r", {}}}};
+  std::vector<double> p(200, 1.0);
+  std::vector<double> q(200, 1.0);
+  std::vector<double> r(200, 0.0);
+  std::fill(p.begin(), p.begin() + 15, 0.0);
+  std::fill(q.begin(), q.begin() + 16, 0.0);
+  std::fill(r.begin(), r.begin() + 50, 1.0);
+  t.columns = {p, q, r};
+
+  rules::Examples examples = rules::logic_examples(t);
+  rules::hide_rare_values_binomial(examples, 0.05, 1e-4);
+  const std::vector<std::vector<double>>& values = examples.data.valores;
+  EXPECT_TRUE(std::isnan(values[0][0]));
+  EXPECT_EQ(values[0][15], 1.0);
+  EXPECT_EQ(values[1][0], 0.0);
+  EXPECT_EQ(values[2][0], 1.0);
+  EXPECT_EQ(values[2][50], 0.0);
+}
+
 // Un fluente sin valores conocidos no tiene etiquetas: no se le pasa a INSLV.
 TEST(NumericExamples, AFluentWithoutValues) {
   const rules::Examples examples = rules::numeric_examples(

@@ -1,6 +1,7 @@
 #include "plantraces/actions.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <set>
 #include <string>
@@ -64,6 +65,10 @@ std::map<std::string, std::vector<Transition>> group_by_action(const std::vector
     }
   }
   return result;
+}
+
+double observation_noise(double frame_changes) {
+  return frame_changes < 0.5 ? (1.0 - std::sqrt(1.0 - 2.0 * frame_changes)) / 2.0 : 0.5;
 }
 
 double frame_changes(const std::vector<Trace>& traces) {

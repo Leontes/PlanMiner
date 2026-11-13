@@ -52,6 +52,11 @@ std::map<std::string, std::vector<Transition>> group_by_action(const std::vector
 /// Los átomos y fluentes sin argumentos no cuentan: una acción puede cambiarlos.
 double frame_changes(const std::vector<Trace>& traces);
 
+/// El ruido de cada observación que da frame_changes: si cada observación se altera con
+/// probabilidad p, independiente en cada estado, una observación cambia entre dos estados con
+/// probabilidad c = 2p(1 - p), y p = (1 - sqrt(1 - 2c)) / 2. Desde c = 0.5, 0.5.
+double observation_noise(double frame_changes);
+
 /// Un átomo o un término numérico sobre los parámetros de una acción: (on ?0 ?1). parameters
 /// tiene, para cada argumento, el índice del parámetro.
 struct LiftedAtom {

@@ -181,18 +181,19 @@ TEST(Learn, ExactWithoutNoise) {
 }
 
 // Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
-// completas, la mejorada da lo mismo sin ellas.
+// completas, la mejorada da lo mismo sin ellas, también con el umbral de la binomial.
 TEST(Learn, NoiseImprovementsOnlyWithNoise) {
-  const pddl::Options improved;
-  pddl::Options without = improved;
+  pddl::Options binomial;
+  binomial.rare_values_alpha = 1e-4;
+  pddl::Options without;
   without.rare_values = 0.0;
   without.smooth_fluents = false;
   without.refine_meta_states = false;
   for (const char* collection : {"blocks-strips-untyped", "counters", "zenotravel"}) {
     const std::vector<plantraces::Trace> complete = traces(collection);
-    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, improved)),
-              pddl::write(collection, pddl::learn(complete, without)))
-        << collection;
+    const std::string expected = pddl::write(collection, pddl::learn(complete, without));
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, binomial)), expected) << collection;
   }
 }
 
@@ -202,6 +203,19 @@ TEST(Learn, RareValuesWithNoise) {
   pddl::Options without;
   without.rare_values = 0.0;
   EXPECT_NE(pddl::write("blocks", pddl::learn(noisy)),
+            pddl::write("blocks", pddl::learn(noisy, without)));
+}
+
+// Con ruido, el umbral de la binomial también cambia lo que se aprende (en las trazas de prueba,
+// lo mismo que el fijo; en el banco no).
+TEST(Learn, BinomialRareValuesWithNoise) {
+  const std::vector<plantraces::Trace> noisy = traces("blocks-strips-untyped", "noise5");
+  pddl::Options binomial;
+  binomial.rare_values = 0.0;
+  binomial.rare_values_alpha = 1e-4;
+  pddl::Options without;
+  without.rare_values = 0.0;
+  EXPECT_NE(pddl::write("blocks", pddl::learn(noisy, binomial)),
             pddl::write("blocks", pddl::learn(noisy, without)));
 }
 

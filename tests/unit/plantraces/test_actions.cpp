@@ -129,6 +129,15 @@ TEST(FrameChanges, WhatChangesOutsideTheAction) {
   EXPECT_DOUBLE_EQ(plantraces::frame_changes({trace}), 2.0 / 3.0);
 }
 
+// c = 2p(1 - p): con un 5 % de ruido en cada observación, c = 0.095.
+TEST(ObservationNoise, TheInverseOfTheChanges) {
+  EXPECT_EQ(plantraces::observation_noise(0.0), 0.0);
+  EXPECT_NEAR(plantraces::observation_noise(2 * 0.05 * 0.95), 0.05, 1e-12);
+  EXPECT_NEAR(plantraces::observation_noise(2 * 0.2 * 0.8), 0.2, 1e-12);
+  EXPECT_EQ(plantraces::observation_noise(0.5), 0.5);
+  EXPECT_EQ(plantraces::observation_noise(0.7), 0.5);
+}
+
 TEST(LiftedAtom, Text) {
   EXPECT_EQ(plantraces::to_string(LiftedAtom{"on", {0, 1}}), "(on ?0 ?1)");
   EXPECT_EQ(plantraces::to_string(LiftedAtom{"handempty", {}}), "(handempty)");

@@ -204,6 +204,7 @@ Options Options::original() {
   options.drop_implied = false;
   options.rare_values = 0.0;
   options.rare_values_per_noise = false;
+  options.rare_values_alpha = 0.0;
   options.smooth_fluents = false;
   options.refine_meta_states = false;
   return options;
@@ -265,7 +266,10 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     }
     const datasets::Table& table = tables.at(name);
     action.logic = rules::logic_examples(table);
-    if (options.rare_values > 0.0 && !noiseless) {
+    if (options.rare_values_alpha > 0.0 && !noiseless) {
+      rules::hide_rare_values_binomial(action.logic, plantraces::observation_noise(noise),
+                                       options.rare_values_alpha);
+    } else if (options.rare_values > 0.0 && !noiseless) {
       const double threshold =
           options.rare_values_per_noise ? options.rare_values * noise : options.rare_values;
       rules::hide_rare_values(action.logic, std::min(threshold, 0.5));
