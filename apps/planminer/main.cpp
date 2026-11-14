@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "pddl/domain.hpp"
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]) {
     const std::string name = arguments.name ? *arguments.name : domain_name(traces);
 
     const pddl::Options options = arguments.original ? pddl::Options::original() : pddl::Options{};
-    const std::string domain = pddl::write(name, pddl::learn(traces, options), options);
+    const std::string domain = pddl::write(name, pddl::learn(std::move(traces), options), options);
 
     if (!arguments.output) {
       std::cout << domain << "\n";

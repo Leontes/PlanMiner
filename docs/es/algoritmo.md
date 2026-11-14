@@ -84,6 +84,15 @@ estima ruido (`plantraces::frame_changes`, c > 0): sin ruido, el dominio es el m
 | Suavizado de los fluentes | Los valores de cada fluente se agrupan con un clustering jerárquico de arriba abajo (HRC: k-means con k = 2, que se repite en cada cluster mientras su dispersión, 0.6 (1 - silueta) + 0.4 σ/μ, pase de 0.05) y pasan a la media de su cluster; los clusters de un solo valor son atípicos y pasan a desconocidos. Antes de buscar los efectos y las relaciones. Salvo `(total-cost)` y los acumuladores, que no se repiten. | `Options::smooth_fluents` |
 | Refinamiento de los meta-estados | La fusión descarta las condiciones con un soporte (los ejemplos que cubren las reglas que las tienen) por debajo del 5 % de las aplicaciones, y en un conflicto con una diferencia de soportes dentro del 10 % de su media, los dos valores. | `Options::refine_meta_states` |
 
+Una opción más, que la mejorada aún no usa: el **suavizado temporal de los átomos**
+(`Options::smooth_atoms`, `plantraces::smooth_atoms`). Las tablas separan cada aplicación de las
+demás, pero el ruido es independiente en cada estado, y el valor de un átomo persiste mientras no
+lo cambie una acción. En cada traza, los estados de cada átomo con argumentos se cortan en tramos
+en las acciones que pueden cambiarlo: las que tienen todos sus objetos y lo cambian más de lo que
+explica el ruido. En cada tramo, sus observaciones pasan al valor de la mayoría si gana por dos o
+más, y a desconocidas si no hay una mayoría clara. Después, el umbral de los valores raros usa en
+cada columna el ruido que queda. Supone que los efectos no tienen constantes del dominio.
+
 ### Escritura
 
 | Mejora | Qué hace | Opción |

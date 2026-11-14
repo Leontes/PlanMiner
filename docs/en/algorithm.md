@@ -84,6 +84,15 @@ noise is estimated (`plantraces::frame_changes`, c > 0): without noise, the doma
 | Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat. | `Options::smooth_fluents` |
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
 
+One more option, not yet used by the improved configuration: **temporal atom smoothing**
+(`Options::smooth_atoms`, `plantraces::smooth_atoms`). The tables separate each application from
+the others, but the noise is independent in each state, and the value of an atom persists until an
+action changes it. In each trace, the states of each atom with arguments are cut into segments at
+the actions that can change it: those that have all its objects and change it more than the noise
+explains. In each segment, its observations take the majority value if it wins by two or more,
+and become unknown if there is no clear majority. Then the rare-value threshold uses, in each
+column, the noise that remains. It assumes that effects have no domain constants.
+
 ### Writing
 
 | Improvement | What it does | Option |

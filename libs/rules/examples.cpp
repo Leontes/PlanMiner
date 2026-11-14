@@ -146,14 +146,16 @@ void hide_rare_values(Examples& examples, double threshold) {
   }
 }
 
-void hide_rare_values_binomial(Examples& examples, double p, double alpha) {
+void hide_rare_values_binomial(Examples& examples, const AttributeNoise& p, double alpha) {
   const std::vector<std::size_t>& classes = examples.data.clases;
-  std::map<std::size_t, std::size_t> bounds;  // por filas conocidas: se repiten mucho
-  const auto bound = [&](std::size_t n) {
-    const auto found = bounds.find(n);
+  // Por filas conocidas y ruido: se repiten mucho.
+  std::map<std::pair<std::size_t, double>, std::size_t> bounds;
+  const auto bound = [&](std::size_t n, double noise) {
+    const auto found = bounds.find({n, noise});
     return found != bounds.end()
                ? found->second
-               : bounds.emplace(n, plantraces::binomial_bound(n, p, alpha)).first->second;
+               : bounds.emplace(std::pair{n, noise}, plantraces::binomial_bound(n, noise, alpha))
+                     .first->second;
   };
   for (std::size_t a = 0; a < examples.attributes.size(); ++a) {
     if (examples.attributes[a].kind != AttributeKind::atom) {
@@ -168,7 +170,7 @@ void hide_rare_values_binomial(Examples& examples, double p, double alpha) {
         holds[classes[row]] += column[row] == 1.0 ? 1U : 0U;
       }
     }
-    const std::vector<std::size_t> limits = {bound(known[0]), bound(known[1])};
+    const std::vector<std::size_t> limits = {bound(known[0], p(a, 0)), bound(known[1], p(a, 1))};
     for (std::size_t row = 0; row < column.size(); ++row) {
       if (std::isnan(column[row])) {
         continue;
@@ -180,6 +182,10 @@ void hide_rare_values_binomial(Examples& examples, double p, double alpha) {
       }
     }
   }
+}
+
+void hide_rare_values_binomial(Examples& examples, double p, double alpha) {
+  hide_rare_values_binomial(examples, [p](std::size_t, std::size_t) { return p; }, alpha);
 }
 
 Examples numeric_examples(const datasets::Table& table,

@@ -77,6 +77,22 @@ struct Options {
   /// que son ciertos: 2c los borra en scanalyzer) o con pocas (borra el ruido, que varía más). En
   /// el banco ruido, de 3493 a 3954 planes válidos STRIPS con ruido; con 1e-4, 3856.
   double rare_values_alpha = 1e-3;
+  /// Si las trazas tienen ruido, antes de aprender, el suavizado temporal de los átomos
+  /// (plantraces::smooth_atoms): en cada traza, el valor de un átomo persiste entre las acciones
+  /// que pueden cambiarlo, y sus observaciones en cada tramo pasan al valor de la mayoría (o, sin
+  /// una mayoría clara, a desconocidas). Las tablas separan cada aplicación de las demás; el
+  /// suavizado usa la secuencia de la traza para corregir el ruido. El umbral de la binomial
+  /// (rare_values_alpha) usa en cada columna el ruido que queda (en las que no se suavizan, como
+  /// las de los átomos sin argumentos, el de antes). El ruido (frame_changes) se estima en las
+  /// trazas sin suavizar. Si no, como el original.
+  ///
+  /// En el banco ruido, con la mejorada, los planes válidos STRIPS con ruido pasan de 3954 a 4228:
+  /// 92, 92, 92 y 89 % con un 3, 5, 10 y 20 % de ruido (sin ruido, 92 %), frente a 92, 87, 84 y
+  /// 78 %. El fallo que corrige: los valores raros que son ciertos, como un shaker ya agitado
+  /// cuando se coge en barman, salían con la frecuencia del ruido, el umbral los borraba e INSLV
+  /// añadía la precondición contraria. Supone que los efectos no tienen constantes del dominio:
+  /// en woodworking, que las tiene, la F baja un poco.
+  bool smooth_atoms = false;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos
@@ -120,6 +136,10 @@ struct Options {
 /// No usa el rand() global: el generador de INSLV da su secuencia y se recorre en el mismo orden
 /// que el original, así que con Options::original() da los mismos ejemplos y reglas.
 LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options& options = {});
+
+/// Como learn, pero el suavizado de los átomos (Options::smooth_atoms) cambia las trazas en lugar
+/// de una copia: con muchas trazas, la copia puede no caber en memoria.
+LearnedDomain learn(std::vector<plantraces::Trace>&& traces, const Options& options = {});
 
 /// El dominio como lo escribe el PlanMiner original (el final de Old/src/bin/mainPlanMiner.cpp),
 /// con el nombre en minúsculas:

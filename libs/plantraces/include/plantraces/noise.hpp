@@ -1,9 +1,15 @@
-// El ruido de las trazas: cuánto hay en cada observación y lo que puede explicar.
+// El ruido de las trazas: cuánto hay en cada observación, lo que puede explicar y su suavizado
+// con la secuencia de los estados.
 #pragma once
 
+#include <array>
 #include <cstddef>
+#include <map>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "plantraces/actions.hpp"
 #include "plantraces/trace.hpp"
 
 namespace plantraces {
@@ -24,5 +30,39 @@ double observation_noise(double frame_changes);
 /// La cota de lo que explica el azar en una binomial: el menor m tal que P(X > m) <= alpha, con
 /// X ~ Binomial(n, p). Con p 0, 0.
 std::size_t binomial_bound(std::size_t n, double p, double alpha);
+
+/// Una acción y un átomo sobre sus parámetros: ("move", (at ?0 ?1)).
+using ActionAtom = std::pair<std::string, LiftedAtom>;
+
+/// El ruido que queda en las columnas de las tablas de ejemplos: de cada acción y átomo sobre sus
+/// parámetros, la probabilidad media de que esté mal una observación de antes de la acción ([0])
+/// y de después ([1]).
+using ColumnNoise = std::map<ActionAtom, std::array<double, 2>>;
+
+/// El suavizado temporal de los átomos, en las trazas. Las tablas de ejemplos separan cada
+/// aplicación de las de antes y de después; pero el ruido es independiente en cada estado, y el
+/// valor de un átomo persiste mientras no lo cambie una acción. p es el ruido de cada observación
+/// (observation_noise). En cada traza:
+///
+/// 1. Un átomo con argumentos solo puede cambiar con una acción que tenga todos sus objetos entre
+///    sus argumentos (suponiendo que los efectos no tienen constantes del dominio). Una acción
+///    cambia un átomo sobre unos de sus parámetros, como (at ?0 ?1) en move, si, entre los estados
+///    de antes y de después, cambia más de lo que explica el ruido: en más de
+///    binomial_bound(n, 2p(1 - p), effect_alpha) de las n aplicaciones en que se conoce en los
+///    dos. Con un alpha alto, ante la duda, es un efecto: tomar un efecto por ruido suavizaría por
+///    encima de un cambio y destruiría datos; lo contrario solo pierde el suavizado en ese punto.
+/// 2. Las acciones que pueden cambiar el átomo (sus efectos, las que lo tienen sobre un objeto que
+///    ocupa varios parámetros y las que no tienen datos) cortan sus estados en tramos. Dentro de un
+///    tramo, su valor es el mismo.
+/// 3. En cada tramo, con d la diferencia entre las observaciones ciertas y las falsas: con d >= 2,
+///    todas pasan al valor de la mayoría, que se equivoca con probabilidad
+///    1 / (1 + ((1 - p) / p)^d); con d <= 1 y dos observaciones o más, a desconocidas (la mayoría
+///    no es más fiable que una observación sola, y si se equivocara, se equivocarían todas juntas);
+///    con una sola, se queda como está, con su ruido p. Las desconocidas no se rellenan.
+///
+/// Los átomos sin argumentos (cualquier acción puede cambiarlos) y los fluentes no se suavizan.
+/// Devuelve el ruido que queda: en las columnas de cada acción, la media de esas probabilidades en
+/// las observaciones conocidas (p si no tiene ninguna).
+ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alpha = 0.3);
 
 }  // namespace plantraces

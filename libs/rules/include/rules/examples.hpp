@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string>
 #include <variant>
@@ -91,6 +92,14 @@ void hide_rare_values(Examples& examples, double threshold);
 /// acerca a p y deja los valores raros que son ciertos; con pocas, sube, porque el ruido varía
 /// más. Un umbral fijo, como el de hide_rare_values, solo acierta en uno de los dos casos.
 void hide_rare_values_binomial(Examples& examples, double p, double alpha);
+
+/// El ruido de cada atributo de los ejemplos (su índice) y clase (0, antes de la acción; 1,
+/// después).
+using AttributeNoise = std::function<double(std::size_t attribute, std::size_t klass)>;
+
+/// hide_rare_values_binomial con el ruido de cada columna: el que queda después del suavizado de
+/// los átomos (plantraces::smooth_atoms).
+void hide_rare_values_binomial(Examples& examples, const AttributeNoise& p, double alpha);
 
 /// Los ejemplos numéricos de la acción, como los construye el original (to_table y discretize):
 /// los valores de los fluentes (y del instante) en el orden de la tabla, discretizados con random;

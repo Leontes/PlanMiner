@@ -208,17 +208,22 @@ Options Options::original() {
   options.rare_values_alpha = 0.0;
   options.smooth_fluents = false;
   options.refine_meta_states = false;
+  options.smooth_atoms = false;
   return options;
 }
 
-LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options& options) {
+namespace {
+
+// learn, con noise el c de las trazas antes de suavizarlas y, si se han suavizado los átomos, el
+// ruido que queda en cada columna.
+LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, double noise,
+                           const plantraces::ColumnNoise* columns, const Options& options) {
   LearnedDomain domain;
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
   const std::map<std::string, std::vector<plantraces::Transition>> actions =
       plantraces::group_by_action(traces);
 
-  const double noise = plantraces::frame_changes(traces);
   const bool noiseless = noise == 0.0;
   // El generador de INSLV, con la secuencia del rand() de glibc. INSLV lo siembra al empezar cada
   // aprendizaje, y la discretización sigue su secuencia: el original hacía lo mismo con el rand()
@@ -268,8 +273,19 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     const datasets::Table& table = tables.at(name);
     action.logic = rules::logic_examples(table);
     if (options.rare_values_alpha > 0.0 && !noiseless) {
-      rules::hide_rare_values_binomial(action.logic, plantraces::observation_noise(noise),
-                                       options.rare_values_alpha);
+      // El ruido de cada observación; con el suavizado de los átomos, el que queda en la columna.
+      const double p = plantraces::observation_noise(noise);
+      const auto column_noise = [&](std::size_t attribute, std::size_t klass) {
+        if (columns != nullptr) {
+          const auto found =
+              columns->find({action.name, action.logic.attributes[attribute].term.term});
+          if (found != columns->end()) {
+            return found->second[klass];
+          }
+        }
+        return p;
+      };
+      rules::hide_rare_values_binomial(action.logic, column_noise, options.rare_values_alpha);
     } else if (options.rare_values > 0.0 && !noiseless) {
       const double threshold =
           options.rare_values_per_noise ? options.rare_values * noise : options.rare_values;
@@ -315,6 +331,33 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     domain.actions.push_back(std::move(action));
   }
   return domain;
+}
+
+// Con el suavizado de los átomos: las trazas se suavizan en su sitio.
+LearnedDomain learn_smoothed(std::vector<plantraces::Trace>& traces, double noise,
+                             const Options& options) {
+  const plantraces::ColumnNoise columns =
+      plantraces::smooth_atoms(traces, plantraces::observation_noise(noise));
+  return learn_domain(traces, noise, &columns, options);
+}
+
+}  // namespace
+
+LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options& options) {
+  const double noise = plantraces::frame_changes(traces);
+  if (options.smooth_atoms && noise > 0.0) {
+    std::vector<plantraces::Trace> copy = traces;
+    return learn_smoothed(copy, noise, options);
+  }
+  return learn_domain(traces, noise, nullptr, options);
+}
+
+LearnedDomain learn(std::vector<plantraces::Trace>&& traces, const Options& options) {
+  const double noise = plantraces::frame_changes(traces);
+  if (options.smooth_atoms && noise > 0.0) {
+    return learn_smoothed(traces, noise, options);
+  }
+  return learn_domain(traces, noise, nullptr, options);
 }
 
 std::string write(const std::string& name, const LearnedDomain& domain, const Options& options) {

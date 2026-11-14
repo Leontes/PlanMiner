@@ -120,6 +120,32 @@ TEST(HideRareValuesBinomial, WhatTheNoiseExplains) {
   EXPECT_EQ(values[2][50], 0.0);
 }
 
+// Con el ruido de cada columna: (p) y (q), falsos en 10 de las 100 filas de antes y de las 100 de
+// después. Con un 5 % de ruido y alpha 1e-4, la cota es 15, y se borran; en (q) después, con un
+// 0.1 % (como el que queda al suavizar los átomos), es 3, y se quedan.
+TEST(HideRareValuesBinomial, TheNoiseOfEachColumn) {
+  datasets::Table t;
+  t.transitions = 100;
+  t.attributes = {{AttributeKind::atom, {"p", {}}}, {AttributeKind::atom, {"q", {}}}};
+  std::vector<double> column(200, 1.0);
+  std::fill(column.begin(), column.begin() + 10, 0.0);
+  std::fill(column.begin() + 100, column.begin() + 110, 0.0);
+  t.columns = {column, column};
+
+  rules::Examples examples = rules::logic_examples(t);
+  rules::hide_rare_values_binomial(
+      examples,
+      [](std::size_t attribute, std::size_t klass) {
+        return attribute == 1 && klass == 1 ? 0.001 : 0.05;
+      },
+      1e-4);
+  const std::vector<std::vector<double>>& values = examples.data.valores;
+  EXPECT_TRUE(std::isnan(values[0][0]));
+  EXPECT_TRUE(std::isnan(values[0][100]));
+  EXPECT_TRUE(std::isnan(values[1][0]));
+  EXPECT_EQ(values[1][100], 0.0);
+}
+
 // Un fluente sin valores conocidos no tiene etiquetas: no se le pasa a INSLV.
 TEST(NumericExamples, AFluentWithoutValues) {
   const rules::Examples examples = rules::numeric_examples(
