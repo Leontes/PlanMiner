@@ -70,7 +70,7 @@ struct Options {
   bool rare_values_per_noise = true;
   /// Si es mayor que 0, en lugar de un umbral fijo, el de una binomial con este alpha
   /// (rules::hide_rare_values_binomial): en cada átomo y clase con n filas, el valor que sale en
-  /// binomial_bound(n, p, alpha) filas o menos, con p el ruido de cada observación
+  /// plantraces::binomial_bound(n, p, alpha) filas o menos, con p el ruido de cada observación
   /// (plantraces::observation_noise de c). Si no, el umbral de rare_values.
   ///
   /// La mejorada usa 1e-3. Un umbral fijo solo acierta con muchas filas (deja los valores raros

@@ -15,6 +15,7 @@
 #include "inslv/inslv.hpp"
 #include "pddl/simplify.hpp"
 #include "plantraces/actions.hpp"
+#include "plantraces/noise.hpp"
 #include "rules/legacy.hpp"
 
 namespace pddl {
