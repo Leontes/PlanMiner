@@ -86,13 +86,13 @@ struct Options {
   /// las de los átomos sin argumentos, el de antes). El ruido (frame_changes) se estima en las
   /// trazas sin suavizar. Si no, como el original.
   ///
-  /// En el banco ruido, con la mejorada, los planes válidos STRIPS con ruido pasan de 3954 a 4228:
-  /// 92, 92, 92 y 89 % con un 3, 5, 10 y 20 % de ruido (sin ruido, 92 %), frente a 92, 87, 84 y
-  /// 78 %. El fallo que corrige: los valores raros que son ciertos, como un shaker ya agitado
-  /// cuando se coge en barman, salían con la frecuencia del ruido, el umbral los borraba e INSLV
-  /// añadía la precondición contraria. Supone que los efectos no tienen constantes del dominio:
-  /// en woodworking, que las tiene, la F baja un poco.
-  bool smooth_atoms = false;
+  /// La mejorada lo usa. En el banco ruido, los planes válidos STRIPS con ruido pasan de 3954 a
+  /// 4228: 92, 92, 92 y 89 % con un 3, 5, 10 y 20 % de ruido (sin ruido, 92 %), frente a 92, 87,
+  /// 84 y 78 %; aprender con ruido cuesta un 40 % más. El fallo que corrige: los valores raros que
+  /// son ciertos, como un shaker ya agitado cuando se coge en barman, salían con la frecuencia del
+  /// ruido, el umbral los borraba e INSLV añadía la precondición contraria. Supone que los efectos
+  /// no tienen constantes del dominio: en woodworking, que las tiene, la F baja un poco.
+  bool smooth_atoms = true;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos

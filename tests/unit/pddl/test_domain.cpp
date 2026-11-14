@@ -181,36 +181,32 @@ TEST(Learn, ExactWithoutNoise) {
 }
 
 // Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
-// completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros y
-// con el suavizado de los átomos.
+// completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros.
 TEST(Learn, NoiseImprovementsOnlyWithNoise) {
   pddl::Options fixed;
   fixed.rare_values_alpha = 0.0;
-  pddl::Options smoothed;
-  smoothed.smooth_atoms = true;
   pddl::Options without = fixed;
   without.rare_values = 0.0;
   without.smooth_fluents = false;
   without.refine_meta_states = false;
+  without.smooth_atoms = false;
   for (const char* collection : {"blocks-strips-untyped", "counters", "zenotravel"}) {
     const std::vector<plantraces::Trace> complete = traces(collection);
     const std::string expected = pddl::write(collection, pddl::learn(complete, without));
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete, fixed)), expected) << collection;
-    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, smoothed)), expected) << collection;
   }
 }
 
 // Con ruido, el suavizado de los átomos cambia lo que se aprende. learn suaviza una copia de las
 // trazas o, si se le dan para eso, las propias: el dominio es el mismo.
 TEST(Learn, SmoothAtoms) {
-  pddl::Options options;
-  options.smooth_atoms = true;
   const std::vector<plantraces::Trace> noisy = traces("zenotravel", "noise5");
-  const std::string copied = pddl::write("zenotravel", pddl::learn(noisy, options));
-  EXPECT_EQ(pddl::write("zenotravel", pddl::learn(traces("zenotravel", "noise5"), options)),
-            copied);
-  EXPECT_NE(pddl::write("zenotravel", pddl::learn(noisy)), copied);
+  const std::string copied = pddl::write("zenotravel", pddl::learn(noisy));
+  EXPECT_EQ(pddl::write("zenotravel", pddl::learn(traces("zenotravel", "noise5"))), copied);
+  pddl::Options without;
+  without.smooth_atoms = false;
+  EXPECT_NE(pddl::write("zenotravel", pddl::learn(noisy, without)), copied);
 }
 
 // Con ruido, los valores raros cambian lo que se aprende: con el umbral de la binomial (el de la

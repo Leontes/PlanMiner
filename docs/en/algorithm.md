@@ -75,23 +75,16 @@ options, so that it can be measured on its own.
 
 ### Noise (PlanMiner-N)
 
-The techniques of PlanMiner-N, the extension of PlanMiner for noisy traces. They only act when
-noise is estimated (`plantraces::frame_changes`, c > 0): without noise, the domain is the same.
+The techniques of PlanMiner-N, the extension of PlanMiner for noisy traces, and a new one, atom
+smoothing, which uses the sequence of each trace. They only act when noise is estimated
+(`plantraces::frame_changes`, c > 0): without noise, the domain is the same.
 
 | Improvement | What it does | Option |
 |-------------|--------------|--------|
+| Atom smoothing | The tables separate each application from the others, but the noise is independent in each state, and the value of an atom persists until an action changes it. Before the tables, in each trace, the states of each atom with arguments are cut into segments at the actions that can change it: those that have all its objects and change it more than the noise explains. In each segment, its observations take the majority value if it wins by two or more, and become unknown if there is no clear majority. The rare-value threshold uses, in each column, the noise that remains. It fixes the rare values that are true, like a shaker already shaken when it is grasped in barman: with the frequency of the noise, the threshold hid them and INSLV added the opposite precondition. It assumes that effects have no domain constants. | `Options::smooth_atoms` |
 | Rare values | In each atom and each class (before or after the action), the value that the noise explains becomes unknown: with p the noise of each observation (c = 2p(1 - p)) and n rows, the one that appears in m rows or fewer, with m the smallest such that P(Binomial(n, p) > m) ≤ 10⁻³, and never the one of half or more. INSLV can then describe the state with that condition at no cost, and validation does not count those values. It is PlanMiner-N's statistical filter with another threshold: the paper's, a fixed 5 %, only cleans half of 5 % noise; one proportional to the noise (2c, with the option) is only right with many rows or with few. The binomial one approaches p with many rows, keeping the rare values that are true, and rises with few, because the noise varies more. | `Options::rare_values_alpha`; `Options::rare_values`, `Options::rare_values_per_noise` |
 | Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat. | `Options::smooth_fluents` |
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
-
-One more option, not yet used by the improved configuration: **temporal atom smoothing**
-(`Options::smooth_atoms`, `plantraces::smooth_atoms`). The tables separate each application from
-the others, but the noise is independent in each state, and the value of an atom persists until an
-action changes it. In each trace, the states of each atom with arguments are cut into segments at
-the actions that can change it: those that have all its objects and change it more than the noise
-explains. In each segment, its observations take the majority value if it wins by two or more,
-and become unknown if there is no clear majority. Then the rare-value threshold uses, in each
-column, the noise that remains. It assumes that effects have no domain constants.
 
 ### Writing
 
