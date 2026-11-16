@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstddef>
 #include <map>
 #include <optional>
@@ -211,7 +212,7 @@ Options Options::original() {
   options.smooth_atoms = false;
   options.smooth_values = false;
   options.exact_comparisons = false;
-  options.effect_accumulators = false;
+  options.noisy_accumulators = false;
   options.noisy_null_model = false;
   return options;
 }
@@ -225,10 +226,11 @@ struct Noise {
   double values = 0.0;
 };
 
-// learn, con el ruido de las trazas antes de suavizarlas y, si se han suavizado los átomos, el
-// ruido que queda en cada columna.
+// learn, con el ruido de las trazas antes de suavizarlas; si se han suavizado los átomos, el ruido
+// que queda en cada columna; y los fluentes que ha suavizado plantraces::smooth_values.
 LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, const Noise& noise,
-                           const plantraces::ColumnNoise* columns, const Options& options) {
+                           const plantraces::ColumnNoise* columns,
+                           const std::set<std::string>& smoothed, const Options& options) {
   LearnedDomain domain;
   domain.hierarchy = plantraces::type_hierarchy(traces);
   const plantraces::Vocabulary vocabulary = plantraces::vocabulary(traces);
@@ -236,10 +238,11 @@ LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, const N
       plantraces::group_by_action(traces);
 
   const bool noiseless = noise.changes == 0.0;
+  // Con ruido en los valores, la probabilidad de que dos observaciones del mismo valor difieran.
+  const double value_pairs = 1.0 - std::pow(1.0 - plantraces::value_noise(noise.values), 2.0);
   datasets::EffectOptions effect_options = options.effects;
-  if (options.noisy_null_model && noise.values > 0.0) {
-    const double p = plantraces::value_noise(noise.values);
-    effect_options.noise = 1.0 - (1.0 - p) * (1.0 - p);
+  if (options.noisy_null_model) {
+    effect_options.noise = value_pairs;
   }
   // El generador de INSLV, con la secuencia del rand() de glibc. INSLV lo siembra al empezar cada
   // aprendizaje, y la discretización sigue su secuencia: el original hacía lo mismo con el rand()
@@ -252,15 +255,18 @@ LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, const N
   // azar; el suavizado de los fluentes, sí.
   std::map<std::string, datasets::Table> tables;
   std::map<std::string, std::vector<datasets::FluentChange>> effects;
-  datasets::DomainFluents fluents{datasets::accumulators(traces), {}};
+  datasets::DomainFluents fluents{
+      datasets::accumulators(traces, options.noisy_accumulators ? value_pairs : 0.0), {}};
   for (const auto& [name, transitions] : actions) {
     datasets::Table table = datasets::build_table(vocabulary, transitions);
     if (options.aliasing) {
       datasets::hide_aliased_atoms(table, transitions);
     }
     if (options.smooth_fluents && !noiseless) {
+      // Ni (total-cost) ni los acumuladores, ni lo que ya ha suavizado smooth_values.
       std::set<std::string> cumulative = fluents.accumulators;
       cumulative.insert("total-cost");
+      cumulative.insert(smoothed.begin(), smoothed.end());
       datasets::smooth_fluents(table, random, {}, cumulative);
     }
     effects[name] = datasets::numeric_effects(table, effect_options);
@@ -269,7 +275,7 @@ LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, const N
     }
     tables.emplace(name, std::move(table));
   }
-  if (options.effect_accumulators && !noiseless) {
+  if (options.noisy_accumulators && !noiseless) {
     // Los fluentes con algún efecto, y si todos son increase.
     std::map<std::string, bool> increasing;
     for (const auto& [name, changes] : effects) {
@@ -378,15 +384,16 @@ bool smooths(const Noise& noise, const Options& options) {
 // Con el suavizado de los átomos o de los fluentes: las trazas se suavizan en su sitio.
 LearnedDomain learn_smoothed(std::vector<plantraces::Trace>& traces, const Noise& noise,
                              const Options& options) {
+  std::set<std::string> smoothed;
   if (options.smooth_values && noise.values > 0.0) {
-    plantraces::smooth_values(traces, plantraces::value_noise(noise.values));
+    smoothed = plantraces::smooth_values(traces, plantraces::value_noise(noise.values));
   }
   if (options.smooth_atoms && noise.changes > 0.0) {
     const plantraces::ColumnNoise columns =
         plantraces::smooth_atoms(traces, plantraces::observation_noise(noise.changes));
-    return learn_domain(traces, noise, &columns, options);
+    return learn_domain(traces, noise, &columns, smoothed, options);
   }
-  return learn_domain(traces, noise, nullptr, options);
+  return learn_domain(traces, noise, nullptr, smoothed, options);
 }
 
 }  // namespace
@@ -397,7 +404,7 @@ LearnedDomain learn(const std::vector<plantraces::Trace>& traces, const Options&
     std::vector<plantraces::Trace> copy = traces;
     return learn_smoothed(copy, noise, options);
   }
-  return learn_domain(traces, noise, nullptr, options);
+  return learn_domain(traces, noise, nullptr, {}, options);
 }
 
 LearnedDomain learn(std::vector<plantraces::Trace>&& traces, const Options& options) {
@@ -405,7 +412,7 @@ LearnedDomain learn(std::vector<plantraces::Trace>&& traces, const Options& opti
   if (smooths(noise, options)) {
     return learn_smoothed(traces, noise, options);
   }
-  return learn_domain(traces, noise, nullptr, options);
+  return learn_domain(traces, noise, nullptr, {}, options);
 }
 
 std::string write(const std::string& name, const LearnedDomain& domain, const Options& options) {

@@ -87,23 +87,29 @@ smoothing, which uses the sequence of each trace. They only act when noise is es
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
 
 For numeric domains with noise there are four more options, not yet used by the improved
-configuration: they still have to be tuned together with PlanMiner-N's fluent smoothing.
+configuration:
 
 - **Temporal fluent smoothing** (`Options::smooth_values`, `plantraces::smooth_values`): like the
   atom smoothing, in the segments of each fluent with arguments between the actions that can
-  change it. Unaltered values are all equal and altered ones almost always different: they all
-  take the mode, if it appears at least twice and more than any other value, or become unknown,
-  also when they are alone in their segment. What stays known is almost always right.
+  change it; of the fluents without arguments, only the constants (those that no action changes
+  in more than half of its applications), with the whole trace as one segment. Unaltered values
+  are all equal and altered ones almost always different: they all take the mode, if it appears at
+  least twice and more than any other value, or become unknown, also when they are alone in their
+  segment. What stays known is almost always right. PlanMiner-N's fluent smoothing (HRC) keeps the
+  other fluents: on data already clean it grouped true values that were close, and replaced a
+  noisy constant such as `(max_int)` with the mean of its cluster, which is not exactly the value.
 - **Exact validation of comparisons** (`Options::exact_comparisons`): with noise, each numeric
   comparison has to hold in every example where it is known, as without noise.
-- **Accumulators by their effects** (`Options::effect_accumulators`): fluents whose effects are all
-  `increase` are accumulators too. With noise, an alteration can make one seem to decrease.
+- **Accumulators with noise** (`Options::noisy_accumulators`): with noise, an alteration can make an
+  accumulator seem to decrease. Before the tables, fluents that increase more than the noise
+  explains and whose decreases it does explain are accumulators too; and, after the effects, those
+  whose effects are all `increase`.
 - **Noise-aware null model** (`Options::noisy_null_model`): for fluents without arguments, which
   are not smoothed, a change that the noise explains is not an effect.
 
-The four together, on the `ruido` benchmark and without PlanMiner-N's smoothing, take the validity
-of the numeric domains with 3, 5, 10 and 20 % noise from 74, 66, 87 and 65 % to 97, 97, 97 and
-94 %.
+The four together, with HRC, on the `ruido` benchmark, take the validity of the numeric domains
+with 3, 5, 10 and 20 % noise from 74, 66, 87 and 65 % to 97, 97, 97 and 94 %, without changing that
+of STRIPS.
 
 ### Writing
 

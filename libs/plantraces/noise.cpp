@@ -371,23 +371,75 @@ void smooth_value_segment(Trace& trace, const GroundAtom& term, std::size_t firs
   }
 }
 
+// Los fluentes sin argumentos que ninguna acción cambia en más de la mitad de sus aplicaciones
+// (en que se conocen antes y después): un efecto cambia el fluente casi siempre, y el ruido, en
+// menos de la mitad. No se usa el ruido estimado: sale de los fluentes con argumentos, y en los
+// enteros pequeños la alteración se pierde al redondear (en counters, max_int, de unos 22, cambia
+// más que los contadores).
+std::set<std::string> constants_without_arguments(const std::vector<Trace>& traces) {
+  // De cada fluente y acción, las aplicaciones en que se conoce antes y después y en cuántas
+  // cambia.
+  std::map<std::string, std::map<std::string, std::pair<std::size_t, std::size_t>>> changes;
+  for (const Trace& trace : traces) {
+    for (const Observation& state : trace.states) {
+      for (const auto& [term, value] : state.values) {
+        if (term.arguments.empty()) {
+          changes.try_emplace(term.name);
+        }
+      }
+    }
+    for (std::size_t i = 0; i < trace.actions.size(); ++i) {
+      for (const auto& [term, was] : trace.states[i].values) {
+        if (!term.arguments.empty()) {
+          continue;
+        }
+        if (const std::optional<double> is = trace.states[i + 1].value(term)) {
+          auto& [known, changed] = changes[term.name][trace.actions[i].name];
+          ++known;
+          changed += *is != was ? 1U : 0U;
+        }
+      }
+    }
+  }
+  std::set<std::string> constants;
+  for (const auto& [fluent, actions] : changes) {
+    if (std::all_of(actions.begin(), actions.end(), [](const auto& entry) {
+          const auto [known, changed] = entry.second;
+          return 2 * changed <= known;
+        })) {
+      constants.insert(fluent);
+    }
+  }
+  return constants;
+}
+
 }  // namespace
 
-void smooth_values(std::vector<Trace>& traces, double p, double effect_alpha) {
+std::set<std::string> smooth_values(std::vector<Trace>& traces, double p, double effect_alpha) {
   // 1. Qué mantiene cada acción: dos observaciones del mismo valor difieren si alguna está
   // alterada, 1 - (1 - p)^2.
   const std::map<ActionAtom, bool> keeps = kept_by_actions(
       traces, fluents_with_arguments,
       [](const Observation& state, const GroundAtom& term) { return state.value(term); },
       1.0 - (1.0 - p) * (1.0 - p), effect_alpha);
-  // 2 y 3. Los tramos de cada fluente y su suavizado.
+  const std::set<std::string> constants = constants_without_arguments(traces);
+
+  // 2 y 3. Los tramos de cada fluente y su suavizado; de las constantes, la traza entera.
+  std::set<std::string> smoothed = constants;
   for (Trace& trace : traces) {
     for (const GroundAtom& term : fluents_with_arguments(trace)) {
+      smoothed.insert(term.name);
       for_each_segment(trace, term, keeps, [&](std::size_t first, std::size_t last) {
         smooth_value_segment(trace, term, first, last);
       });
     }
+    if (!trace.states.empty()) {
+      for (const std::string& constant : constants) {
+        smooth_value_segment(trace, GroundAtom{constant, {}}, 0, trace.states.size() - 1);
+      }
+    }
   }
+  return smoothed;
 }
 
 }  // namespace plantraces

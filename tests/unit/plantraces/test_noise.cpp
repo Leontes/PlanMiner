@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -243,15 +244,17 @@ TEST(SmoothAtoms, TheNoiseOfBlocksworld) {
 
 // Un robot r que va y viene entre a y b, con cuatro move. (size a) y (size b) no cambian, y en el
 // estado 2 el ruido ha alterado (size a); (charge r) baja con cada move. (size c), de una
-// habitación que no es de ninguna acción, sale 7 dos veces y 7.5 dos veces. (total-cost) no tiene
-// argumentos.
+// habitación que no es de ninguna acción, sale 7 dos veces y 7.5 dos veces. (total-cost) y
+// (max-charge) no tienen argumentos: el primero sube con cada move, y el segundo es una constante
+// que el ruido ha alterado en el estado 3.
 plantraces::Trace rover() {
   const auto state = [](int step, double size_a, double size_c, double charge) {
     return "{\"step\": " + std::to_string(step) + ", \"time\": " + std::to_string(step) +
            ", \"true\": [], \"unknown\": [], \"values\": {\"(size a)\": " + std::to_string(size_a) +
            ", \"(size b)\": 6, \"(size c)\": " + std::to_string(size_c) +
            ", \"(charge r)\": " + std::to_string(charge) +
-           ", \"(total-cost)\": " + std::to_string(step) + "}, \"unknown_values\": []}";
+           ", \"(total-cost)\": " + std::to_string(step) +
+           ", \"(max-charge)\": " + (step == 3 ? "21" : "20") + "}, \"unknown_values\": []}";
   };
   return plantraces::parse_trace(
       R"json({"format": "pddldomains-trace", "version": 1, "domain": {"name": "rover"},
@@ -275,7 +278,8 @@ std::optional<double> value(const plantraces::Trace& trace, std::size_t state,
 // en los 4: es un efecto.
 TEST(SmoothValues, TheModeOfEachSegment) {
   std::vector<plantraces::Trace> traces{rover()};
-  plantraces::smooth_values(traces, 0.1);
+  EXPECT_EQ(plantraces::smooth_values(traces, 0.1),
+            (std::set<std::string>{"charge", "max-charge", "size"}));
   const plantraces::Trace& trace = traces.front();
 
   // (size a): 5 cuatro veces y 5.5 una, en un solo tramo: la moda.
@@ -288,8 +292,9 @@ TEST(SmoothValues, TheModeOfEachSegment) {
   // (charge r): cada move lo corta, y una observación sola no se puede corroborar.
   EXPECT_EQ(value(trace, 1, "(charge r)"), std::nullopt);
   EXPECT_TRUE(trace.states[1].unknown_values.contains(plantraces::parse_atom("(charge r)")));
-  // (total-cost) no se suaviza.
+  // (total-cost) no se suaviza; (max-charge), la constante, sí, con la traza entera.
   EXPECT_EQ(value(trace, 3, "(total-cost)"), 3.0);
+  EXPECT_EQ(value(trace, 3, "(max-charge)"), 20.0);
 }
 
 // De los valores de los fluentes con argumentos, cuántos están mal y cuántos son desconocidos.

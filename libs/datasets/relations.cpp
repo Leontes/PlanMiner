@@ -1,15 +1,16 @@
 #include "datasets/relations.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <optional>
 #include <utility>
 
 #include "changes.hpp"
+#include "plantraces/noise.hpp"
 
 namespace datasets {
 
@@ -162,24 +163,29 @@ RelationOptions RelationOptions::original() {
   return options;
 }
 
-std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces) {
-  std::set<std::string> increase;
-  std::set<std::string> decrease;
+std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces, double noise) {
+  // De cada fluente, las parejas de estados seguidos en que se conoce, y en cuántas sube y baja.
+  std::map<std::string, std::array<std::size_t, 3>> counts;
   for (const plantraces::Trace& trace : traces) {
     for (std::size_t i = 0; i + 1 < trace.states.size(); ++i) {
       for (const auto& [term, after] : trace.states[i + 1].values) {
-        const std::optional<double> before = trace.states[i].value(term);
-        if (before && after > *before) {
-          increase.insert(term.name);
-        } else if (before && after < *before) {
-          decrease.insert(term.name);
+        if (const std::optional<double> before = trace.states[i].value(term)) {
+          auto& [pairs, up, down] = counts[term.name];
+          ++pairs;
+          up += after > *before ? 1U : 0U;
+          down += after < *before ? 1U : 0U;
         }
       }
     }
   }
   std::set<std::string> result;
-  std::set_difference(increase.begin(), increase.end(), decrease.begin(), decrease.end(),
-                      std::inserter(result, result.end()));
+  for (const auto& [fluent, count] : counts) {
+    const auto [pairs, up, down] = count;
+    const std::size_t bound = plantraces::binomial_bound(pairs, noise / 2.0, 1e-3);
+    if ((up > 0 && down == 0) || (up > bound && down <= bound)) {
+      result.insert(fluent);
+    }
+  }
   return result;
 }
 

@@ -187,7 +187,7 @@ pddl::Options numeric_noise() {
   pddl::Options options;
   options.smooth_values = true;
   options.exact_comparisons = true;
-  options.effect_accumulators = true;
+  options.noisy_accumulators = true;
   options.noisy_null_model = true;
   return options;
 }

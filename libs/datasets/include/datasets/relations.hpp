@@ -107,7 +107,14 @@ struct DomainFluents {
 /// Los acumuladores de las trazas: los fluentes cuyos valores no bajan nunca de un estado al
 /// siguiente (entre valores conocidos, en ninguna traza y de ningún objeto) y suben alguna vez,
 /// por su nombre. Son los que suman lo que cuesta el plan, como total-cost o total-fuel-used.
-std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces);
+///
+/// Con ruido q (la probabilidad de que dos observaciones del mismo valor difieran), una alteración
+/// puede hacer que un acumulador parezca bajar: entre dos estados seguidos con el mismo valor,
+/// cerca de q / 2 de las parejas bajan y otras tantas suben. Entonces, también los fluentes que
+/// suben más de lo que explica una binomial con q / 2 y alpha 1e-3, y bajan menos (no una
+/// constante con ruido, que sube y baja lo mismo). Con 0, solo los de antes.
+std::set<std::string> accumulators(const std::vector<plantraces::Trace>& traces,
+                                   double noise = 0.0);
 
 /// Las relaciones numéricas de la acción de la tabla. changes son los efectos numéricos de la
 /// acción (numeric_effects), de los que se toman las expresiones; el original no los usa.

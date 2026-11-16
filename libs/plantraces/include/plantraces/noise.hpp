@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -73,16 +74,22 @@ using ColumnNoise = std::map<ActionAtom, std::array<double, 2>>;
 /// las observaciones conocidas (p si no tiene ninguna).
 ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alpha = 0.3);
 
-/// El suavizado temporal de los fluentes con argumentos, en las trazas: como smooth_atoms, con p
-/// el ruido de cada valor (value_noise). Las acciones que cambian un fluente sobre sus parámetros
-/// son las que lo cambian en más de binomial_bound(n, 1 - (1 - p)^2, effect_alpha) de sus n
-/// aplicaciones, y cortan sus estados en tramos. En cada tramo, los valores no alterados son
-/// todos iguales y los alterados, casi siempre distintos entre sí: si un valor sale al menos dos
-/// veces y más que cualquier otro (la moda), todas las observaciones pasan a él; si no (también
-/// con una sola observación, que nada corrobora), a desconocidas. Así, lo que queda conocido está
-/// casi siempre bien: en las trazas de prueba de zenotravel con ruido no queda ningún valor mal.
+/// El suavizado temporal de los fluentes, en las trazas: como smooth_atoms, con p el ruido de cada
+/// valor (value_noise). Las acciones que cambian un fluente sobre sus parámetros son las que lo
+/// cambian en más de binomial_bound(n, 1 - (1 - p)^2, effect_alpha) de sus n aplicaciones, y
+/// cortan sus estados en tramos. En cada tramo, los valores no alterados son todos iguales y los
+/// alterados, casi siempre distintos entre sí: si un valor sale al menos dos veces y más que
+/// cualquier otro (la moda), todas las observaciones pasan a él; si no (también con una sola
+/// observación, que nada corrobora), a desconocidas. Así, lo que queda conocido está casi siempre
+/// bien: en las trazas de prueba de zenotravel con ruido no queda ningún valor mal.
 ///
-/// Los fluentes sin argumentos (cualquier acción puede cambiarlos) no se suavizan.
-void smooth_values(std::vector<Trace>& traces, double p, double effect_alpha = 0.3);
+/// De los fluentes sin argumentos (cualquier acción puede cambiarlos), solo las constantes: los que
+/// ninguna acción cambia en más de la mitad de sus aplicaciones, con la traza entera como tramo,
+/// como (max_int) en counters. Los demás, como (total-cost), no se suavizan.
+///
+/// Devuelve los nombres de los fluentes que suaviza: los demás quedan para el suavizado de las
+/// tablas (datasets::smooth_fluents, el HRC de PlanMiner-N).
+std::set<std::string> smooth_values(std::vector<Trace>& traces, double p,
+                                    double effect_alpha = 0.3);
 
 }  // namespace plantraces

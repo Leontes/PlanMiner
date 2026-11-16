@@ -254,6 +254,35 @@ TEST(Accumulators, NeverDecreaseAndIncreaseSometime) {
   EXPECT_EQ(datasets::accumulators(traces), (std::set<std::string>{"used"}));
 }
 
+// Con ruido, un acumulador puede parecer bajar. En 40 estados, (used) sube en 20 de las 39
+// parejas de estados seguidos y baja en 2 (dos alteraciones); (limit), constante, sube en 3 y baja
+// en 3. Con q = 0.2, el ruido explica hasta 11 subidas o bajadas (binomial con q / 2 = 0.1 y alpha
+// 1e-3): (used) es un acumulador y (limit) no. Sin ruido, (used) no lo es: baja.
+TEST(Accumulators, WithNoise) {
+  std::string states;
+  std::string actions;
+  double used = 0.0;
+  for (int s = 0; s < 40; ++s) {
+    used += s % 2 == 1 ? 3.0 : 0.0;
+    const double observed = s == 10 || s == 30 ? used - 1.0 : used;
+    const double limit = s == 5 || s == 25 ? 21.0 : s == 15 ? 19.0 : 20.0;
+    states += std::string{s > 0 ? "," : ""} + R"j({"step": )j" + std::to_string(s) +
+              R"j(, "time": 0, "true": [], "unknown": [], "values": {"(used)": )j" +
+              std::to_string(observed) + R"j(, "(limit)": )j" + std::to_string(limit) +
+              R"j(}, "unknown_values": []})j";
+    if (s > 0) {
+      actions += std::string{s > 1 ? "," : ""} + R"j({"step": )j" + std::to_string(s) +
+                 R"j(, "time": 0, "name": "step", "arguments": []})j";
+    }
+  }
+  const std::vector<plantraces::Trace> traces = {plantraces::parse_trace(
+      R"j({"format": "pddldomains-trace", "version": 1, "domain": {"name": "d"},
+      "problem": {"name": "p"}, "world": "closed", "objects": {}, "states": [)j" +
+      states + R"j(], "actions": [)j" + actions + "]}")};
+  EXPECT_EQ(datasets::accumulators(traces), std::set<std::string>{});
+  EXPECT_EQ(datasets::accumulators(traces, 0.2), (std::set<std::string>{"used"}));
+}
+
 // Mejora: los acumuladores no se comparan con nada. (y) crece a lo largo de la traza, y (< (x) (y))
 // solo se cumple a partir de un momento.
 TEST(NumericRelations, AccumulatorsAreNotCompared) {
