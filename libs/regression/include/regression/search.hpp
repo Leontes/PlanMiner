@@ -67,8 +67,8 @@ struct Options {
   /// casualidad: con los problemas del catálogo de zenotravel y un 30 % de huecos, fly-fast
   /// aprendía (assign (total-fuel-used) (* (distance ?2 ?1) (+ (zoom-limit ?0) 2))) con 3 filas.
   /// Con 0.5, una de 5 nodos necesita 3 y (* (distance ?1 ?2) (fast-burn ?0)), de 3, 2. Con 0,
-  /// solo min_examples.
-  double min_examples_per_node = 0.0;
+  /// como el original, solo min_examples.
+  double min_examples_per_node = 0.5;
   /// Tamaño máximo de las expresiones (nodos); 0, sin límite. Con límite el espacio de búsqueda es
   /// finito: si se recorre entero sin llegar a los límites de seguridad, no hay expresión de ese
   /// tamaño.

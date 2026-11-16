@@ -142,23 +142,23 @@ TEST(Search, NeedsEnoughExamples) {
   EXPECT_FALSE(regression::search(one).expression);  // con un solo ejemplo, cualquier cosa vale
 }
 
-// Con min_examples_per_node, una expresión necesita más ejemplos cuanto más grande es: con 0.5,
-// (+ (* a b) c), de 5 nodos, necesita 3. Con los 6 ejemplos la encuentra; con 2, sin ese mínimo,
-// también (dos puntos los explica casi cualquier cosa), y con él, nada de más de 4 nodos.
+// Con min_examples_per_node (0.5 por defecto), una expresión necesita más ejemplos cuanto más
+// grande es: (+ (* a b) c), de 5 nodos, necesita 3. Con los 6 ejemplos la encuentra; con 2, sin ese
+// mínimo, también (dos puntos los explica casi cualquier cosa), y con él, nada de más de 4 nodos.
 TEST(Search, LargerExpressionsNeedMoreExamples) {
   const Problem all = problem([](double a, double b, double c) { return a * b + c; });
   Problem two = all;
   for (std::size_t e = 2; e < abc[0].size(); ++e) {
     two.targets[0].values[e] = unknown;
   }
-  Options options;
-  options.min_examples_per_node = 0.5;
-  EXPECT_EQ(text(regression::search(all, options)), "(+ (* a b) c)");
-  const Result without = regression::search(two);
-  ASSERT_TRUE(without.expression);
-  EXPECT_EQ(without.expression->size(), 5U) << text(without);
-  const Result with = regression::search(two, options);
-  EXPECT_TRUE(!with.expression || with.expression->size() <= 4) << text(with);
+  EXPECT_EQ(text(regression::search(all)), "(+ (* a b) c)");
+  Options without;
+  without.min_examples_per_node = 0.0;
+  const Result loose = regression::search(two, without);
+  ASSERT_TRUE(loose.expression);
+  EXPECT_EQ(loose.expression->size(), 5U) << text(loose);
+  const Result strict = regression::search(two);
+  EXPECT_TRUE(!strict.expression || strict.expression->size() <= 4) << text(strict);
 }
 
 TEST(Search, StopsAtTheExpansionLimitWithoutAnExpression) {

@@ -114,7 +114,7 @@ struct Options {
   /// los datos tienen embarques con dos pasajeros o más. En el banco ruido, con noisy_contrast, la
   /// validez de los numéricos con un 3, 5, 10 y 20 % de ruido pasa de 97, 97, 97 y 94 % a 99 % en
   /// todos, sin cambiar la de STRIPS.
-  bool value_chains = false;
+  bool value_chains = true;
   /// Si las trazas tienen ruido, la validación de la fusión exige que cada comparación numérica se
   /// cumpla en todos los ejemplos en que se conoce (rules::FusionOptions::min_comparison_support
   /// 1), como sin ruido (exact_without_noise). Es para usarla con smooth_values, que deja limpios
@@ -152,14 +152,16 @@ struct Options {
   /// precondiciones que INSLV no ve: datasets::numeric_relations descarta las relaciones constantes
   /// en las filas de la acción, como (> (onboard ?0) (zoom-limit ?0)) en fly-fast, porque
   /// pasárselas todas añade coincidencias. Las candidatas (datasets::candidate_relations) incluyen
-  /// esas constantes y las de los fluentes que cambian en otras acciones. Solo sin ruido
-  /// (plantraces::frame_changes es 0): con ruido, casi ninguna relación es un invariante (el ruido
-  /// la contradice en algún estado), y pasan cotas que son coincidencias.
+  /// esas constantes y las de los fluentes que cambian en otras acciones. Sin noisy_contrast,
+  /// solo sin ruido (plantraces::frame_changes es 0): con ruido sin suavizar, casi ninguna
+  /// relación es un invariante (el ruido la contradice en algún estado), y pasan cotas que son
+  /// coincidencias.
   bool contrast = true;
   /// La regla de contraste también con ruido, con el min_support de las comparaciones
   /// (exact_comparisons). Es para usarla con smooth_values y value_chains, que dejan limpios los
-  /// valores conocidos: en zenotravel recupera (<= (onboard ?0) (zoom-limit ?0)) en fly-fast.
-  bool noisy_contrast = false;
+  /// valores conocidos: en zenotravel recupera (<= (onboard ?0) (zoom-limit ?0)) en fly-fast. La
+  /// mejorada la usa.
+  bool noisy_contrast = true;
   /// De la precondición fusionada se quita lo que implican las demás condiciones en los estados de
   /// las trazas (drop_implied): la inversa de una relación simétrica o un invariante del estado,
   /// que se cumplen siempre en los datos. Además de sobrar, las numéricas redundantes empeoran la

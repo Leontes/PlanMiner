@@ -239,6 +239,7 @@ Options Options::original() {
   options.constants = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1};
   options.drop_constant_variables = false;
   options.min_examples = 1;
+  options.min_examples_per_node = 0.0;
   options.max_size = 0;
   options.time_limit = std::chrono::milliseconds{300000};
   return options;
