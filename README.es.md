@@ -67,8 +67,8 @@ cmake --build --preset release      # el ejecutable: build/release/bin/planminer
 
 Cada preset compila en `build/<preset>`. [INSLV](https://github.com/Leontes/INSLV-PlanMiner) se
 descarga al configurar (FetchContent), fijado en una versión (`v1.0.0`). El submódulo
-`vendor/PDDLDomains` (el catálogo de dominios) solo hace falta para los tests y para la
-evaluación.
+`vendor/PDDLDomains` (el catálogo de dominios), fijado en su versión `v1.0`, solo hace falta
+para los tests y para la evaluación.
 
 ## Idioma
 
@@ -142,7 +142,7 @@ std::string text = pddl::write("blocks", domain);
 | `libs/rules/` | los ejemplos de INSLV, la interpretación de sus reglas y su fusión en precondición y efecto |
 | `libs/pddl/` | el aprendizaje de principio a fin, la simplificación de las precondiciones y la escritura en PDDL |
 | `libs/resources/` | los límites de memoria |
-| `vendor/PDDLDomains/` | submódulo: el catálogo de dominios de los tests y del banco de pruebas |
+| `vendor/PDDLDomains/` | submódulo: el catálogo de dominios de los tests y del banco de pruebas (`v1.0`) |
 | `scripts/` | la comparación de dominios, el banco de pruebas, las trazas de prueba y la preparación del entorno |
 | `benchmarks/` | las definiciones del banco de pruebas y sus huellas |
 | `tests/` | tests unitarios, del planificador, de los scripts y del oráculo; `data/traces/`: las trazas de prueba |

@@ -41,6 +41,11 @@ jobs:
         with:
           submodules: true
 
+      # El submódulo se clona sin etiquetas, y el banco de pruebas guarda la versión de PDDLDomains
+      # por su etiqueta (v1.0).
+      - name: Etiquetas de PDDLDomains
+        run: git -C vendor/PDDLDomains fetch --depth=1 origin 'refs/tags/*:refs/tags/*'
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

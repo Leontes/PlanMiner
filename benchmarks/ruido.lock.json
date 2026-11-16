@@ -1,5 +1,5 @@
 {
-  "pddldomains": "82c37913c7df83f4ba3246954117b395bdf9eb54",
+  "pddldomains": "v1.0",
   "collections": {
     "ipc-1998/gripper-round-1-strips": {
       "problems": 90,

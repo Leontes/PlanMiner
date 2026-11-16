@@ -260,6 +260,36 @@ class Lock(unittest.TestCase):
         self.assertNotEqual(bm.digest({"a": "1"}), bm.digest({"a": "2"}))
 
 
+class PddlDomainsVersion(unittest.TestCase):
+    """La versión de PDDLDomains que se guarda en el lock: la etiqueta del commit, o el commit."""
+
+    def git(self, repository: Path, *arguments: str) -> str:
+        identity = ["-c", "user.name=prueba", "-c", "user.email=prueba@example.com"]
+        return subprocess.run(
+            ["git", "-C", str(repository), *identity, *arguments],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+
+    def test_tag_or_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            self.git(repository, "init", "-q")
+            self.git(repository, "commit", "-q", "--allow-empty", "-m", "uno")
+            self.git(repository, "tag", "-a", "v1.0", "-m", "versión 1.0")
+            self.assertEqual(bm.pddldomains_version(repository), "v1.0")
+            self.git(repository, "commit", "-q", "--allow-empty", "-m", "dos")
+            commit = self.git(repository, "rev-parse", "HEAD")
+            self.assertEqual(bm.pddldomains_version(repository), commit)
+            self.assertEqual(bm.short_version(commit), commit[:7])
+            self.assertEqual(bm.short_version("v1.1-htn"), "v1.1-htn")
+
+    def test_no_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(bm.pddldomains_version(Path(directory) / "no"), "?")
+
+
 class Outcomes(unittest.TestCase):
     def test_kind(self) -> None:
         path = Path("p01.pddl")

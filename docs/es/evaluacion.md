@@ -82,9 +82,9 @@ cada ajuste:
 Todo es reproducible:
 
 - Las semillas son fijas.
-- `generate` comprueba las huellas de lo que genera con las de
-  `benchmarks/default.lock.json`, y termina con 1 si no coinciden (`--update-lock` guarda las
-  nuevas).
+- `generate` comprueba las huellas de lo que genera y la versión de PDDLDomains (la etiqueta del
+  submódulo, `v1.0`, o su commit si no tiene) con las de `benchmarks/default.lock.json`, y
+  termina con 1 si no coinciden (`--update-lock` guarda las nuevas).
 - `run` guarda el resultado de cada aprendizaje y sigue donde se quedó (`--force` los repite).
 
 Otras opciones:

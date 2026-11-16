@@ -47,6 +47,7 @@ import hashlib
 import json
 import math
 import random
+import re
 import shutil
 import statistics
 import subprocess
@@ -722,11 +723,21 @@ def _version(package: str) -> str:
         return "?"
 
 
-def _pddldomains_commit() -> str:
-    try:
-        return run_command(["git", "-C", str(PDDLDOMAINS), "rev-parse", "HEAD"]).strip()
-    except (BenchmarkError, OSError):
-        return "?"
+def pddldomains_version(repository: Path = PDDLDOMAINS) -> str:
+    """La versión de PDDLDomains (el submódulo vendor/PDDLDomains): su etiqueta, como v1.0, o su
+    commit si no está en ninguna. Un clon sin etiquetas (los superficiales de la CI) da el commit:
+    hay que traerlas (git -C vendor/PDDLDomains fetch origin 'refs/tags/*:refs/tags/*')."""
+    for command in (["describe", "--tags", "--exact-match", "HEAD"], ["rev-parse", "HEAD"]):
+        try:
+            return run_command(["git", "-C", str(repository), *command]).strip()
+        except (BenchmarkError, OSError):
+            continue
+    return "?"
+
+
+def short_version(version: str) -> str:
+    """La versión de PDDLDomains para el informe: la etiqueta, o el commit abreviado."""
+    return version[:7] if re.fullmatch(r"[0-9a-f]{40}", version) else version
 
 
 def lock_of(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -793,7 +804,7 @@ def generate(
     manifest |= {
         "benchmark": definition.name,
         "definition": definition.digest,
-        "pddldomains": _pddldomains_commit(),
+        "pddldomains": pddldomains_version(),
         "pyplanner": _version("pyplanner"),
         "excluded": excluded,
     }
@@ -1165,7 +1176,7 @@ def report(definition: Definition, output: Path) -> int:
         "",
         definition.description + ".",
         "",
-        f"PDDLDomains {manifest['pddldomains'][:7]}, PyPlanner {manifest['pyplanner']}; "
+        f"PDDLDomains {short_version(manifest['pddldomains'])}, PyPlanner {manifest['pyplanner']}; "
         f"{definition.problems} problemas por dominio, validación cruzada con "
         f"{definition.folds} particiones (semilla {definition.seed}).",
         "",

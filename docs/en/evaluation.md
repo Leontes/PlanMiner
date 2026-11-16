@@ -81,7 +81,8 @@ explains each setting:
 Everything is reproducible:
 
 - The seeds are fixed.
-- `generate` checks the fingerprints of what it generates against those in
+- `generate` checks the fingerprints of what it generates and the PDDLDomains version (the
+  submodule's tag, `v1.0`, or its commit if it has none) against those in
   `benchmarks/default.lock.json`, and exits with 1 if they do not match (`--update-lock` saves
   the new ones).
 - `run` saves the result of each learning and resumes where it left off (`--force` repeats
