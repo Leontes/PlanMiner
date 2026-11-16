@@ -27,6 +27,14 @@ double frame_changes(const std::vector<Trace>& traces);
 /// probabilidad c = 2p(1 - p), y p = (1 - sqrt(1 - 2c)) / 2. Desde c = 0.5, 0.5.
 double observation_noise(double frame_changes);
 
+/// Lo que cambia fuera de las acciones, solo en los valores: como frame_changes, de los fluentes
+/// con argumentos, ninguno de ellos de la acción. Con ruido p en cada valor (pddldomains trace
+/// --noise), cerca de 1 - (1 - p)^2: dos observaciones difieren si alguna está alterada.
+double value_changes(const std::vector<Trace>& traces);
+
+/// El ruido de cada valor que da value_changes: p = 1 - sqrt(1 - c). Desde c = 1, 1.
+double value_noise(double value_changes);
+
 /// La cota de lo que explica el azar en una binomial: el menor m tal que P(X > m) <= alpha, con
 /// X ~ Binomial(n, p). Con p 0, 0.
 std::size_t binomial_bound(std::size_t n, double p, double alpha);
@@ -64,5 +72,17 @@ using ColumnNoise = std::map<ActionAtom, std::array<double, 2>>;
 /// Devuelve el ruido que queda: en las columnas de cada acción, la media de esas probabilidades en
 /// las observaciones conocidas (p si no tiene ninguna).
 ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alpha = 0.3);
+
+/// El suavizado temporal de los fluentes con argumentos, en las trazas: como smooth_atoms, con p
+/// el ruido de cada valor (value_noise). Las acciones que cambian un fluente sobre sus parámetros
+/// son las que lo cambian en más de binomial_bound(n, 1 - (1 - p)^2, effect_alpha) de sus n
+/// aplicaciones, y cortan sus estados en tramos. En cada tramo, los valores no alterados son
+/// todos iguales y los alterados, casi siempre distintos entre sí: si un valor sale al menos dos
+/// veces y más que cualquier otro (la moda), todas las observaciones pasan a él; si no (también
+/// con una sola observación, que nada corrobora), a desconocidas. Así, lo que queda conocido está
+/// casi siempre bien: en las trazas de prueba de zenotravel con ruido no queda ningún valor mal.
+///
+/// Los fluentes sin argumentos (cualquier acción puede cambiarlos) no se suavizan.
+void smooth_values(std::vector<Trace>& traces, double p, double effect_alpha = 0.3);
 
 }  // namespace plantraces

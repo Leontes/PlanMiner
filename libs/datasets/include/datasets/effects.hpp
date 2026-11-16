@@ -51,6 +51,14 @@ struct EffectOptions {
   /// Si no, cualquier cambio cuenta, como en el original.
   bool null_model = true;
   double max_unchanged = 0.75;
+  /// Con el modelo nulo, el ruido de los fluentes sin argumentos: la probabilidad de que dos
+  /// observaciones del mismo valor difieran (1 - (1 - p)^2, con p de plantraces::value_noise). Un
+  /// fluente sin argumentos tampoco tiene efecto si lo que cambia lo explica una binomial
+  /// (plantraces::binomial_bound con alpha 1e-3). Con un 20 % de ruido, (total-fuel-used) difiere
+  /// en un 36 % de las aplicaciones de board en zenotravel, por encima del 25 % de max_unchanged, y
+  /// la regresión le encontraba un efecto absurdo. Los fluentes con argumentos no: los suaviza
+  /// plantraces::smooth_values (y con pocas filas la binomial no distingue un efecto). Con 0, nada.
+  double noise = 0.0;
   /// Las operaciones entre constantes de la expresión se sustituyen por su valor
   /// (regression::fold_constants): (* 10 3) pasa a 30. Si no, como en el original, la expresión
   /// queda como la construye la búsqueda.

@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "plantraces/noise.hpp"
+
 namespace datasets::detail {
 
 // Tolerancia relativa para decidir que un valor no ha cambiado.
@@ -23,10 +25,14 @@ struct Unchanged {
   std::size_t unchanged = 0;
 
   /// Si cambia en alguna aplicación; con el modelo nulo, en más de una proporción 1 -
-  /// max_unchanged de las conocidas.
-  bool changes(bool null_model, double max_unchanged) const {
-    return unchanged != known && !(null_model && static_cast<double>(unchanged) >=
-                                                     max_unchanged * static_cast<double>(known));
+  /// max_unchanged de las conocidas y, con ruido q (la probabilidad de que dos observaciones del
+  /// mismo valor difieran), en más de las que explica una binomial con alpha 1e-3.
+  bool changes(bool null_model, double max_unchanged, double noise = 0.0) const {
+    if (unchanged == known || !null_model) {
+      return unchanged != known;
+    }
+    return static_cast<double>(unchanged) < max_unchanged * static_cast<double>(known) &&
+           !(noise > 0.0 && known - unchanged <= plantraces::binomial_bound(known, noise, 1e-3));
   }
 };
 

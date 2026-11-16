@@ -87,8 +87,9 @@ std::vector<FluentChange> numeric_effects(const Table& table, const EffectOption
     const std::vector<double> before = rows(table.columns[target], 0, n);
     const std::vector<double> after = rows(table.columns[target], n, n);
 
+    const double noise = table.attributes[target].term.parameters.empty() ? options.noise : 0.0;
     if (!detail::count_unchanged(table.columns[target], n)
-             .changes(options.null_model, options.max_unchanged)) {
+             .changes(options.null_model, options.max_unchanged, noise)) {
       continue;
     }
 

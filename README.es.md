@@ -136,7 +136,7 @@ std::string text = pddl::write("blocks", domain);
 | Ruta | Qué hay |
 |------|---------|
 | `apps/planminer/` | la línea de comandos |
-| `libs/plantraces/` | lectura de las trazas, aplicaciones de cada acción, átomos sobre sus parámetros, jerarquía de tipos y ruido (su estimación y el suavizado de los átomos) |
+| `libs/plantraces/` | lectura de las trazas, aplicaciones de cada acción, átomos sobre sus parámetros, jerarquía de tipos y ruido (su estimación y el suavizado de los átomos y de los fluentes) |
 | `libs/datasets/` | la tabla de ejemplos de cada acción, los efectos numéricos (con la regresión), las relaciones numéricas y la discretización |
 | `libs/regression/` | la regresión simbólica: expresiones aritméticas y su búsqueda A* |
 | `libs/rules/` | los ejemplos de INSLV, la interpretación de sus reglas y su fusión en precondición y efecto |

@@ -166,6 +166,35 @@ TEST_P(CountersEffects, FindsTheEffectsOfTheReferenceDomainAndNoOthers) {
 INSTANTIATE_TEST_SUITE_P(Variants, CountersEffects,
                          testing::Values("complete", "noise5", "missing30"));
 
+// Con ruido, el modelo nulo de los fluentes sin argumentos: (total-fuel-used) cambia en 7 de 20
+// aplicaciones, más del 25 % que deja max_unchanged; con un 20 % de ruido en cada valor (dos
+// observaciones difieren con q = 0.36), lo explica la binomial y no tiene efecto. (fuel ?0), con
+// los mismos valores, sí: los fluentes con argumentos los suaviza plantraces::smooth_values.
+TEST(NullModel, TheNoiseOfTheFluentsWithoutArguments) {
+  datasets::Table table;
+  table.transitions = 20;
+  table.attributes = {{datasets::AttributeKind::fluent, {"total-fuel-used", {}}},
+                      {datasets::AttributeKind::fluent, {"fuel", {0}}}};
+  std::vector<double> column(40, 100.0);
+  for (std::size_t i = 0; i < 7; ++i) {
+    column[20 + i] = 110.0 + static_cast<double>(i);
+  }
+  table.columns = {column, column};
+
+  datasets::EffectOptions options;
+  options.search.max_expansions = 2000;
+  const auto changing = [&table](const datasets::EffectOptions& with) {
+    std::vector<std::string> fluents;
+    for (const datasets::FluentChange& change : datasets::numeric_effects(table, with)) {
+      fluents.push_back(plantraces::to_string(change.fluent));
+    }
+    return fluents;
+  };
+  EXPECT_EQ(changing(options), (std::vector<std::string>{"(total-fuel-used)", "(fuel ?0)"}));
+  options.noise = 0.36;
+  EXPECT_EQ(changing(options), std::vector<std::string>{"(fuel ?0)"});
+}
+
 TEST(NumericEffect, Text) {
   const datasets::NumericEffect effect{
       {"fuel", {0}}, EffectKind::decrease, product(), {distance, {"slow-burn", {0}}}, 0.0};

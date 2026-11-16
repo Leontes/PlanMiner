@@ -86,6 +86,25 @@ suavizado de los átomos, que usa la secuencia de cada traza. Solo actúan si se
 | Suavizado de los fluentes | Los valores de cada fluente se agrupan con un clustering jerárquico de arriba abajo (HRC: k-means con k = 2, que se repite en cada cluster mientras su dispersión, 0.6 (1 - silueta) + 0.4 σ/μ, pase de 0.05) y pasan a la media de su cluster; los clusters de un solo valor son atípicos y pasan a desconocidos. Antes de buscar los efectos y las relaciones. Salvo `(total-cost)` y los acumuladores, que no se repiten. | `Options::smooth_fluents` |
 | Refinamiento de los meta-estados | La fusión descarta las condiciones con un soporte (los ejemplos que cubren las reglas que las tienen) por debajo del 5 % de las aplicaciones, y en un conflicto con una diferencia de soportes dentro del 10 % de su media, los dos valores. | `Options::refine_meta_states` |
 
+Para los numéricos con ruido hay cuatro opciones más, que la mejorada aún no usa: falta ajustarlas
+con el suavizado de los fluentes de PlanMiner-N.
+
+- **Suavizado temporal de los fluentes** (`Options::smooth_values`, `plantraces::smooth_values`):
+  como el de los átomos, en los tramos de cada fluente con argumentos entre las acciones que
+  pueden cambiarlo. Los valores sin alterar son todos iguales y los alterados, casi siempre
+  distintos: todos pasan a la moda, si sale al menos dos veces y más que cualquier otro valor, o a
+  desconocidos, también si están solos en su tramo. Lo que queda conocido está casi siempre bien.
+- **Validación exacta de las comparaciones** (`Options::exact_comparisons`): con ruido, cada
+  comparación numérica tiene que cumplirse en todos los ejemplos en que se conoce, como sin ruido.
+- **Acumuladores por sus efectos** (`Options::effect_accumulators`): también son acumuladores los
+  fluentes cuyos efectos son todos `increase`. Con ruido, una alteración puede hacer que uno
+  parezca bajar.
+- **Modelo nulo con ruido** (`Options::noisy_null_model`): en los fluentes sin argumentos, que no
+  se suavizan, un cambio que explica el ruido no es un efecto.
+
+Las cuatro juntas, en el banco `ruido` y sin el suavizado de PlanMiner-N, llevan la validez de los
+numéricos con un 3, 5, 10 y 20 % de ruido de 74, 66, 87 y 65 % a 97, 97, 97 y 94 %.
+
 ### Escritura
 
 | Mejora | Qué hace | Opción |

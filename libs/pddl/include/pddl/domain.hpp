@@ -93,6 +93,35 @@ struct Options {
   /// ruido, el umbral los borraba e INSLV añadía la precondición contraria. Supone que los efectos
   /// no tienen constantes del dominio: en woodworking, que las tiene, la F baja un poco.
   bool smooth_atoms = true;
+  /// Si las trazas tienen ruido en los valores (plantraces::value_changes > 0), antes de aprender,
+  /// el suavizado temporal de los fluentes con argumentos (plantraces::smooth_values): en cada
+  /// tramo entre las acciones que pueden cambiar el fluente, la moda de sus valores; sin una moda
+  /// clara o con una sola observación, desconocidos. Lo que queda conocido está casi siempre bien.
+  /// Si no, como el original.
+  ///
+  /// Las cuatro opciones de los numéricos con ruido (smooth_values, exact_comparisons,
+  /// effect_accumulators y noisy_null_model) aún no están en la mejorada: falta ajustarlas con el
+  /// suavizado de los fluentes de PlanMiner-N (smooth_fluents). En el banco ruido, las cuatro sin
+  /// smooth_fluents llevan la validez de los numéricos con un 3, 5, 10 y 20 % de ruido de 74, 66,
+  /// 87 y 65 % a 97, 97, 97 y 94 %, sin cambiar la de STRIPS; con smooth_fluents, el HRC agrupa
+  /// valores ciertos y parecidos de los datos ya limpios, y la F baja.
+  bool smooth_values = false;
+  /// Si las trazas tienen ruido, la validación de la fusión exige que cada comparación numérica se
+  /// cumpla en todos los ejemplos en que se conoce (rules::FusionOptions::min_comparison_support
+  /// 1), como sin ruido (exact_without_noise). Es para usarla con smooth_values, que deja limpios
+  /// los valores conocidos (no los átomos: la validación exacta de todo pierde efectos ciertos). En
+  /// counters, con la validación de 0.95, pasaba (> (value ?0) 1) en decrement en lugar de
+  /// (>= (value ?0) 1).
+  bool exact_comparisons = false;
+  /// Si las trazas tienen ruido, los acumuladores (que no se comparan: datasets::accumulators) son
+  /// también los fluentes cuyos efectos (de la regresión) son todos increase. Con ruido, una
+  /// alteración puede hacer que un acumulador parezca bajar, y se comparaba: (>= (total-fuel-used)
+  /// (onboard ?1)) en board de zenotravel, que obliga a volar antes de subir al segundo pasajero.
+  bool effect_accumulators = false;
+  /// Si las trazas tienen ruido en los valores, el modelo nulo de la regresión de los fluentes sin
+  /// argumentos (los que smooth_values no suaviza) tiene en cuenta el ruido
+  /// (datasets::EffectOptions::noise).
+  bool noisy_null_model = false;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos

@@ -182,6 +182,16 @@ TEST(Learn, ExactWithoutNoise) {
 
 // Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
 // completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros.
+// Las opciones de los numéricos con ruido, que la mejorada aún no usa.
+pddl::Options numeric_noise() {
+  pddl::Options options;
+  options.smooth_values = true;
+  options.exact_comparisons = true;
+  options.effect_accumulators = true;
+  options.noisy_null_model = true;
+  return options;
+}
+
 TEST(Learn, NoiseImprovementsOnlyWithNoise) {
   pddl::Options fixed;
   fixed.rare_values_alpha = 0.0;
@@ -195,7 +205,34 @@ TEST(Learn, NoiseImprovementsOnlyWithNoise) {
     const std::string expected = pddl::write(collection, pddl::learn(complete, without));
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete, fixed)), expected) << collection;
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, numeric_noise())), expected)
+        << collection;
   }
+}
+
+// Los numéricos con ruido: con las cuatro opciones, de las trazas de counters con un 5 % de ruido
+// se aprende el mismo dominio que de las completas, con (>= (value ?0) 1) en decrement (sin ellas,
+// (> (value ?0) 1)). En zenotravel, ninguna precondición compara (total-fuel-used), que es un
+// acumulador.
+TEST(Learn, NumericNoise) {
+  const std::string complete = pddl::write("counters", pddl::learn(traces("counters")));
+  const std::vector<plantraces::Trace> noisy = traces("counters", "noise5");
+  EXPECT_EQ(pddl::write("counters", pddl::learn(noisy, numeric_noise())), complete);
+  EXPECT_NE(pddl::write("counters", pddl::learn(noisy)), complete);
+
+  const std::string zenotravel =
+      pddl::write("zenotravel", pddl::learn(traces("zenotravel", "noise5"), numeric_noise()));
+  std::size_t comparisons = 0;
+  std::size_t start = 0;
+  for (std::size_t end = zenotravel.find('\n'); end != std::string::npos;
+       start = end + 1, end = zenotravel.find('\n', start)) {
+    const std::string line = zenotravel.substr(start, end - start);
+    const bool comparison = line.find("\t\t\t\t(<") != std::string::npos ||
+                            line.find("\t\t\t\t(>") != std::string::npos ||
+                            line.find("\t\t\t\t(=") != std::string::npos;
+    comparisons += comparison && line.find("total-fuel-used") != std::string::npos ? 1U : 0U;
+  }
+  EXPECT_EQ(comparisons, 0U) << zenotravel;
 }
 
 // Con ruido, el suavizado de los átomos cambia lo que se aprende. learn suaviza una copia de las

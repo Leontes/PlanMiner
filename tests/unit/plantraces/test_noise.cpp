@@ -61,6 +61,23 @@ TEST(ObservationNoise, TheInverseOfTheChanges) {
   EXPECT_EQ(plantraces::observation_noise(0.7), 0.5);
 }
 
+// Lo que cambia fuera de la acción en los valores: (fuel p2) sí y (capacity p2) no; los átomos no
+// cuentan.
+TEST(ValueChanges, WhatChangesOutsideTheAction) {
+  EXPECT_DOUBLE_EQ(plantraces::value_changes({flight(R"json(
+      {"step": 1, "time": 1, "true": ["(located p1 c1)"], "unknown": [],
+       "values": {"(fuel p1)": 6, "(fuel p2)": 4, "(capacity p2)": 9}, "unknown_values": []}
+  )json")}),
+                   0.5);
+}
+
+// c = 1 - (1 - p)^2: con un 10 % de ruido en cada valor, c = 0.19.
+TEST(ValueNoise, TheInverseOfTheChanges) {
+  EXPECT_EQ(plantraces::value_noise(0.0), 0.0);
+  EXPECT_NEAR(plantraces::value_noise(1.0 - 0.9 * 0.9), 0.1, 1e-12);
+  EXPECT_EQ(plantraces::value_noise(1.0), 1.0);
+}
+
 // P(X > m) <= alpha con X ~ Binomial(n, p). Con n = 2 y p = 0.5, P(X <= 0) = 0.25 y P(X <= 1) =
 // 0.75. Con p = 0.05 y alpha = 1e-4, el umbral en proporción baja con las filas: 30 % con 20, 15 %
 // con 100 y 7.7 % con 1000.
@@ -222,6 +239,91 @@ TEST(SmoothAtoms, TheNoiseOfBlocksworld) {
   EXPECT_EQ(errors(noisy, complete), (std::pair<std::size_t, std::size_t>{192, 0}));
   plantraces::smooth_atoms(noisy, plantraces::observation_noise(plantraces::frame_changes(noisy)));
   EXPECT_EQ(errors(noisy, complete), (std::pair<std::size_t, std::size_t>{6, 55}));
+}
+
+// Un robot r que va y viene entre a y b, con cuatro move. (size a) y (size b) no cambian, y en el
+// estado 2 el ruido ha alterado (size a); (charge r) baja con cada move. (size c), de una
+// habitación que no es de ninguna acción, sale 7 dos veces y 7.5 dos veces. (total-cost) no tiene
+// argumentos.
+plantraces::Trace rover() {
+  const auto state = [](int step, double size_a, double size_c, double charge) {
+    return "{\"step\": " + std::to_string(step) + ", \"time\": " + std::to_string(step) +
+           ", \"true\": [], \"unknown\": [], \"values\": {\"(size a)\": " + std::to_string(size_a) +
+           ", \"(size b)\": 6, \"(size c)\": " + std::to_string(size_c) +
+           ", \"(charge r)\": " + std::to_string(charge) +
+           ", \"(total-cost)\": " + std::to_string(step) + "}, \"unknown_values\": []}";
+  };
+  return plantraces::parse_trace(
+      R"json({"format": "pddldomains-trace", "version": 1, "domain": {"name": "rover"},
+      "problem": {"name": "p"}, "world": "closed",
+      "objects": {"r": "robot", "a": "room", "b": "room", "c": "room"}, "states": [)json" +
+      state(0, 5, 7, 10) + "," + state(1, 5, 7.5, 9) + "," + state(2, 5.5, 7, 8) + "," +
+      state(3, 5, 7.5, 7) + "," + state(4, 5, 8, 6) + R"json(], "actions": [
+      {"step": 1, "time": 1, "name": "move", "arguments": ["r", "a", "b"]},
+      {"step": 2, "time": 2, "name": "move", "arguments": ["r", "b", "a"]},
+      {"step": 3, "time": 3, "name": "move", "arguments": ["r", "a", "b"]},
+      {"step": 4, "time": 4, "name": "move", "arguments": ["r", "b", "a"]}]})json");
+}
+
+std::optional<double> value(const plantraces::Trace& trace, std::size_t state,
+                            const std::string& term) {
+  return trace.states[state].value(plantraces::parse_atom(term));
+}
+
+// Con p = 0.1, dos observaciones del mismo valor difieren con 1 - 0.9^2 = 0.19: (size ?1) y
+// (size ?2) cambian en 1 de 4 move, que lo explica el ruido (con alpha 0.3, hasta 1); (charge ?0),
+// en los 4: es un efecto.
+TEST(SmoothValues, TheModeOfEachSegment) {
+  std::vector<plantraces::Trace> traces{rover()};
+  plantraces::smooth_values(traces, 0.1);
+  const plantraces::Trace& trace = traces.front();
+
+  // (size a): 5 cuatro veces y 5.5 una, en un solo tramo: la moda.
+  EXPECT_EQ(value(trace, 2, "(size a)"), 5.0);
+  EXPECT_EQ(value(trace, 0, "(size b)"), 6.0);
+  // (size c): dos 7 y dos 7.5, sin una moda clara: desconocido.
+  for (std::size_t state = 0; state < 5; ++state) {
+    EXPECT_EQ(value(trace, state, "(size c)"), std::nullopt) << state;
+  }
+  // (charge r): cada move lo corta, y una observación sola no se puede corroborar.
+  EXPECT_EQ(value(trace, 1, "(charge r)"), std::nullopt);
+  EXPECT_TRUE(trace.states[1].unknown_values.contains(plantraces::parse_atom("(charge r)")));
+  // (total-cost) no se suaviza.
+  EXPECT_EQ(value(trace, 3, "(total-cost)"), 3.0);
+}
+
+// De los valores de los fluentes con argumentos, cuántos están mal y cuántos son desconocidos.
+std::pair<std::size_t, std::size_t> value_errors(const std::vector<plantraces::Trace>& traces,
+                                                 const std::vector<plantraces::Trace>& complete) {
+  std::size_t wrong = 0;
+  std::size_t unknown = 0;
+  for (std::size_t t = 0; t < traces.size(); ++t) {
+    for (std::size_t s = 0; s < traces[t].states.size(); ++s) {
+      for (const auto& [term, expected] : complete[t].states[s].values) {
+        if (term.arguments.empty()) {
+          continue;
+        }
+        const std::optional<double> observed = traces[t].states[s].value(term);
+        if (!observed) {
+          ++unknown;
+        } else if (*observed != expected) {
+          ++wrong;
+        }
+      }
+    }
+  }
+  return {wrong, unknown};
+}
+
+// En las trazas de prueba de zenotravel con un 5 % de ruido, el ruido ha alterado 465 valores de
+// fluentes con argumentos. Después de suavizar, con el p que se estima, no queda ninguno mal, y 716
+// pasan a desconocidos: los que nada corrobora (problemas pequeños, con pocos estados entre las
+// acciones que cambian cada fluente).
+TEST(SmoothValues, TheNoiseOfZenotravel) {
+  auto [noisy, complete] = with_complete("zenotravel", "noise5");
+  EXPECT_EQ(value_errors(noisy, complete), (std::pair<std::size_t, std::size_t>{465, 0}));
+  plantraces::smooth_values(noisy, plantraces::value_noise(plantraces::value_changes(noisy)));
+  EXPECT_EQ(value_errors(noisy, complete), (std::pair<std::size_t, std::size_t>{0, 716}));
 }
 
 }  // namespace

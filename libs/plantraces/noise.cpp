@@ -65,6 +65,36 @@ double observation_noise(double frame_changes) {
   return frame_changes < 0.5 ? (1.0 - std::sqrt(1.0 - 2.0 * frame_changes)) / 2.0 : 0.5;
 }
 
+double value_changes(const std::vector<Trace>& traces) {
+  std::size_t observed = 0;
+  std::size_t changed = 0;
+  for (const Trace& trace : traces) {
+    for (std::size_t i = 0; i < trace.actions.size(); ++i) {
+      const std::vector<std::string>& arguments = trace.actions[i].arguments;
+      const auto outside = [&arguments](const GroundAtom& term) {
+        return !term.arguments.empty() &&
+               std::none_of(term.arguments.begin(), term.arguments.end(),
+                            [&arguments](const std::string& object) {
+                              return std::find(arguments.begin(), arguments.end(), object) !=
+                                     arguments.end();
+                            });
+      };
+      for (const auto& [term, was] : trace.states[i].values) {
+        const std::optional<double> is = trace.states[i + 1].value(term);
+        if (outside(term) && is) {
+          ++observed;
+          changed += *is != was ? 1U : 0U;
+        }
+      }
+    }
+  }
+  return observed == 0 ? 0.0 : static_cast<double>(changed) / static_cast<double>(observed);
+}
+
+double value_noise(double value_changes) {
+  return value_changes < 1.0 ? 1.0 - std::sqrt(1.0 - value_changes) : 1.0;
+}
+
 std::size_t binomial_bound(std::size_t n, double p, double alpha) {
   if (p <= 0.0) {
     return 0;
@@ -174,48 +204,75 @@ void smooth_segment(Trace& trace, const GroundAtom& atom, std::size_t first, std
   }
 }
 
-}  // namespace
-
-ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alpha) {
-  // 1. Qué cambia cada acción: de cada átomo sobre sus parámetros, las aplicaciones en que se
-  // conoce antes y después, y en cuántas cambia.
-  std::map<ActionAtom, std::pair<std::size_t, std::size_t>> changes;
+// Lo que mantiene cada acción: de cada término (átomo o fluente) sobre sus parámetros, si lo que
+// cambia entre los estados de antes y de después, en las aplicaciones en que se conoce en los dos,
+// lo explica el ruido: hasta binomial_bound(n, q, alpha) de las n. terms da los términos de una
+// traza y read, lo que se observa de un término en un estado.
+template <typename Terms, typename Read>
+std::map<ActionAtom, bool> kept_by_actions(const std::vector<Trace>& traces, Terms terms, Read read,
+                                           double q, double alpha) {
+  std::map<ActionAtom, std::pair<std::size_t, std::size_t>> changes;  // conocidas, cambian
   for (const Trace& trace : traces) {
-    for (const GroundAtom& atom : atoms_with_arguments(trace)) {
+    for (const GroundAtom& term : terms(trace)) {
       for (std::size_t i = 0; i < trace.actions.size(); ++i) {
-        const auto parameters = parameters_of(atom, trace.actions[i]);
+        const auto parameters = parameters_of(term, trace.actions[i]);
         if (!parameters || parameters->empty()) {
           continue;
         }
-        const std::optional<bool> was = trace.states[i].truth(atom);
-        const std::optional<bool> is = trace.states[i + 1].truth(atom);
+        const auto was = read(trace.states[i], term);
+        const auto is = read(trace.states[i + 1], term);
         if (was && is) {
-          auto& [known, changed] = changes[{trace.actions[i].name, {atom.name, *parameters}}];
+          auto& [known, changed] = changes[{trace.actions[i].name, {term.name, *parameters}}];
           ++known;
           changed += *was != *is ? 1U : 0U;
         }
       }
     }
   }
-  // Las que lo mantienen: entre dos observaciones del mismo valor, el ruido cambia
-  // 2p(1 - p) de ellas.
-  const double q = 2.0 * p * (1.0 - p);
   std::map<ActionAtom, bool> keeps;
-  for (const auto& [action_atom, counts] : changes) {
+  for (const auto& [action_term, counts] : changes) {
     const auto [known, changed] = counts;
-    keeps[action_atom] = changed <= binomial_bound(known, q, effect_alpha);
+    keeps[action_term] = changed <= binomial_bound(known, q, alpha);
   }
-  const auto cuts = [&keeps](const GroundAtom& atom, const GroundAction& action) {
-    const auto parameters = parameters_of(atom, action);
+  return keeps;
+}
+
+// Los tramos de estados [first, last] de la traza en que el término no cambia: los cortan las
+// acciones que pueden cambiarlo (las que no lo mantienen según keeps, las que lo tienen sobre un
+// objeto que ocupa varios parámetros y las que no tienen datos).
+template <typename Segment>
+void for_each_segment(const Trace& trace, const GroundAtom& term,
+                      const std::map<ActionAtom, bool>& keeps, Segment segment) {
+  const auto cuts = [&](const GroundAction& action) {
+    const auto parameters = parameters_of(term, action);
     if (!parameters) {
       return false;
     }
     if (parameters->empty()) {
       return true;
     }
-    const auto found = keeps.find({action.name, {atom.name, *parameters}});
+    const auto found = keeps.find({action.name, {term.name, *parameters}});
     return found == keeps.end() || !found->second;
   };
+  const std::size_t states = trace.states.size();
+  std::size_t first = 0;
+  for (std::size_t s = 0; s < states; ++s) {
+    if (s + 1 == states || cuts(trace.actions[s])) {
+      segment(first, s);
+      first = s + 1;
+    }
+  }
+}
+
+}  // namespace
+
+ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alpha) {
+  // 1. Qué mantiene cada acción: entre dos observaciones del mismo valor, el ruido cambia
+  // 2p(1 - p) de ellas.
+  const std::map<ActionAtom, bool> keeps = kept_by_actions(
+      traces, atoms_with_arguments,
+      [](const Observation& state, const GroundAtom& atom) { return state.truth(atom); },
+      2.0 * p * (1.0 - p), effect_alpha);
 
   // 2 y 3. Los tramos de cada átomo y su suavizado; y, de las observaciones de antes y de después
   // de cada acción, la suma de las probabilidades de que estén mal, y cuántas son.
@@ -224,13 +281,9 @@ ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alp
     const std::size_t states = trace.states.size();
     for (const GroundAtom& atom : atoms_with_arguments(trace)) {
       std::vector<std::optional<double>> wrong(states);
-      std::size_t first = 0;
-      for (std::size_t s = 0; s < states; ++s) {
-        if (s + 1 == states || cuts(atom, trace.actions[s])) {
-          smooth_segment(trace, atom, first, s, p, wrong);
-          first = s + 1;
-        }
-      }
+      for_each_segment(trace, atom, keeps, [&](std::size_t first, std::size_t last) {
+        smooth_segment(trace, atom, first, last, p, wrong);
+      });
       for (std::size_t i = 0; i < trace.actions.size(); ++i) {
         const auto parameters = parameters_of(atom, trace.actions[i]);
         if (!parameters || parameters->empty()) {
@@ -255,6 +308,86 @@ ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alp
     }
   }
   return noise;
+}
+
+namespace {
+
+// Los fluentes con argumentos que aparecen en algún estado de la traza.
+std::set<GroundAtom> fluents_with_arguments(const Trace& trace) {
+  std::set<GroundAtom> terms;
+  for (const Observation& state : trace.states) {
+    for (const auto& [term, value] : state.values) {
+      if (!term.arguments.empty()) {
+        terms.insert(term);
+      }
+    }
+    for (const GroundAtom& term : state.unknown_values) {
+      if (!term.arguments.empty()) {
+        terms.insert(term);
+      }
+    }
+  }
+  return terms;
+}
+
+// El suavizado del fluente en el tramo de estados [first, last] de la traza, en que su valor es el
+// mismo (smooth_values, paso 3).
+void smooth_value_segment(Trace& trace, const GroundAtom& term, std::size_t first,
+                          std::size_t last) {
+  std::map<double, std::size_t> counts;
+  for (std::size_t s = first; s <= last; ++s) {
+    if (const std::optional<double> value = trace.states[s].value(term)) {
+      ++counts[*value];
+    }
+  }
+  // La moda, si sale al menos dos veces y más que cualquier otro valor.
+  std::optional<double> mode;
+  std::size_t best = 0;
+  std::size_t second = 0;
+  for (const auto& [value, count] : counts) {
+    if (count > best) {
+      second = best;
+      best = count;
+      mode = value;
+    } else if (count > second) {
+      second = count;
+    }
+  }
+  if (best < 2 || best == second) {
+    mode.reset();
+  }
+  for (std::size_t s = first; s <= last; ++s) {
+    Observation& state = trace.states[s];
+    const auto found = state.values.find(term);
+    if (found == state.values.end()) {
+      continue;
+    }
+    if (mode) {
+      found->second = *mode;
+    } else {
+      state.values.erase(found);
+      state.unknown_values.insert(term);
+    }
+  }
+}
+
+}  // namespace
+
+void smooth_values(std::vector<Trace>& traces, double p, double effect_alpha) {
+  // 1. Qué mantiene cada acción: dos observaciones del mismo valor difieren si alguna está
+  // alterada, 1 - (1 - p)^2.
+  const std::map<ActionAtom, bool> keeps = kept_by_actions(
+      traces, fluents_with_arguments,
+      [](const Observation& state, const GroundAtom& term) { return state.value(term); },
+      1.0 - (1.0 - p) * (1.0 - p), effect_alpha);
+  // 2 y 3. Los tramos de cada fluente y su suavizado.
+  for (Trace& trace : traces) {
+    for (const GroundAtom& term : fluents_with_arguments(trace)) {
+      for_each_segment(trace, term, keeps, [&](std::size_t first, std::size_t last) {
+        smooth_value_segment(trace, term, first, last);
+      });
+    }
+  }
 }
 
 }  // namespace plantraces

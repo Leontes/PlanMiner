@@ -49,6 +49,9 @@ struct FusionOptions {
   /// comprueban.
   bool validate = true;
   double min_support = 0.95;
+  /// Si es mayor o igual que 0, el min_support de las comparaciones numéricas (los atributos
+  /// "op..."), en lugar de min_support.
+  double min_comparison_support = -1.0;
   /// En un conflicto entre dos valores de un atributo gana el que cubre más ejemplos, antes y
   /// después; con un empate, ninguno. Si no, como el original: el primero si cubre más del 5 %.
   bool majority = true;

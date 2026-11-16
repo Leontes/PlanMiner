@@ -88,6 +88,26 @@ TEST(Fuse, ValidatesTheConditionsWithTheExamples) {
             (std::vector<Literal>{{"( p )", "True"}, {"( q )", "True"}}));
 }
 
+// Las comparaciones numéricas, con su propio min_support: con 1, (x > 1), cierta en tres de los
+// cuatro estados de antes, se quita; (p), con el mismo soporte, se queda con el min_support de 0.7.
+TEST(Fuse, TheSupportOfTheComparisons) {
+  const std::vector<LegacyRule> input = {{-1, {{"( p )", "True"}, {"opGT - ( x )  1 ", "True"}}}};
+  rules::Evidence evidence;
+  evidence.transitions = 4;
+  evidence.columns = {{"( p )", {1, 1, 1, 0, 0, 0, 0, 0}},
+                      {"opGT - ( x )  1 ", {1, 1, 1, 0, 0, 0, 0, 0}}};
+
+  rules::FusionOptions options = rules::FusionOptions::original();
+  options.validate = true;
+  options.min_support = 0.7;
+  options.min_support = 0.7;
+  EXPECT_EQ(rules::fuse(input, {}, evidence, options).precondition,
+            (std::vector<Literal>{{"( p )", "True"}, {"opGT - ( x ) 1.000000", "True"}}));
+  options.min_comparison_support = 1.0;
+  EXPECT_EQ(rules::fuse(input, {}, evidence, options).precondition,
+            (std::vector<Literal>{{"( p )", "True"}}));
+}
+
 // Corrección: en un conflicto gana el valor que cubre más ejemplos (con el original, el primero).
 TEST(Fuse, TheMajorityWins) {
   const std::vector<LegacyRule> input = {

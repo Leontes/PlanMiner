@@ -86,6 +86,25 @@ smoothing, which uses the sequence of each trace. They only act when noise is es
 | Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat. | `Options::smooth_fluents` |
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
 
+For numeric domains with noise there are four more options, not yet used by the improved
+configuration: they still have to be tuned together with PlanMiner-N's fluent smoothing.
+
+- **Temporal fluent smoothing** (`Options::smooth_values`, `plantraces::smooth_values`): like the
+  atom smoothing, in the segments of each fluent with arguments between the actions that can
+  change it. Unaltered values are all equal and altered ones almost always different: they all
+  take the mode, if it appears at least twice and more than any other value, or become unknown,
+  also when they are alone in their segment. What stays known is almost always right.
+- **Exact validation of comparisons** (`Options::exact_comparisons`): with noise, each numeric
+  comparison has to hold in every example where it is known, as without noise.
+- **Accumulators by their effects** (`Options::effect_accumulators`): fluents whose effects are all
+  `increase` are accumulators too. With noise, an alteration can make one seem to decrease.
+- **Noise-aware null model** (`Options::noisy_null_model`): for fluents without arguments, which
+  are not smoothed, a change that the noise explains is not an effect.
+
+The four together, on the `ruido` benchmark and without PlanMiner-N's smoothing, take the validity
+of the numeric domains with 3, 5, 10 and 20 % noise from 74, 66, 87 and 65 % to 97, 97, 97 and
+94 %.
+
 ### Writing
 
 | Improvement | What it does | Option |

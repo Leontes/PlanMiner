@@ -709,7 +709,10 @@ Fused fuse(std::vector<LegacyRule> rules, const std::vector<std::string>& header
   if (options.validate) {
     for (LegacyRule& rule : rules) {
       std::erase_if(rule.conditions, [&](const Literal& literal) {
-        return !supported(literal, rule.covered >= 0, evidence, options.min_support);
+        const bool comparison =
+            options.min_comparison_support >= 0.0 && literal.attribute.starts_with("op");
+        return !supported(literal, rule.covered >= 0, evidence,
+                          comparison ? options.min_comparison_support : options.min_support);
       });
     }
   }

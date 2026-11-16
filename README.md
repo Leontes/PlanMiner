@@ -134,7 +134,7 @@ std::string text = pddl::write("blocks", domain);
 | Path | Contents |
 |------|----------|
 | `apps/planminer/` | the command line |
-| `libs/plantraces/` | trace reading, the applications of each action, atoms over its parameters, the type hierarchy and noise (its estimate and atom smoothing) |
+| `libs/plantraces/` | trace reading, the applications of each action, atoms over its parameters, the type hierarchy and noise (its estimate and the smoothing of atoms and fluents) |
 | `libs/datasets/` | the example table of each action, numeric effects (with the regression), numeric relations and discretization |
 | `libs/regression/` | symbolic regression: arithmetic expressions and their A* search |
 | `libs/rules/` | the INSLV examples, the interpretation of its rules and their fusion into precondition and effect |
