@@ -199,12 +199,31 @@ TEST(Learn, NoiseImprovementsOnlyWithNoise) {
   without.smooth_fluents = false;
   without.refine_meta_states = false;
   without.smooth_atoms = false;
+  pddl::Options chains;
+  chains.value_chains = true;
+  chains.noisy_contrast = true;
   for (const char* collection : {"blocks-strips-untyped", "counters", "zenotravel"}) {
     const std::vector<plantraces::Trace> complete = traces(collection);
     const std::string expected = pddl::write(collection, pddl::learn(complete, without));
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete, fixed)), expected) << collection;
+    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, chains)), expected) << collection;
   }
+}
+
+// Con las cadenas de tramos y la regla de contraste con ruido, de las trazas de zenotravel con un
+// 5 % de ruido sale la cota de fly-fast, (<= (onboard ?0) (zoom-limit ?0)), como de las
+// completas; sin ellas, no.
+TEST(Learn, ChainsAndNoisyContrast) {
+  const std::string bound = "(<= ( onboard ?param_0 ) ( zoom-limit ?param_0 ) )";
+  const std::vector<plantraces::Trace> noisy = traces("zenotravel", "noise5");
+  pddl::Options options;
+  options.value_chains = true;
+  options.noisy_contrast = true;
+  EXPECT_NE(pddl::write("zenotravel", pddl::learn(traces("zenotravel"))).find(bound),
+            std::string::npos);
+  EXPECT_NE(pddl::write("zenotravel", pddl::learn(noisy, options)).find(bound), std::string::npos);
+  EXPECT_EQ(pddl::write("zenotravel", pddl::learn(noisy)).find(bound), std::string::npos);
 }
 
 // Los numéricos con ruido: con la mejorada, de las trazas de counters con un 5 % de ruido se

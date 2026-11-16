@@ -214,6 +214,8 @@ Options Options::original() {
   options.exact_comparisons = false;
   options.noisy_accumulators = false;
   options.noisy_null_model = false;
+  options.value_chains = false;
+  options.noisy_contrast = false;
   return options;
 }
 
@@ -344,10 +346,12 @@ LearnedDomain learn_domain(const std::vector<plantraces::Trace>& traces, const N
     const std::vector<rules::LegacyRule> numeric = rules::legacy_rules(
         rules::learn(action.numeric, inslv_options), action.numeric, action.argument_types);
     rules.insert(rules.end(), numeric.begin(), numeric.end());
-    if (options.contrast && noiseless) {
+    if (options.contrast && (noiseless || options.noisy_contrast)) {
       rules::LegacyRule contrast = rules::contrast_rule(
           datasets::candidate_relations(table, changes, options.relations, fluents), action.numeric,
-          action.argument_types, traces, fusion.min_support);
+          action.argument_types, traces,
+          fusion.min_comparison_support >= 0.0 ? fusion.min_comparison_support
+                                               : fusion.min_support);
       if (!contrast.conditions.empty()) {
         rules.push_back(std::move(contrast));
       }
@@ -386,7 +390,8 @@ LearnedDomain learn_smoothed(std::vector<plantraces::Trace>& traces, const Noise
                              const Options& options) {
   std::set<std::string> smoothed;
   if (options.smooth_values && noise.values > 0.0) {
-    smoothed = plantraces::smooth_values(traces, plantraces::value_noise(noise.values));
+    smoothed = plantraces::smooth_values(traces, plantraces::value_noise(noise.values),
+                                         options.value_chains);
   }
   if (options.smooth_atoms && noise.changes > 0.0) {
     const plantraces::ColumnNoise columns =

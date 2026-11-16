@@ -1,5 +1,6 @@
 #include "regression/search.hpp"
 
+#include <algorithm>
 #include <bit>
 #include <cmath>
 #include <cstdint>
@@ -202,7 +203,11 @@ class Search {
           continue;  // no se distingue de la variable trivial
         }
       }
-      const std::optional<double> error = mape(values, target.values, options_.min_examples);
+      const std::size_t needed = std::max(
+          options_.min_examples,
+          static_cast<std::size_t>(std::ceil(options_.min_examples_per_node *
+                                             static_cast<double>(node.expression.size()))));
+      const std::optional<double> error = mape(values, target.values, needed);
       if (error && *error < node.error) {
         node.error = *error;
         node.target = t;

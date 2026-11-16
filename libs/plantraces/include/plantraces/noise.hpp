@@ -87,9 +87,16 @@ ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alp
 /// ninguna acción cambia en más de la mitad de sus aplicaciones, con la traza entera como tramo,
 /// como (max_int) en counters. Los demás, como (total-cost), no se suavizan.
 ///
+/// Con chains, una acción que cambia el fluente siempre en lo mismo (el cambio que sale en más de
+/// la mitad de sus aplicaciones, como board +1 a (onboard ?a)) no corta el tramo: se restan los
+/// cambios acumulados y la moda se toma en toda la cadena de tramos. Sin las cadenas, el valor
+/// entre dos board seguidos está solo en su tramo y pasa a desconocido; y lo que se oculta así no
+/// es al azar: en zenotravel, los board con dos pasajeros o más, que contradicen (<= (onboard
+/// ?a) 1).
+///
 /// Devuelve los nombres de los fluentes que suaviza: los demás quedan para el suavizado de las
 /// tablas (datasets::smooth_fluents, el HRC de PlanMiner-N).
-std::set<std::string> smooth_values(std::vector<Trace>& traces, double p,
+std::set<std::string> smooth_values(std::vector<Trace>& traces, double p, bool chains = true,
                                     double effect_alpha = 0.3);
 
 }  // namespace plantraces

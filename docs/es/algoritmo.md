@@ -91,6 +91,22 @@ tienen en cuenta el ruido en los numéricos. Solo actúan si se estima ruido
 | Modelo nulo con ruido | En los fluentes sin argumentos, que no se suavizan, un cambio que explica el ruido no es un efecto: con un 20 % de ruido, `(total-fuel-used)` difiere en un 36 % de las aplicaciones de board, por encima del 25 % del modelo nulo, y la regresión le encontraba un efecto absurdo. | `Options::noisy_null_model` |
 | Refinamiento de los meta-estados | La fusión descarta las condiciones con un soporte (los ejemplos que cubren las reglas que las tienen) por debajo del 5 % de las aplicaciones, y en un conflicto con una diferencia de soportes dentro del 10 % de su media, los dos valores. | `Options::refine_meta_states` |
 
+Tres opciones más, que la mejorada aún no usa:
+
+- **Cadenas de tramos** (`Options::value_chains`): en el suavizado temporal de los fluentes, una
+  acción que cambia el fluente siempre en lo mismo (board +1 a `(onboard ?a)`) no corta el tramo:
+  se restan los cambios acumulados y la moda se toma en toda la cadena. Sin ellas, el valor entre
+  dos board seguidos está solo en su tramo y pasa a desconocido, y lo que se oculta así no es al
+  azar: `(<= (onboard ?1) 1)` pasaba la validación en board.
+- **Contraste con ruido** (`Options::noisy_contrast`): la regla de contraste también con ruido, con
+  la validación de las comparaciones. Con los valores ya limpios, recupera
+  `(<= (onboard ?0) (zoom-limit ?0))` en fly-fast.
+- **Ejemplos por nodo** (`regression::Options::min_examples_per_node`): una expresión necesita más
+  ejemplos cuanto más grande es. Con muy pocas filas, una grande puede cuadrar por casualidad.
+
+Las dos primeras llevan la validez de los numéricos con ruido del banco `ruido` al 99 % en todos
+los niveles; la tercera no cambia nada en los bancos.
+
 ### Escritura
 
 | Mejora | Qué hace | Opción |

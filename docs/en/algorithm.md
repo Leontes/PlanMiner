@@ -91,6 +91,23 @@ take the noise into account in numeric domains. They only act when noise is esti
 | Noise-aware null model | For fluents without arguments, which are not smoothed, a change that the noise explains is not an effect: with 20 % noise, `(total-fuel-used)` differs in 36 % of board's applications, above the null model's 25 %, and the regression found an absurd effect for it. | `Options::noisy_null_model` |
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
 
+Three more options, not yet used by the improved configuration:
+
+- **Segment chains** (`Options::value_chains`): in the temporal fluent smoothing, an action that
+  always changes the fluent by the same amount (board +1 to `(onboard ?a)`) does not cut the
+  segment: the accumulated changes are subtracted and the mode is taken over the whole chain.
+  Without them, the value between two consecutive boards is alone in its segment and becomes
+  unknown, and what is hidden this way is not random: `(<= (onboard ?1) 1)` passed validation in
+  board.
+- **Contrast with noise** (`Options::noisy_contrast`): the contrast rule also with noise, with the
+  validation of comparisons. With the values already clean, it recovers
+  `(<= (onboard ?0) (zoom-limit ?0))` in fly-fast.
+- **Examples per node** (`regression::Options::min_examples_per_node`): an expression needs more
+  examples the bigger it is. With very few rows, a big one can fit by chance.
+
+The first two take the validity of the numeric domains with noise in the `ruido` benchmark to
+99 % at every level; the third changes nothing in the benchmarks.
+
 ### Writing
 
 | Improvement | What it does | Option |

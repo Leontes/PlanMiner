@@ -278,7 +278,7 @@ std::optional<double> value(const plantraces::Trace& trace, std::size_t state,
 // en los 4: es un efecto.
 TEST(SmoothValues, TheModeOfEachSegment) {
   std::vector<plantraces::Trace> traces{rover()};
-  EXPECT_EQ(plantraces::smooth_values(traces, 0.1),
+  EXPECT_EQ(plantraces::smooth_values(traces, 0.1, false),
             (std::set<std::string>{"charge", "max-charge", "size"}));
   const plantraces::Trace& trace = traces.front();
 
@@ -327,8 +327,47 @@ std::pair<std::size_t, std::size_t> value_errors(const std::vector<plantraces::T
 TEST(SmoothValues, TheNoiseOfZenotravel) {
   auto [noisy, complete] = with_complete("zenotravel", "noise5");
   EXPECT_EQ(value_errors(noisy, complete), (std::pair<std::size_t, std::size_t>{465, 0}));
-  plantraces::smooth_values(noisy, plantraces::value_noise(plantraces::value_changes(noisy)));
+  std::vector<plantraces::Trace> chained = noisy;
+  const double p = plantraces::value_noise(plantraces::value_changes(noisy));
+  plantraces::smooth_values(noisy, p, false);
   EXPECT_EQ(value_errors(noisy, complete), (std::pair<std::size_t, std::size_t>{0, 716}));
+  // Con las cadenas, los valores entre efectos constantes (board, debark) se corroboran: 91
+  // desconocidos.
+  plantraces::smooth_values(chained, p);
+  EXPECT_EQ(value_errors(chained, complete), (std::pair<std::size_t, std::size_t>{0, 91}));
+}
+
+// Un robot que se mueve 8 veces y gasta 1 de carga en cada movimiento: cada move cambia (charge
+// r), y sin las cadenas cada observación está sola en su tramo. El cambio constante, -1, une los
+// tramos: menos lo gastado, la carga es 10 en los 9 estados, salvo en el 4, que el ruido ha
+// alterado (5.5 en lugar de 6).
+TEST(SmoothValues, ChainsOfConstantChanges) {
+  std::string states;
+  std::string actions;
+  for (int s = 0; s <= 8; ++s) {
+    const std::string charge = s == 4 ? "5.5" : std::to_string(10 - s);
+    states += std::string{s > 0 ? "," : ""} + R"j({"step": )j" + std::to_string(s) +
+              R"j(, "time": 0, "true": [], "unknown": [], "values": {"(charge r)": )j" + charge +
+              R"j(}, "unknown_values": []})j";
+    if (s > 0) {
+      actions += std::string{s > 1 ? "," : ""} + R"j({"step": )j" + std::to_string(s) +
+                 R"j(, "time": 0, "name": "move", "arguments": ["r"]})j";
+    }
+  }
+  const plantraces::Trace trace = plantraces::parse_trace(
+      R"j({"format": "pddldomains-trace", "version": 1, "domain": {"name": "d"},
+      "problem": {"name": "p"}, "world": "closed", "objects": {"r": "robot"}, "states": [)j" +
+      states + R"j(], "actions": [)j" + actions + "]}");
+
+  std::vector<plantraces::Trace> segments{trace};
+  plantraces::smooth_values(segments, 0.1, false);
+  EXPECT_EQ(value(segments.front(), 3, "(charge r)"), std::nullopt);
+
+  std::vector<plantraces::Trace> chains{trace};
+  plantraces::smooth_values(chains, 0.1);
+  for (int s = 0; s <= 8; ++s) {
+    EXPECT_EQ(value(chains.front(), static_cast<std::size_t>(s), "(charge r)"), 10.0 - s) << s;
+  }
 }
 
 }  // namespace

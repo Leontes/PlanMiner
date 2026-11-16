@@ -239,28 +239,41 @@ std::map<ActionAtom, bool> kept_by_actions(const std::vector<Trace>& traces, Ter
 
 // Los tramos de estados [first, last] de la traza en que el término no cambia: los cortan las
 // acciones que pueden cambiarlo (las que no lo mantienen según keeps, las que lo tienen sobre un
-// objeto que ocupa varios parámetros y las que no tienen datos).
+// objeto que ocupa varios parámetros y las que no tienen datos). Una acción con un cambio
+// constante (steps) no corta: une los dos tramos en una cadena, y offsets[s] es lo que han sumado
+// esos cambios hasta el estado s. segment recibe cada cadena (first, last, offsets).
 template <typename Segment>
 void for_each_segment(const Trace& trace, const GroundAtom& term,
-                      const std::map<ActionAtom, bool>& keeps, Segment segment) {
-  const auto cuts = [&](const GroundAction& action) {
-    const auto parameters = parameters_of(term, action);
-    if (!parameters) {
-      return false;
-    }
-    if (parameters->empty()) {
-      return true;
-    }
-    const auto found = keeps.find({action.name, {term.name, *parameters}});
-    return found == keeps.end() || !found->second;
-  };
+                      const std::map<ActionAtom, bool>& keeps,
+                      const std::map<ActionAtom, double>& steps, Segment segment) {
   const std::size_t states = trace.states.size();
+  std::vector<double> offsets(states, 0.0);
+  double offset = 0.0;
   std::size_t first = 0;
   for (std::size_t s = 0; s < states; ++s) {
-    if (s + 1 == states || cuts(trace.actions[s])) {
-      segment(first, s);
-      first = s + 1;
+    offsets[s] = offset;
+    if (s + 1 == states) {
+      segment(first, s, offsets);
+      break;
     }
+    const GroundAction& action = trace.actions[s];
+    const auto parameters = parameters_of(term, action);
+    if (!parameters) {
+      continue;
+    }
+    const ActionAtom key{action.name, {term.name, *parameters}};
+    if (!parameters->empty()) {
+      if (const auto kept = keeps.find(key); kept != keeps.end() && kept->second) {
+        continue;
+      }
+      if (const auto step = steps.find(key); step != steps.end()) {
+        offset += step->second;
+        continue;
+      }
+    }
+    segment(first, s, offsets);
+    first = s + 1;
+    offset = 0.0;
   }
 }
 
@@ -281,9 +294,10 @@ ColumnNoise smooth_atoms(std::vector<Trace>& traces, double p, double effect_alp
     const std::size_t states = trace.states.size();
     for (const GroundAtom& atom : atoms_with_arguments(trace)) {
       std::vector<std::optional<double>> wrong(states);
-      for_each_segment(trace, atom, keeps, [&](std::size_t first, std::size_t last) {
-        smooth_segment(trace, atom, first, last, p, wrong);
-      });
+      for_each_segment(trace, atom, keeps, {},
+                       [&](std::size_t first, std::size_t last, const std::vector<double>&) {
+                         smooth_segment(trace, atom, first, last, p, wrong);
+                       });
       for (std::size_t i = 0; i < trace.actions.size(); ++i) {
         const auto parameters = parameters_of(atom, trace.actions[i]);
         if (!parameters || parameters->empty()) {
@@ -330,14 +344,14 @@ std::set<GroundAtom> fluents_with_arguments(const Trace& trace) {
   return terms;
 }
 
-// El suavizado del fluente en el tramo de estados [first, last] de la traza, en que su valor es el
-// mismo (smooth_values, paso 3).
-void smooth_value_segment(Trace& trace, const GroundAtom& term, std::size_t first,
-                          std::size_t last) {
+// El suavizado del fluente en la cadena de estados [first, last] de la traza, en que su valor menos
+// offsets[s] es el mismo (smooth_values, paso 3).
+void smooth_value_segment(Trace& trace, const GroundAtom& term, std::size_t first, std::size_t last,
+                          const std::vector<double>& offsets) {
   std::map<double, std::size_t> counts;
   for (std::size_t s = first; s <= last; ++s) {
     if (const std::optional<double> value = trace.states[s].value(term)) {
-      ++counts[*value];
+      ++counts[*value - offsets[s]];
     }
   }
   // La moda, si sale al menos dos veces y más que cualquier otro valor.
@@ -363,7 +377,7 @@ void smooth_value_segment(Trace& trace, const GroundAtom& term, std::size_t firs
       continue;
     }
     if (mode) {
-      found->second = *mode;
+      found->second = *mode + offsets[s];
     } else {
       state.values.erase(found);
       state.unknown_values.insert(term);
@@ -413,29 +427,80 @@ std::set<std::string> constants_without_arguments(const std::vector<Trace>& trac
   return constants;
 }
 
+// Los cambios constantes de las acciones que cambian cada fluente según keeps: el que sale en más
+// de la mitad de sus aplicaciones (en que se conoce antes y después), al menos dos veces. Con
+// ruido, los cambios alterados salen casi siempre distintos.
+std::map<ActionAtom, double> constant_steps(const std::vector<Trace>& traces,
+                                            const std::map<ActionAtom, bool>& keeps) {
+  std::map<ActionAtom, std::map<double, std::size_t>> changes;
+  for (const Trace& trace : traces) {
+    for (const GroundAtom& term : fluents_with_arguments(trace)) {
+      for (std::size_t i = 0; i < trace.actions.size(); ++i) {
+        const auto parameters = parameters_of(term, trace.actions[i]);
+        if (!parameters || parameters->empty()) {
+          continue;
+        }
+        const ActionAtom key{trace.actions[i].name, {term.name, *parameters}};
+        if (const auto kept = keeps.find(key); kept == keeps.end() || kept->second) {
+          continue;
+        }
+        const std::optional<double> was = trace.states[i].value(term);
+        const std::optional<double> is = trace.states[i + 1].value(term);
+        if (was && is) {
+          ++changes[key][*is - *was];
+        }
+      }
+    }
+  }
+  std::map<ActionAtom, double> steps;
+  for (const auto& [key, counts] : changes) {
+    std::size_t total = 0;
+    std::size_t best = 0;
+    double step = 0.0;
+    for (const auto& [change, count] : counts) {
+      total += count;
+      if (count > best) {
+        best = count;
+        step = change;
+      }
+    }
+    if (best >= 2 && 2 * best > total) {
+      steps[key] = step;
+    }
+  }
+  return steps;
+}
+
 }  // namespace
 
-std::set<std::string> smooth_values(std::vector<Trace>& traces, double p, double effect_alpha) {
+std::set<std::string> smooth_values(std::vector<Trace>& traces, double p, bool chains,
+                                    double effect_alpha) {
   // 1. Qué mantiene cada acción: dos observaciones del mismo valor difieren si alguna está
   // alterada, 1 - (1 - p)^2.
   const std::map<ActionAtom, bool> keeps = kept_by_actions(
       traces, fluents_with_arguments,
       [](const Observation& state, const GroundAtom& term) { return state.value(term); },
       1.0 - (1.0 - p) * (1.0 - p), effect_alpha);
+  const std::map<ActionAtom, double> steps =
+      chains ? constant_steps(traces, keeps) : std::map<ActionAtom, double>{};
   const std::set<std::string> constants = constants_without_arguments(traces);
 
-  // 2 y 3. Los tramos de cada fluente y su suavizado; de las constantes, la traza entera.
+  // 2 y 3. Los tramos (o las cadenas) de cada fluente y su suavizado; de las constantes, la traza
+  // entera.
   std::set<std::string> smoothed = constants;
   for (Trace& trace : traces) {
     for (const GroundAtom& term : fluents_with_arguments(trace)) {
       smoothed.insert(term.name);
-      for_each_segment(trace, term, keeps, [&](std::size_t first, std::size_t last) {
-        smooth_value_segment(trace, term, first, last);
-      });
+      for_each_segment(
+          trace, term, keeps, steps,
+          [&](std::size_t first, std::size_t last, const std::vector<double>& offsets) {
+            smooth_value_segment(trace, term, first, last, offsets);
+          });
     }
     if (!trace.states.empty()) {
+      const std::vector<double> none(trace.states.size(), 0.0);
       for (const std::string& constant : constants) {
-        smooth_value_segment(trace, GroundAtom{constant, {}}, 0, trace.states.size() - 1);
+        smooth_value_segment(trace, GroundAtom{constant, {}}, 0, trace.states.size() - 1, none);
       }
     }
   }
