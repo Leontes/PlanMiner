@@ -180,22 +180,21 @@ TEST(Learn, ExactWithoutNoise) {
             std::string::npos);
 }
 
-// Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
-// completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros.
-// Las opciones de los numéricos con ruido, que la mejorada aún no usa.
-pddl::Options numeric_noise() {
-  pddl::Options options;
-  options.smooth_values = true;
-  options.exact_comparisons = true;
-  options.noisy_accumulators = true;
-  options.noisy_null_model = true;
+// Las opciones, sin las cuatro de los numéricos con ruido.
+pddl::Options without_numeric_noise(pddl::Options options = {}) {
+  options.smooth_values = false;
+  options.exact_comparisons = false;
+  options.noisy_accumulators = false;
+  options.noisy_null_model = false;
   return options;
 }
 
+// Las mejoras para el ruido (PlanMiner-N) solo cuentan si se estima ruido: con las trazas
+// completas, la mejorada da lo mismo sin ellas, también con el umbral fijo de los valores raros.
 TEST(Learn, NoiseImprovementsOnlyWithNoise) {
   pddl::Options fixed;
   fixed.rare_values_alpha = 0.0;
-  pddl::Options without = fixed;
+  pddl::Options without = without_numeric_noise(fixed);
   without.rare_values = 0.0;
   without.smooth_fluents = false;
   without.refine_meta_states = false;
@@ -205,23 +204,21 @@ TEST(Learn, NoiseImprovementsOnlyWithNoise) {
     const std::string expected = pddl::write(collection, pddl::learn(complete, without));
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete)), expected) << collection;
     EXPECT_EQ(pddl::write(collection, pddl::learn(complete, fixed)), expected) << collection;
-    EXPECT_EQ(pddl::write(collection, pddl::learn(complete, numeric_noise())), expected)
-        << collection;
   }
 }
 
-// Los numéricos con ruido: con las cuatro opciones, de las trazas de counters con un 5 % de ruido
-// se aprende el mismo dominio que de las completas, con (>= (value ?0) 1) en decrement (sin ellas,
-// (> (value ?0) 1)). En zenotravel, ninguna precondición compara (total-fuel-used), que es un
-// acumulador.
+// Los numéricos con ruido: con la mejorada, de las trazas de counters con un 5 % de ruido se
+// aprende el mismo dominio que de las completas, con (>= (value ?0) 1) en decrement (sin las
+// cuatro opciones, (> (value ?0) 1)). En zenotravel, ninguna precondición compara
+// (total-fuel-used), que es un acumulador.
 TEST(Learn, NumericNoise) {
   const std::string complete = pddl::write("counters", pddl::learn(traces("counters")));
   const std::vector<plantraces::Trace> noisy = traces("counters", "noise5");
-  EXPECT_EQ(pddl::write("counters", pddl::learn(noisy, numeric_noise())), complete);
-  EXPECT_NE(pddl::write("counters", pddl::learn(noisy)), complete);
+  EXPECT_EQ(pddl::write("counters", pddl::learn(noisy)), complete);
+  EXPECT_NE(pddl::write("counters", pddl::learn(noisy, without_numeric_noise())), complete);
 
   const std::string zenotravel =
-      pddl::write("zenotravel", pddl::learn(traces("zenotravel", "noise5"), numeric_noise()));
+      pddl::write("zenotravel", pddl::learn(traces("zenotravel", "noise5")));
   std::size_t comparisons = 0;
   std::size_t start = 0;
   for (std::size_t end = zenotravel.find('\n'); end != std::string::npos;

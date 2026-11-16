@@ -75,40 +75,21 @@ poder medirla por separado.
 
 ### Ruido (PlanMiner-N)
 
-Las técnicas de PlanMiner-N, la extensión de PlanMiner para trazas con ruido, y una nueva, el
-suavizado de los átomos, que usa la secuencia de cada traza. Solo actúan si se estima ruido
+Las técnicas de PlanMiner-N, la extensión de PlanMiner para trazas con ruido, y otras nuevas: el
+suavizado temporal de los átomos y de los fluentes, que usa la secuencia de cada traza, y las que
+tienen en cuenta el ruido en los numéricos. Solo actúan si se estima ruido
 (`plantraces::frame_changes`, c > 0): sin ruido, el dominio es el mismo.
 
 | Mejora | Qué hace | Opción |
 |--------|----------|--------|
 | Suavizado de los átomos | Las tablas separan cada aplicación de las demás, pero el ruido es independiente en cada estado, y el valor de un átomo persiste mientras no lo cambie una acción. Antes de las tablas, en cada traza, los estados de cada átomo con argumentos se cortan en tramos en las acciones que pueden cambiarlo: las que tienen todos sus objetos y lo cambian más de lo que explica el ruido. En cada tramo, sus observaciones pasan al valor de la mayoría si gana por dos o más, y a desconocidas si no hay una mayoría clara. El umbral de los valores raros usa en cada columna el ruido que queda. Corrige los valores raros que son ciertos, como un shaker ya agitado cuando se coge en barman: con la frecuencia del ruido, el umbral los borraba e INSLV añadía la precondición contraria. Supone que los efectos no tienen constantes del dominio. | `Options::smooth_atoms` |
 | Valores raros | En cada átomo y en cada clase (antes o después de la acción), el valor que explica el ruido pasa a desconocido: con p el ruido de cada observación (c = 2p(1 - p)) y n filas, el que sale en m filas o menos, con m el menor tal que P(Binomial(n, p) > m) ≤ 10⁻³, y nunca el de la mitad o más. INSLV puede describir el estado con esa condición sin que le cueste, y la validación no cuenta esos valores. Es el filtro estadístico de PlanMiner-N con otro umbral: el del artículo, un 5 % fijo, con un 5 % de ruido solo limpia la mitad; uno proporcional al ruido (2c, con la opción) solo acierta con muchas filas o con pocas. El de la binomial se acerca a p con muchas filas, y deja los valores raros que son ciertos, y sube con pocas, porque el ruido varía más. | `Options::rare_values_alpha`; `Options::rare_values`, `Options::rare_values_per_noise` |
-| Suavizado de los fluentes | Los valores de cada fluente se agrupan con un clustering jerárquico de arriba abajo (HRC: k-means con k = 2, que se repite en cada cluster mientras su dispersión, 0.6 (1 - silueta) + 0.4 σ/μ, pase de 0.05) y pasan a la media de su cluster; los clusters de un solo valor son atípicos y pasan a desconocidos. Antes de buscar los efectos y las relaciones. Salvo `(total-cost)` y los acumuladores, que no se repiten. | `Options::smooth_fluents` |
+| Suavizado de los fluentes | Los valores de cada fluente se agrupan con un clustering jerárquico de arriba abajo (HRC: k-means con k = 2, que se repite en cada cluster mientras su dispersión, 0.6 (1 - silueta) + 0.4 σ/μ, pase de 0.05) y pasan a la media de su cluster; los clusters de un solo valor son atípicos y pasan a desconocidos. Antes de buscar los efectos y las relaciones. Salvo `(total-cost)` y los acumuladores, que no se repiten, y los fluentes que ya ha suavizado el suavizado temporal. | `Options::smooth_fluents` |
+| Suavizado temporal de los fluentes | Como el de los átomos, en los tramos de cada fluente con argumentos entre las acciones que pueden cambiarlo; de los fluentes sin argumentos, solo las constantes (las que ninguna acción cambia en más de la mitad de sus aplicaciones), con la traza entera como tramo. Los valores sin alterar son todos iguales y los alterados, casi siempre distintos: todos pasan a la moda, si sale al menos dos veces y más que cualquier otro valor, o a desconocidos, también si están solos en su tramo. Lo que queda conocido está casi siempre bien. El suavizado de los fluentes de PlanMiner-N (HRC) se queda con los demás: con los datos ya limpios, agrupaba valores ciertos y parecidos, y pasaba una constante con ruido, como `(max_int)`, a la media de su cluster, que no es exactamente el valor. | `Options::smooth_values` |
+| Validación exacta de las comparaciones | Con ruido, cada comparación numérica tiene que cumplirse en todos los ejemplos en que se conoce, como sin ruido: los valores que quedan conocidos están limpios (los átomos, no). En counters, con la validación de 0.95, pasaba `(> (value ?0) 1)` en decrement en lugar de `(>= (value ?0) 1)`. | `Options::exact_comparisons` |
+| Acumuladores con ruido | Con ruido, una alteración puede hacer que un acumulador parezca bajar, y se comparaba: `(>= (total-fuel-used) (onboard ?1))` en board de zenotravel, que obliga a volar antes de subir al segundo pasajero. Antes de las tablas, también son acumuladores los fluentes que suben más de lo que explica el ruido y cuyas bajadas sí lo explica; y, después de los efectos, los que solo tienen efectos `increase`. | `Options::noisy_accumulators` |
+| Modelo nulo con ruido | En los fluentes sin argumentos, que no se suavizan, un cambio que explica el ruido no es un efecto: con un 20 % de ruido, `(total-fuel-used)` difiere en un 36 % de las aplicaciones de board, por encima del 25 % del modelo nulo, y la regresión le encontraba un efecto absurdo. | `Options::noisy_null_model` |
 | Refinamiento de los meta-estados | La fusión descarta las condiciones con un soporte (los ejemplos que cubren las reglas que las tienen) por debajo del 5 % de las aplicaciones, y en un conflicto con una diferencia de soportes dentro del 10 % de su media, los dos valores. | `Options::refine_meta_states` |
-
-Para los numéricos con ruido hay cuatro opciones más, que la mejorada aún no usa:
-
-- **Suavizado temporal de los fluentes** (`Options::smooth_values`, `plantraces::smooth_values`):
-  como el de los átomos, en los tramos de cada fluente con argumentos entre las acciones que
-  pueden cambiarlo; de los fluentes sin argumentos, solo las constantes (las que ninguna acción
-  cambia en más de la mitad de sus aplicaciones), con la traza entera como tramo. Los valores sin
-  alterar son todos iguales y los alterados, casi siempre distintos: todos pasan a la moda, si
-  sale al menos dos veces y más que cualquier otro valor, o a desconocidos, también si están solos
-  en su tramo. Lo que queda conocido está casi siempre bien. El suavizado de los fluentes de
-  PlanMiner-N (HRC) se queda con los demás: con los datos ya limpios, agrupaba valores ciertos y
-  parecidos, y pasaba una constante con ruido, como `(max_int)`, a la media de su cluster, que no
-  es exactamente el valor.
-- **Validación exacta de las comparaciones** (`Options::exact_comparisons`): con ruido, cada
-  comparación numérica tiene que cumplirse en todos los ejemplos en que se conoce, como sin ruido.
-- **Acumuladores con ruido** (`Options::noisy_accumulators`): con ruido, una alteración puede hacer
-  que un acumulador parezca bajar. Antes de las tablas, también son acumuladores los fluentes que
-  suben más de lo que explica el ruido y cuyas bajadas sí lo explica; y, después de los efectos,
-  los que solo tienen efectos `increase`.
-- **Modelo nulo con ruido** (`Options::noisy_null_model`): en los fluentes sin argumentos, que no
-  se suavizan, un cambio que explica el ruido no es un efecto.
-
-Las cuatro juntas, con el HRC, en el banco `ruido`, llevan la validez de los numéricos con un 3,
-5, 10 y 20 % de ruido de 74, 66, 87 y 65 % a 97, 97, 97 y 94 %, sin cambiar la de STRIPS.
 
 ### Escritura
 

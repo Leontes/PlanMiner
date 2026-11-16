@@ -102,18 +102,18 @@ struct Options {
   /// constante con ruido, como (max_int), a la media de su cluster, que no es exactamente el valor.
   /// Si no, como el original.
   ///
-  /// Las cuatro opciones de los numéricos con ruido (smooth_values, exact_comparisons,
-  /// noisy_accumulators y noisy_null_model) aún no están en la mejorada. En el banco ruido, con el
-  /// HRC, llevan la validez de los numéricos con un 3, 5, 10 y 20 % de ruido de 74, 66, 87 y 65 %
-  /// a 97, 97, 97 y 94 %, sin cambiar la de STRIPS.
-  bool smooth_values = false;
+  /// La mejorada usa las cuatro opciones de los numéricos con ruido (smooth_values,
+  /// exact_comparisons, noisy_accumulators y noisy_null_model). En el banco ruido, con el HRC,
+  /// llevan la validez de los numéricos con un 3, 5, 10 y 20 % de ruido de 74, 66, 87 y 65 % a 97,
+  /// 97, 97 y 94 %, sin cambiar la de STRIPS.
+  bool smooth_values = true;
   /// Si las trazas tienen ruido, la validación de la fusión exige que cada comparación numérica se
   /// cumpla en todos los ejemplos en que se conoce (rules::FusionOptions::min_comparison_support
   /// 1), como sin ruido (exact_without_noise). Es para usarla con smooth_values, que deja limpios
   /// los valores conocidos (no los átomos: la validación exacta de todo pierde efectos ciertos). En
   /// counters, con la validación de 0.95, pasaba (> (value ?0) 1) en decrement en lugar de
   /// (>= (value ?0) 1).
-  bool exact_comparisons = false;
+  bool exact_comparisons = true;
   /// Si las trazas tienen ruido, los acumuladores (que no se comparan ni pasan por el HRC:
   /// datasets::accumulators) se reconocen con el ruido: antes de las tablas, los que suben más de
   /// lo que explica el ruido de los valores y cuyas bajadas sí lo explica; y, después de los
@@ -121,11 +121,11 @@ struct Options {
   /// que un acumulador parezca bajar: (total-fuel-used) se comparaba ((>= (total-fuel-used)
   /// (onboard ?1)) en board de zenotravel, que obliga a volar antes de subir al segundo pasajero)
   /// y pasaba por el HRC.
-  bool noisy_accumulators = false;
+  bool noisy_accumulators = true;
   /// Si las trazas tienen ruido en los valores, el modelo nulo de la regresión de los fluentes sin
   /// argumentos (los que smooth_values no suaviza) tiene en cuenta el ruido
   /// (datasets::EffectOptions::noise).
-  bool noisy_null_model = false;
+  bool noisy_null_model = true;
   /// Si las trazas tienen ruido, en la tabla de cada acción, los valores de cada fluente se agrupan
   /// con HRC y pasan a la media de su cluster, y los atípicos, a desconocidos
   /// (datasets::smooth_fluents: el filtro numérico de PlanMiner-N). Va antes de buscar los efectos

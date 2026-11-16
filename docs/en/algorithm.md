@@ -75,41 +75,21 @@ options, so that it can be measured on its own.
 
 ### Noise (PlanMiner-N)
 
-The techniques of PlanMiner-N, the extension of PlanMiner for noisy traces, and a new one, atom
-smoothing, which uses the sequence of each trace. They only act when noise is estimated
+The techniques of PlanMiner-N, the extension of PlanMiner for noisy traces, and new ones: the
+temporal smoothing of atoms and fluents, which uses the sequence of each trace, and those that
+take the noise into account in numeric domains. They only act when noise is estimated
 (`plantraces::frame_changes`, c > 0): without noise, the domain is the same.
 
 | Improvement | What it does | Option |
 |-------------|--------------|--------|
 | Atom smoothing | The tables separate each application from the others, but the noise is independent in each state, and the value of an atom persists until an action changes it. Before the tables, in each trace, the states of each atom with arguments are cut into segments at the actions that can change it: those that have all its objects and change it more than the noise explains. In each segment, its observations take the majority value if it wins by two or more, and become unknown if there is no clear majority. The rare-value threshold uses, in each column, the noise that remains. It fixes the rare values that are true, like a shaker already shaken when it is grasped in barman: with the frequency of the noise, the threshold hid them and INSLV added the opposite precondition. It assumes that effects have no domain constants. | `Options::smooth_atoms` |
 | Rare values | In each atom and each class (before or after the action), the value that the noise explains becomes unknown: with p the noise of each observation (c = 2p(1 - p)) and n rows, the one that appears in m rows or fewer, with m the smallest such that P(Binomial(n, p) > m) ≤ 10⁻³, and never the one of half or more. INSLV can then describe the state with that condition at no cost, and validation does not count those values. It is PlanMiner-N's statistical filter with another threshold: the paper's, a fixed 5 %, only cleans half of 5 % noise; one proportional to the noise (2c, with the option) is only right with many rows or with few. The binomial one approaches p with many rows, keeping the rare values that are true, and rises with few, because the noise varies more. | `Options::rare_values_alpha`; `Options::rare_values`, `Options::rare_values_per_noise` |
-| Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat. | `Options::smooth_fluents` |
+| Fluent smoothing | The values of each fluent are grouped with a top-down hierarchical clustering (HRC: k-means with k = 2, repeated in each cluster while its dispersion, 0.6 (1 - silhouette) + 0.4 σ/μ, exceeds 0.05) and replaced by the mean of their cluster; single-value clusters are outliers and become unknown. Before searching for the effects and the relations. Except `(total-cost)` and accumulators, which do not repeat, and the fluents that the temporal smoothing has already smoothed. | `Options::smooth_fluents` |
+| Temporal fluent smoothing | Like the atom smoothing, in the segments of each fluent with arguments between the actions that can change it; of the fluents without arguments, only the constants (those that no action changes in more than half of its applications), with the whole trace as one segment. Unaltered values are all equal and altered ones almost always different: they all take the mode, if it appears at least twice and more than any other value, or become unknown, also when they are alone in their segment. What stays known is almost always right. PlanMiner-N's fluent smoothing (HRC) keeps the other fluents: on data already clean it grouped true values that were close, and replaced a noisy constant such as `(max_int)` with the mean of its cluster, which is not exactly the value. | `Options::smooth_values` |
+| Exact validation of comparisons | With noise, each numeric comparison has to hold in every example where it is known, as without noise: the values that stay known are clean (the atoms are not). In counters, with the 0.95 validation, `(> (value ?0) 1)` passed in decrement instead of `(>= (value ?0) 1)`. | `Options::exact_comparisons` |
+| Accumulators with noise | With noise, an alteration can make an accumulator seem to decrease, and it was compared: `(>= (total-fuel-used) (onboard ?1))` in zenotravel's board, which forces a flight before the second passenger boards. Before the tables, fluents that increase more than the noise explains and whose decreases it does explain are accumulators too; and, after the effects, those whose effects are all `increase`. | `Options::noisy_accumulators` |
+| Noise-aware null model | For fluents without arguments, which are not smoothed, a change that the noise explains is not an effect: with 20 % noise, `(total-fuel-used)` differs in 36 % of board's applications, above the null model's 25 %, and the regression found an absurd effect for it. | `Options::noisy_null_model` |
 | Meta-state refinement | The fusion drops the conditions whose support (the examples covered by the rules that have them) is below 5 % of the applications, and in a conflict whose support difference is within 10 % of their mean, both values. | `Options::refine_meta_states` |
-
-For numeric domains with noise there are four more options, not yet used by the improved
-configuration:
-
-- **Temporal fluent smoothing** (`Options::smooth_values`, `plantraces::smooth_values`): like the
-  atom smoothing, in the segments of each fluent with arguments between the actions that can
-  change it; of the fluents without arguments, only the constants (those that no action changes
-  in more than half of its applications), with the whole trace as one segment. Unaltered values
-  are all equal and altered ones almost always different: they all take the mode, if it appears at
-  least twice and more than any other value, or become unknown, also when they are alone in their
-  segment. What stays known is almost always right. PlanMiner-N's fluent smoothing (HRC) keeps the
-  other fluents: on data already clean it grouped true values that were close, and replaced a
-  noisy constant such as `(max_int)` with the mean of its cluster, which is not exactly the value.
-- **Exact validation of comparisons** (`Options::exact_comparisons`): with noise, each numeric
-  comparison has to hold in every example where it is known, as without noise.
-- **Accumulators with noise** (`Options::noisy_accumulators`): with noise, an alteration can make an
-  accumulator seem to decrease. Before the tables, fluents that increase more than the noise
-  explains and whose decreases it does explain are accumulators too; and, after the effects, those
-  whose effects are all `increase`.
-- **Noise-aware null model** (`Options::noisy_null_model`): for fluents without arguments, which
-  are not smoothed, a change that the noise explains is not an effect.
-
-The four together, with HRC, on the `ruido` benchmark, take the validity of the numeric domains
-with 3, 5, 10 and 20 % noise from 74, 66, 87 and 65 % to 97, 97, 97 and 94 %, without changing that
-of STRIPS.
 
 ### Writing
 
