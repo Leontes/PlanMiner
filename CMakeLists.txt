@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
   PlanMiner
-  VERSION 1.0.0
+  VERSION 1.1.0
   DESCRIPTION "Aprendizaje de dominios de planificación a partir de trazas de planes"
   HOMEPAGE_URL "https://github.com/Leontes/PlanMiner"
   LANGUAGES CXX)

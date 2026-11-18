@@ -22,8 +22,9 @@ algorithm ([Segura-Muros, Pérez and Fernández-Olivares,
 
 With complete traces, or with 30 % of the atoms and values unknown, the improved configuration
 gives valid plans in every test problem of 14 of the 15 domains of the benchmark (the other one
-uses domain constants). With 5 % noise, not yet: see
-[Evaluation](docs/en/evaluation.md#results).
+uses domain constants). With 5 % noise, almost all of them too: 92 % in STRIPS and 99 % in the
+numeric domains, against 11 % and 1 % for the original. With more noise, or with gaps and noise
+together, it loses some: see [Evaluation](docs/en/evaluation.md#results).
 
 ## Features
 
@@ -38,6 +39,9 @@ uses domain constants). With 5 % noise, not yet: see
 - **Numeric preconditions:** comparisons between fluents and with the expressions of the
   effects: `(>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
 - **Types:** the hierarchy is inferred from the objects in the traces.
+- **Noise:** PlanMiner estimates how much there is in the traces and cleans it with the
+  techniques of PlanMiner-N (the statistical filter and the hierarchical clustering of fluents,
+  HRC) and with a temporal smoothing: an atom or a value persists until an action changes it.
 - **Two configurations:** the improved one (the default) and the original one. The improvements
   are described in [How PlanMiner learns](docs/en/algorithm.md).
 - **Memory:** PlanMiner sets itself a memory limit, and its searches stop when they reach it

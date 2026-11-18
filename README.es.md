@@ -22,8 +22,9 @@ medible frente a él.
 
 Con trazas completas, o con un 30 % de los átomos y valores desconocidos, la configuración
 mejorada da planes válidos en todos los problemas de prueba de 14 de los 15 dominios del banco de
-pruebas (el que falta usa constantes del dominio). Con un 5 % de ruido, todavía no:
-ver [Evaluación](docs/es/evaluacion.md#resultados).
+pruebas (el que falta usa constantes del dominio). Con un 5 % de ruido, también casi todos: el
+92 % en STRIPS y el 99 % en los numéricos, frente al 11 y el 1 % de la original. Con más ruido, o
+con huecos y ruido a la vez, pierde algunos: ver [Evaluación](docs/es/evaluacion.md#resultados).
 
 ## Características
 
@@ -38,6 +39,9 @@ ver [Evaluación](docs/es/evaluacion.md#resultados).
 - **Precondiciones numéricas:** comparaciones entre fluentes y con las expresiones de los
   efectos: `(>= (fuel ?a) (* (distance ?c1 ?c2) (slow-burn ?a)))`.
 - **Tipos:** la jerarquía se infiere de los objetos de las trazas.
+- **Ruido:** PlanMiner estima cuánto hay en las trazas y lo limpia con las técnicas de
+  PlanMiner-N (el filtro estadístico y el clustering jerárquico de los fluentes, HRC) y con un
+  suavizado temporal: un átomo o un valor persiste mientras no lo cambie una acción.
 - **Dos configuraciones:** la mejorada (por defecto) y la original. Las mejoras están descritas
   en [Cómo aprende PlanMiner](docs/es/algoritmo.md).
 - **Memoria:** PlanMiner se pone un límite de memoria y sus búsquedas paran al llegar a él, en
