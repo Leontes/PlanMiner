@@ -103,8 +103,14 @@ tienen en cuenta el ruido en los numéricos. Solo actúan si se estima ruido
 - **Lenguaje:** STRIPS con tipos y costes de acción, y fluentes numéricos sin acciones
   durativas. Ni ADL (cuantificadores, efectos condicionales, disyunciones), ni constantes del
   dominio, ni acciones durativas.
-- **Ruido:** con un 5 % de ruido en las trazas faltan literales esenciales y casi ningún dominio
-  aprendido da planes válidos.
+- **Huecos y ruido a la vez:** cada uno por separado se aguanta bien, pero juntos, a partir de un
+  10 % de ruido, faltan precondiciones y efectos. Con los huecos, INSLV describe a veces los
+  estados con otros átomos y deja fuera alguno que los datos muestran (`(holding ?0)` en put-down).
+  Además, en las acciones que se aplican pocas veces quedan tan pocas observaciones conocidas que
+  el suavizado temporal toma un efecto por ruido.
+- **El suavizado temporal** supone que una acción solo cambia lo que tiene todos sus objetos
+  entre sus argumentos, sin constantes del dominio en los efectos. Los valores que nada corrobora
+  quedan desconocidos, no corregidos.
 - **Ambigüedad:** solo hay ejemplos de lo que pasa, no de lo que no puede pasar. Una precondición
   que se cumple en todos los estados de las trazas en que se aplica la acción no se puede
   descartar con ellas: una relación estática (`(reachable-floor ?lift ?floor)`), un invariante

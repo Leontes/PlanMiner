@@ -103,8 +103,14 @@ take the noise into account in numeric domains. They only act when noise is esti
 - **Language:** STRIPS with types and action costs, and numeric fluents without durative
   actions. No ADL (quantifiers, conditional effects, disjunctions), no domain constants, no
   durative actions.
-- **Noise:** with 5 % noise in the traces, essential literals go missing and almost no learned
-  domain gives valid plans.
+- **Gaps and noise together:** each one alone is handled well, but together, from 10 % noise
+  on, preconditions and effects go missing. With gaps, INSLV sometimes describes the states with
+  other atoms and leaves out one that the data shows (`(holding ?0)` in put-down). Also, in
+  actions that are applied few times, so few known observations remain that the temporal
+  smoothing takes an effect for noise.
+- **Temporal smoothing** assumes that an action only changes what has all its objects among its
+  arguments, with no domain constants in the effects. Values that nothing corroborates stay
+  unknown, not corrected.
 - **Ambiguity:** there are only examples of what happens, not of what cannot happen. A
   precondition that holds in every state of the traces where the action is applied cannot be
   ruled out with them: a static relation (`(reachable-floor ?lift ?floor)`), a state invariant

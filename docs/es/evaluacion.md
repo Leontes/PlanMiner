@@ -113,39 +113,66 @@ corta al doble.
 
 ## Resultados
 
-El banco `default` con PlanMiner en el commit `f69da15` (octubre de 2026): 15 dominios, 90
-problemas por dominio y 3 particiones. P, R y F en modo tolerante; la validez es el porcentaje de
-planes válidos. INSLV 1.0 da los mismos resultados: con él, los 270 dominios aprendidos son
-idénticos byte a byte.
+Los tres bancos con PlanMiner 1.1 (commit `16ed699`, noviembre de 2026) y PDDLDomains v1.0: 15
+dominios (13 STRIPS y 2 numéricos), 90 problemas por dominio y 3 particiones. F en modo tolerante
+y validez (el porcentaje de planes válidos), con la media de los dominios de cada clase. En
+STRIPS, el 92 % es el máximo mientras no se aprendan las constantes del dominio: todos los planes
+de 12 de los 13 dominios.
+
+Huecos (`default`):
 
 | Clase | Variante | Original: F · validez | Mejorada: F · validez |
 |-------|----------|----------------------:|----------------------:|
 | STRIPS (13) | complete | 0.937 · 87 % | 0.958 · 92 % |
-| STRIPS (13) | missing30 | 0.916 · 80 % | 0.958 · 92 % |
-| STRIPS (13) | noise5 | 0.574 · 2 % | 0.422 · 1 % |
+| STRIPS (13) | missing30 | 0.926 · 82 % | 0.958 · 92 % |
+| STRIPS (13) | noise5 | 0.620 · 11 % | 0.944 · 92 % |
 | numéricos (2) | complete | 0.749 · 51 % | 0.820 · 100 % |
-| numéricos (2) | missing30 | 0.704 · 53 % | 0.815 · 100 % |
-| numéricos (2) | noise5 | 0.359 · 4 % | 0.522 · 51 % |
+| numéricos (2) | missing30 | 0.723 · 67 % | 0.809 · 100 % |
+| numéricos (2) | noise5 | 0.292 · 1 % | 0.817 · 99 % |
 
-Por dominio, con las trazas completas (F · planes válidos):
+Ruido (`ruido`):
 
-| Colección | Original | Mejorada |
-|-----------|---------:|---------:|
-| `ipc-1998/gripper-round-1-strips` | 0.977 · 27/90 | 1.000 · 90/90 |
-| `ipc-2000/blocks-strips-untyped` | 1.000 · 90/90 | 1.000 · 90/90 |
-| `ipc-2011/barman-sequential-satisficing` | 0.976 · 89/89 | 0.979 · 89/89 |
-| `ipc-2011/elevator-sequential-satisficing` | 0.901 · 82/82 | 0.901 · 82/82 |
-| `ipc-2011/floor-tile-sequential-satisficing` | 0.919 · 90/90 | 0.919 · 90/90 |
-| `ipc-2011/no-mystery-sequential-satisficing` | 0.909 · 90/90 | 1.000 · 90/90 |
-| `ipc-2011/parking-sequential-satisficing` | 0.947 · 90/90 | 0.947 · 90/90 |
-| `ipc-2011/peg-solitaire-sequential-satisficing` | 0.952 · 90/90 | 0.984 · 90/90 |
-| `ipc-2011/scanalyzer-3d-sequential-satisficing` | 0.979 · 89/89 | 0.979 · 89/89 |
-| `ipc-2011/sokoban-sequential-satisficing` | 1.000 · 90/90 | 1.000 · 90/90 |
-| `ipc-2011/transport-sequential-satisficing` | 0.965 · 90/90 | 0.986 · 90/90 |
-| `ipc-2011/visit-all-sequential-satisficing` | 0.833 · 90/90 | 0.909 · 90/90 |
-| `ipc-2011/woodworking-sequential-satisficing` | 0.823 · 0/90 | 0.856 · 0/90 |
-| `ipc-2023-numeric/counters` | 0.667 · 72/90 | 0.750 · 90/90 |
-| `ipc-2023-numeric/zenotravel` | 0.832 · 19/90 | 0.890 · 90/90 |
+| Clase | Configuración | complete | noise3 | noise5 | noise10 | noise20 |
+|-------|---------------|---------:|-------:|-------:|--------:|--------:|
+| STRIPS (13) | original | 0.937 · 87 % | 0.585 · 4 % | 0.620 · 11 % | 0.604 · 6 % | 0.560 · 1 % |
+| STRIPS (13) | mejorada | 0.958 · 92 % | 0.951 · 92 % | 0.944 · 92 % | 0.942 · 92 % | 0.928 · 89 % |
+| numéricos (2) | original | 0.749 · 51 % | 0.639 · 41 % | 0.292 · 1 % | 0.214 · 1 % | 0.178 · 1 % |
+| numéricos (2) | mejorada | 0.820 · 100 % | 0.817 · 99 % | 0.817 · 99 % | 0.817 · 99 % | 0.817 · 99 % |
+
+Huecos y ruido a la vez (`mezcla`; todas las variantes, salvo la completa, con un 30 % de
+huecos):
+
+| Clase | Configuración | complete | noise3 | noise5 | noise10 | noise20 |
+|-------|---------------|---------:|-------:|-------:|--------:|--------:|
+| STRIPS (13) | original | 0.937 · 87 % | 0.706 · 21 % | 0.688 · 7 % | 0.681 · 5 % | 0.632 · 5 % |
+| STRIPS (13) | mejorada | 0.958 · 92 % | 0.945 · 92 % | 0.942 · 92 % | 0.930 · 88 % | 0.916 · 72 % |
+| numéricos (2) | original | 0.749 · 49 % | 0.470 · 41 % | 0.453 · 41 % | 0.097 · 1 % | 0.063 · 1 % |
+| numéricos (2) | mejorada | 0.823 · 99 % | 0.820 · 97 % | 0.817 · 97 % | 0.817 · 97 % | 0.814 · 97 % |
+
+Los problemas de `mezcla` son los de los otros bancos salvo en zenotravel, donde uno es otro: al
+generar el banco, PyPlanner no resolvió el mismo en su límite de tiempo.
+
+Por dominio (F · planes válidos): con las trazas completas, las dos configuraciones; y la
+mejorada con lo más difícil de los bancos de ruido: un 20 % de ruido, y un 30 % de huecos con
+un 20 % de ruido.
+
+| Colección | Original | Mejorada | Ruido 20 % | Huecos y ruido 20 % |
+|-----------|---------:|---------:|-----------:|--------------------:|
+| `ipc-1998/gripper-round-1-strips` | 0.977 · 27/90 | 1.000 · 90/90 | 1.000 · 90/90 | 0.993 · 90/90 |
+| `ipc-2000/blocks-strips-untyped` | 1.000 · 90/90 | 1.000 · 90/90 | 1.000 · 90/90 | 0.987 · 45/90 |
+| `ipc-2011/barman-sequential-satisficing` | 0.976 · 89/89 | 0.979 · 89/89 | 0.938 · 80/89 | 0.887 · 28/89 |
+| `ipc-2011/elevator-sequential-satisficing` | 0.901 · 81/81 | 0.901 · 81/81 | 0.890 · 57/81 | 0.882 · 47/81 |
+| `ipc-2011/floor-tile-sequential-satisficing` | 0.919 · 90/90 | 0.919 · 90/90 | 0.919 · 90/90 | 0.909 · 77/90 |
+| `ipc-2011/no-mystery-sequential-satisficing` | 0.909 · 90/90 | 1.000 · 90/90 | 0.930 · 90/90 | 0.922 · 83/90 |
+| `ipc-2011/parking-sequential-satisficing` | 0.947 · 90/90 | 0.947 · 90/90 | 0.947 · 90/90 | 0.939 · 72/90 |
+| `ipc-2011/peg-solitaire-sequential-satisficing` | 0.952 · 90/90 | 0.984 · 90/90 | 0.952 · 90/90 | 0.952 · 90/90 |
+| `ipc-2011/scanalyzer-3d-sequential-satisficing` | 0.979 · 89/89 | 0.979 · 89/89 | 0.954 · 86/89 | 0.950 · 45/89 |
+| `ipc-2011/sokoban-sequential-satisficing` | 1.000 · 90/90 | 1.000 · 90/90 | 0.976 · 90/90 | 0.956 · 79/90 |
+| `ipc-2011/transport-sequential-satisficing` | 0.965 · 90/90 | 0.986 · 90/90 | 0.942 · 90/90 | 0.934 · 90/90 |
+| `ipc-2011/visit-all-sequential-satisficing` | 0.833 · 90/90 | 0.909 · 90/90 | 0.833 · 90/90 | 0.833 · 90/90 |
+| `ipc-2011/woodworking-sequential-satisficing` | 0.823 · 0/90 | 0.856 · 0/90 | 0.780 · 0/90 | 0.766 · 0/90 |
+| `ipc-2023-numeric/counters` | 0.667 · 72/90 | 0.750 · 90/90 | 0.750 · 90/90 | 0.750 · 90/90 |
+| `ipc-2023-numeric/zenotravel` | 0.832 · 19/90 | 0.890 · 90/90 | 0.885 · 88/90 | 0.877 · 84/90 |
 
 - **Woodworking** usa constantes del dominio (`natural`, `untreated`…), que PlanMiner todavía no
   aprende: PyPlanner rechaza los problemas porque el dominio aprendido no las declara.
@@ -153,4 +180,10 @@ Por dominio, con las trazas completas (F · planes válidos):
   (precondiciones que se cumplen siempre en las trazas, ver
   [Cómo aprende PlanMiner](algoritmo.md#límites)) y formas equivalentes que la comparación no
   reconoce: con enteros, `(< (value ?0) (max_int))` es `(<= (+ (value ?0) 1) (max_int))`.
-- **Con ruido** casi nada funciona todavía.
+- **Con ruido**, la mejorada pierde muy pocos planes hasta un 10 %: como mucho dos por dominio,
+  la mayoría por el límite del planificador (los dos de zenotravel, desde un 3 %). Con un 20 %
+  pierde más en barman (inválidos), elevator (límite) y scanalyzer.
+- **Con huecos y ruido a la vez**, hasta un 5 % de ruido, casi lo mismo que con cada uno por
+  separado; en zenotravel, cuatro planes inválidos. Desde un 10 %, faltan precondiciones y efectos
+  (ver [Cómo aprende PlanMiner](algoritmo.md#límites)), y con un 20 % se pierden muchos planes en
+  blocks, barman, elevator, parking y scanalyzer.
