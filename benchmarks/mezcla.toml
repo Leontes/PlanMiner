@@ -1,0 +1,95 @@
+# Banco de huecos y ruido a la vez de PlanMiner (scripts/benchmark.py): los mismos dominios,
+# problemas y planes que los bancos default y ruido, con trazas completas y con un 30 % de huecos
+# (el missing30 de default) y ruido de los niveles del banco ruido en la misma traza. El artículo de
+# PlanMiner-N señala la mezcla como su límite: los filtros quitan información legítima.
+#
+# De cada dominio se generan `problems` problemas con su plan y, de cada plan, una traza por
+# variante. La evaluación es una validación cruzada con `folds` particiones de los problemas:
+# PlanMiner aprende con las trazas de las demás particiones y planifica con el dominio aprendido
+# en los problemas de la suya (PyPlanner y VAL).
+
+description = "Dominios STRIPS y numéricos de PDDLDomains con un 30 % de huecos y un 3, 5, 10 y 20 % de ruido"
+seed = 1
+problems = 90
+folds = 3
+
+# Las colecciones, con los filtros de los [[select]] de los datasets de PDDLDomains:
+# collections, exclude-collections, types, exclude-types, requirements, exclude-requirements,
+# levels, min-level y max-level. Se descartan las de un dominio por problema: PlanMiner aprende
+# uno solo.
+[[select]]
+types = ["strips"]
+
+[[select]]
+types = ["numeric"]
+exclude-types = [
+  "temporal", "continuous", "pddlplus", "til", "derived", "preferences", "constraints",
+]
+
+# Los problemas de las colecciones clásicas: paseos aleatorios (random-walk de PDDLDomains) desde
+# los `bases` problemas más pequeños de la colección. El paseo es el plan. Se generan
+# `candidates` candidatos por problema y se eligen los que cubren el dominio: cada acción
+# aplicada y cada efecto cambiando el estado en al menos `coverage` problemas (o en todos los
+# candidatos que lo muestran, si son menos). Lo que no muestra ningún problema no cuenta en las
+# métricas.
+[walk]
+bases = 6
+mode = "both"
+steps = "10..40"
+goals = "2..6"
+candidates = 3
+coverage = 6
+
+# Los de las numéricas: el generador de la colección en PDDLDomains, con sus parámetros por
+# defecto y los que se den aquí ("<colección>" = { parámetro = valor }). Los planes, de
+# PyPlanner: se generan la mitad más de problemas y se quedan los primeros que resuelve.
+[generators]
+
+# PyPlanner: los planes de las numéricas, qué problemas resuelve el dominio de referencia y los
+# planes con los dominios aprendidos. Límites por problema, en segundos y MB.
+[planner]
+config = "gbfs-ff-pref"
+time_limit = 60
+memory_limit = 1024
+
+# PlanMiner: las configuraciones (original, improved) y los límites de cada aprendizaje.
+[planminer]
+configurations = ["original", "improved"]
+time_limit = 1800
+memory_limit = 2560
+
+# Las variantes de las trazas, con las opciones de `pddldomains trace`: world, universe, missing,
+# missing_states, noise, numeric_noise y seed. noise es el porcentaje de los átomos observados de
+# cada estado que se invierten y de los valores numéricos que se alteran (hasta numeric_noise, un
+# 10 % por defecto, al alza o a la baja).
+[[variants]]
+name = "complete"
+world = "open"
+
+[[variants]]
+name = "missing30-noise3"
+world = "open"
+missing = 30
+noise = 3
+seed = 1
+
+[[variants]]
+name = "missing30-noise5"
+world = "open"
+missing = 30
+noise = 5
+seed = 1
+
+[[variants]]
+name = "missing30-noise10"
+world = "open"
+missing = 30
+noise = 10
+seed = 1
+
+[[variants]]
+name = "missing30-noise20"
+world = "open"
+missing = 30
+noise = 20
+seed = 1
